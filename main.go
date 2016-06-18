@@ -22,7 +22,7 @@ func main() {
 	data, err := bot.SlackConnect(slackApiKey)
 	events.Start(data)
 	if err != nil {
-		logger.Fatal("Unable to contact the slack API", zap.Err(err))
+		logger.Fatal("Unable to contact the slack API", zap.Error(err))
 	}
-	api.Run(data, events.Data)
+	api.Run(data)
 }
