@@ -18,6 +18,7 @@ func init() {
 
 func main() {
 	cfg.Parse()
+	bot.LogLevel = zap.Debug
 	data, err := bot.SlackConnect(slackApiKey)
 	events.Start(data)
 	if err != nil {
