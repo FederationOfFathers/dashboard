@@ -8,15 +8,14 @@ import (
 	"time"
 
 	"github.com/FederationOfFathers/dashboard/slack"
-	"github.com/apokalyptik/cfg"
 	"github.com/uber-go/zap"
 )
 
 var logger = zap.NewJSON().With(zap.String("module", "event"))
 var Data = &Events{}
 var slackData *bot.SlackData
-var savefile = "events.json"
-var saveinterval = time.Minute
+var SaveFile = "events.json"
+var SaveInterval = time.Minute
 
 type Events struct {
 	sync.RWMutex
@@ -50,12 +49,12 @@ func (e *Events) FindForSlackUserID(userID string) []*Event {
 func (e *Events) load() {
 	e.Lock()
 	defer e.Unlock()
-	fp, err := os.Open(savefile)
+	fp, err := os.Open(SaveFile)
 	if err != nil {
 		if os.IsNotExist(err) {
 			return
 		}
-		logger.Fatal("Unable to open savefile for reading", zap.String("filename", savefile), zap.Error(err))
+		logger.Fatal("Unable to open savefile for reading", zap.String("filename", SaveFile), zap.Error(err))
 	}
 	defer fp.Close()
 	dec := json.NewDecoder(fp)
@@ -69,7 +68,7 @@ func (e *Events) load() {
 		i = i + 1
 		ev := new(Event)
 		if err := dec.Decode(ev); err != nil {
-			logger.Fatal("error decoding savefile", zap.String("filename", savefile), zap.Error(err), zap.Int("record", i))
+			logger.Fatal("error decoding savefile", zap.String("filename", SaveFile), zap.Error(err), zap.Int("record", i))
 			break
 		}
 		e.list = append(e.list, ev)
@@ -77,7 +76,7 @@ func (e *Events) load() {
 }
 
 func (e *Events) save() {
-	tempfile := fmt.Sprintf(".%s.tmp", savefile)
+	tempfile := fmt.Sprintf(".%s.tmp", SaveFile)
 	e.Lock()
 	defer e.Unlock()
 	if e.saved {
@@ -98,8 +97,8 @@ func (e *Events) save() {
 			logger.Fatal("error encoding event", zap.String("filename", tempfile), zap.Error(err))
 		}
 	}
-	if err := os.Rename(tempfile, savefile); err != nil {
-		logger.Fatal("error renaming temporary save file", zap.String("from", tempfile), zap.String("to", savefile), zap.Error(err))
+	if err := os.Rename(tempfile, SaveFile); err != nil {
+		logger.Fatal("error renaming temporary save file", zap.String("from", tempfile), zap.String("to", SaveFile), zap.Error(err))
 	}
 	logger.Info("data saved")
 	e.saved = true
@@ -122,12 +121,6 @@ func (e *Events) AddEvent(ev *Event) {
 	e.childUpdate()
 }
 
-func init() {
-	cfg := cfg.New("events")
-	cfg.StringVar(&savefile, "savefile", savefile, "path to the file in which events should be persisted")
-	cfg.DurationVar(&saveinterval, "saveinterval", saveinterval, "how often to check and see if we need to save data")
-}
-
 func Start(slData *bot.SlackData) {
 	slackData = slData
 	logger.SetLevel(zap.DebugLevel)
@@ -141,7 +134,7 @@ func Start(slData *bot.SlackData) {
 	Data.Unlock()
 	Data.load()
 	go func() {
-		t := time.Tick(saveinterval)
+		t := time.Tick(SaveInterval)
 		for {
 			select {
 			case <-t:

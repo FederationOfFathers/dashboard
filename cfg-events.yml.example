@@ -1,0 +1,4 @@
+---
+savefile: /path/to/events.json
+saveinterval: 1m30s
+

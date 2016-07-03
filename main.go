@@ -10,20 +10,24 @@ import (
 
 var slackApiKey = "xox...."
 var logger = zap.NewJSON()
-var cdnPath = ""
-var cdnPrefix = ""
 
 func init() {
-	scfg := cfg.New("slack")
+	scfg := cfg.New("cfg-slack")
 	scfg.StringVar(&slackApiKey, "apiKey", slackApiKey, "Slack API Key (env: SLACK_APIKEY)")
-	scfg.StringVar(&cdnPrefix, "cdnPrefix", cdnPrefix, "http url base from which to store saved uploads")
-	scfg.StringVar(&cdnPath, "cdnPath", cdnPath, "Filesystem path to store uploads in")
+	scfg.StringVar(&bot.CdnPrefix, "cdnPrefix", bot.CdnPrefix, "http url base from which to store saved uploads")
+	scfg.StringVar(&bot.CdnPath, "cdnPath", bot.CdnPath, "Filesystem path to store uploads in")
+
+	acfg := cfg.New("cfg-api")
+	acfg.StringVar(&api.ListenOn, "listen", api.ListenOn, "API bind address (env: API_LISTEN)")
+
+	ecfg := cfg.New("cfg-events")
+	ecfg.StringVar(&events.SaveFile, "savefile", events.SaveFile, "path to the file in which events should be persisted")
+	ecfg.DurationVar(&events.SaveInterval, "saveinterval", events.SaveInterval, "how often to check and see if we need to save data")
+
 }
 
 func main() {
 	cfg.Parse()
-	bot.CdnPath = cdnPath
-	bot.CdnPrefix = cdnPrefix
 	data, err := bot.SlackConnect(slackApiKey)
 	events.Start(data)
 	if err != nil {
