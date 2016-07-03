@@ -1,2 +1,2 @@
 # dashboard
-the cli executable from which the new dashboard project will live...
+The next generation of FoF Services (in development)
