@@ -1,1 +1,3 @@
 apiKey: xox........................
+cdnPrefix: http://example.com/some/path/
+cdnPath: /path/to/example.com/some/path/
