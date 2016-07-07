@@ -1,6 +1,8 @@
 package api
 
 import (
+	"net/http"
+
 	"github.com/FederationOfFathers/dashboard/events"
 	"github.com/FederationOfFathers/dashboard/slack"
 	"github.com/codegangsta/negroni"
@@ -11,7 +13,7 @@ import (
 )
 
 var ListenOn = ":8866"
-var router = mux.NewRouter()
+var Router = mux.NewRouter()
 var logger = zap.NewJSON().With(zap.String("module", "api"))
 
 var slackData *bot.SlackData
@@ -25,6 +27,6 @@ func Run(slData *bot.SlackData, eData *events.Events) {
 	n.Use(cors.New(cors.Options{AllowedOrigins: []string{"*"}}))
 	n.Use(negroni.NewRecovery())
 	n.Use(gzip.Gzip(gzip.DefaultCompression))
-	n.UseHandler(router)
-	n.Run(ListenOn)
+	n.UseHandler(Router)
+	logger.Fatal("error starting API http server", zap.String("listenOn", ListenOn), zap.Error(http.ListenAndServe(ListenOn, n)))
 }
