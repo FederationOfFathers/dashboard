@@ -1,0 +1,19 @@
+{
+        "pkg": "ui",
+        "dest": "./ui/",
+        "fmt": true,
+        "compression": {
+                "compress": false,
+                "method": "DefaultCompression",
+                "keep": false
+        },
+        "custom": [
+                {
+                        "files": [
+                                "../dashboard-ui/application/"
+                         ],
+                        "base": "../dashboard-ui/application/",
+                        "prefix": "application/"
+                }
+        ]
+}
