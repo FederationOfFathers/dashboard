@@ -7,7 +7,7 @@ import (
 )
 
 func init() {
-	router.Path("/api/v0/say").Methods("POST").HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	Router.Path("/api/v0/say").Methods("POST").HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		to := r.FormValue("to")
 		if to == "" {
 			w.WriteHeader(http.StatusBadRequest)

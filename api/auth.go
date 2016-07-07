@@ -20,13 +20,13 @@ var JWTSecret string
 var AuthSecret = ""
 
 func init() {
-	router.Path("/api/v0/login").Methods("GET").HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	Router.Path("/api/v0/login").Methods("GET").HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		args := r.URL.Query()
 		who := args.Get("w")
 		token := args.Get("t")
 		fmt.Fprintln(w, validateMiniAuthToken(who, token))
 	})
-	router.Path("/api/v0/logout").Methods("GET").HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	Router.Path("/api/v0/logout").Methods("GET").HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
