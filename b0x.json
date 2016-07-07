@@ -13,7 +13,7 @@
                                 "../dashboard-ui/application/"
                          ],
                         "base": "../dashboard-ui/application/",
-                        "prefix": "application/"
+                        "prefix": "application"
                 }
         ]
 }
