@@ -41,6 +41,8 @@ func init() {
 
 func main() {
 	cfg.Parse()
+	bot.AuthTokenGenerator = api.GenerateValidAuthTokens
+
 	data, err := bot.SlackConnect(slackAPIKey)
 	events.Start(data)
 	if err != nil {

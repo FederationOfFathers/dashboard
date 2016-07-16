@@ -10,43 +10,55 @@ import (
 	"github.com/uber-go/zap"
 )
 
+type MessageHandler func(*slack.MessageEvent) bool
+type AuthTokenGeneratorFunc func(string) []string
+
+var AuthTokenGenerator = func(s string) []string {
+	return nil
+}
+
+var ChannelMessageHandlers = []MessageHandler{
+	handleChannelUpload,
+	handleFortune,
+	handleSaySomething,
+}
+var GroupMessageHandlers = []MessageHandler{
+	handleChannelUpload,
+	handleFortune,
+	handleSaySomething,
+}
+var DirectMessageHandlers = []MessageHandler{
+	handleLogin,
+	handleDMUpload,
+	handleFortune,
+	handleSaySomething,
+}
+
 func handleChannelMessage(m *slack.MessageEvent) bool {
-	if handleChannelUpload(m) {
-		return true
-	}
-	if handleFortune(m) {
-		return true
-	}
-	if handleSaySomething(m) {
-		return true
+	for _, handler := range ChannelMessageHandlers {
+		if handler(m) {
+			return true
+		}
 	}
 	return false
 }
 
 func handleGroupMessage(m *slack.MessageEvent) bool {
-	if handleChannelUpload(m) {
-		return true
+	for _, handler := range GroupMessageHandlers {
+		if handler(m) {
+			return true
+		}
 	}
-	if handleFortune(m) {
-		return true
-	}
-	if handleSaySomething(m) {
-		return true
-	}
-	return false
+	return true
 }
 
 func handleDirectMessage(m *slack.MessageEvent) bool {
-	if handleDMUpload(m) {
-		return true
+	for _, handler := range DirectMessageHandlers {
+		if handler(m) {
+			return true
+		}
 	}
-	if handleFortune(m) {
-		return true
-	}
-	if handleSaySomething(m) {
-		return true
-	}
-	return false
+	return true
 }
 
 func atBotPrefixed(message string) bool {
@@ -158,4 +170,23 @@ func handleFortune(m *slack.MessageEvent) bool {
 		}
 	}
 	return false
+}
+
+func handleLogin(m *slack.MessageEvent) bool {
+	if m.Msg.Text != "login" {
+		return false
+	}
+
+	if AuthTokenGenerator == nil {
+		return false
+	}
+
+	rtm.SendMessage(&slack.OutgoingMessage{
+		ID:      int(time.Now().UnixNano()),
+		Channel: m.Channel,
+		Text:    fmt.Sprintf("%s -- %s", m.Msg.User, AuthTokenGenerator(m.Msg.User)[0]),
+		Type:    "message",
+	})
+
+	return true
 }
