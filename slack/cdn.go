@@ -39,47 +39,76 @@ func handleChannelUpload(m *slack.MessageEvent) bool {
 	if !m.Msg.Upload {
 		return false
 	}
+	logger.Info("File upload detected", zap.String("username", m.Username), zap.String("filename", m.File.Name))
 	if buf, err := fileBytes(m.Msg.File); err != nil {
-		logger.Info("error downloading file", zap.Error(err))
+		logger.Error(
+			"error downloading file",
+			zap.Error(err),
+			zap.String("username", m.Username),
+			zap.String("filename", m.File.Name))
 	} else {
 		path := fmt.Sprintf("%s/%s", CdnPath, time.Now().Format("2006/01/02/15"))
 		if err := os.MkdirAll(path, 0755); err != nil {
-			logger.Error("error making cdn path", zap.String("path", path))
+			logger.Error(
+				"error making cdn path",
+				zap.String("path", path),
+				zap.String("username", m.Username),
+				zap.String("filename", m.File.Name))
 			return false
 		}
 		part := &url.URL{Path: m.Msg.File.Name}
 		urlPath := fmt.Sprintf("%s/%s-%s", path, m.Msg.File.ID, part.String())
 		path = fmt.Sprintf("%s/%s-%s", path, m.Msg.File.ID, m.Msg.File.Name)
 		if fp, err := os.Create(path); err != nil {
-			logger.Error("error creating cdn file", zap.String("path", path))
+			logger.Error(
+				"error creating cdn file",
+				zap.String("path", path),
+				zap.String("username", m.Username),
+				zap.String("filename", m.File.Name))
 			return false
 		} else {
 			if _, err := fp.Write(buf); err != nil {
 				fp.Close()
-				logger.Error("error writing to cdn file", zap.String("path", path))
+				logger.Error(
+					"error writing to cdn file",
+					zap.String("path", path),
+					zap.String("username", m.Username),
+					zap.String("filename", m.File.Name))
 				return false
 			}
 			fp.Close()
 			fileURL := CdnPrefix + urlPath[len(CdnPath):]
 			rtm.DeleteFile(m.Msg.File.ID)
 			if isImage.MatchString(strings.ToLower(m.Msg.File.Name)) {
-				rtm.PostMessage(
-					m.Channel,
-					"",
-					slack.PostMessageParameters{
-						Text:        "",
-						AsUser:      true,
-						UnfurlLinks: true,
-						UnfurlMedia: true,
-						IconEmoji:   ":paperclip:",
-						Attachments: []slack.Attachment{
-							slack.Attachment{
-								Title:     fmt.Sprintf("%s uploaded %s", m.Msg.Username, m.Msg.File.Title),
-								TitleLink: fileURL,
-								ImageURL:  fileURL,
+				for i := 0; i < 5; i++ {
+					_, _, err := rtm.PostMessage(
+						m.Channel,
+						"",
+						slack.PostMessageParameters{
+							Text:        "",
+							AsUser:      true,
+							UnfurlLinks: true,
+							UnfurlMedia: true,
+							IconEmoji:   ":paperclip:",
+							Attachments: []slack.Attachment{
+								slack.Attachment{
+									Title:     fmt.Sprintf("%s uploaded %s", m.Msg.Username, m.Msg.File.Title),
+									TitleLink: fileURL,
+									ImageURL:  fileURL,
+								},
 							},
-						},
-					})
+						})
+					if err != nil {
+						logger.Error(
+							"Failed postting cdn link back to slack",
+							zap.String("username", m.Username),
+							zap.String("filename", m.File.Name),
+							zap.String("url", fileURL))
+					} else {
+						break
+					}
+					time.Sleep(time.Second * time.Duration(i))
+				}
 			} else {
 				rtm.SendMessage(&slack.OutgoingMessage{
 					ID:      int(time.Now().UnixNano()),
