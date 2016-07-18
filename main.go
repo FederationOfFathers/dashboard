@@ -10,6 +10,7 @@
 package main
 
 import (
+	"fmt"
 	"net/http"
 
 	"github.com/FederationOfFathers/dashboard/api"
@@ -42,6 +43,8 @@ func init() {
 func main() {
 	cfg.Parse()
 	bot.AuthTokenGenerator = api.GenerateValidAuthTokens
+
+	bot.LoginLink = fmt.Sprintf("http://fofgaming.com%s/", api.ListenOn)
 
 	data, err := bot.SlackConnect(slackAPIKey)
 	events.Start(data)
