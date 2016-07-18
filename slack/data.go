@@ -34,6 +34,17 @@ type SlackData struct {
 // Data is the living representation of the current SlackData
 var data = new(SlackData)
 
+func (s *SlackData) User(id string) (*slack.User, error) {
+	s.Lock()
+	defer s.Unlock()
+	for _, u := range s.Users {
+		if u.ID == id {
+			return &u, nil
+		}
+	}
+	return nil, ErrUsernameNotFound
+}
+
 func (s *SlackData) ChannelByName(channel string) (*slack.Channel, error) {
 	s.Lock()
 	defer s.Unlock()

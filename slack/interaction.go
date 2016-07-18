@@ -11,11 +11,6 @@ import (
 )
 
 type MessageHandler func(*slack.MessageEvent) bool
-type AuthTokenGeneratorFunc func(string) []string
-
-var AuthTokenGenerator = func(s string) []string {
-	return nil
-}
 
 var ChannelMessageHandlers = []MessageHandler{
 	handleChannelUpload,
@@ -170,23 +165,4 @@ func handleFortune(m *slack.MessageEvent) bool {
 		}
 	}
 	return false
-}
-
-func handleLogin(m *slack.MessageEvent) bool {
-	if m.Msg.Text != "login" {
-		return false
-	}
-
-	if AuthTokenGenerator == nil {
-		return false
-	}
-
-	rtm.SendMessage(&slack.OutgoingMessage{
-		ID:      int(time.Now().UnixNano()),
-		Channel: m.Channel,
-		Text:    fmt.Sprintf("%s -- %s", m.Msg.User, AuthTokenGenerator(m.Msg.User)[0]),
-		Type:    "message",
-	})
-
-	return true
 }
