@@ -10,9 +10,9 @@
         "custom": [
                 {
                         "files": [
-                                "../dashboard-ui/application/"
+                                "../dashboard-ui/dev/export/"
                          ],
-                        "base": "../dashboard-ui/application/",
+                        "base": "../dashboard-ui/dev/export/",
                         "prefix": "application"
                 }
         ]
