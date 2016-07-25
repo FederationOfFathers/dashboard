@@ -12,6 +12,8 @@ package main
 import (
 	"fmt"
 	"net/http"
+	"net/http/httputil"
+	"net/url"
 
 	"github.com/FederationOfFathers/dashboard/api"
 	"github.com/FederationOfFathers/dashboard/events"
@@ -23,6 +25,7 @@ import (
 
 var slackAPIKey = "xox...."
 var logger = zap.NewJSON()
+var devPort = 0
 
 func init() {
 	scfg := cfg.New("cfg-slack")
@@ -34,6 +37,7 @@ func init() {
 	acfg.StringVar(&api.ListenOn, "listen", api.ListenOn, "API bind address (env: API_LISTEN)")
 	acfg.StringVar(&api.AuthSecret, "secret", api.AuthSecret, "Authentication secret for use in generating login tokens")
 	acfg.StringVar(&api.JWTSecret, "hmac", api.JWTSecret, "Authentication secret used for JWT tokens")
+	acfg.IntVar(&devPort, "ui-dev", devPort, "proxy /application/ to localhost:devport/")
 
 	ecfg := cfg.New("cfg-events")
 	ecfg.StringVar(&events.SaveFile, "savefile", events.SaveFile, "path to the file in which events should be persisted")
@@ -51,6 +55,18 @@ func main() {
 	if err != nil {
 		logger.Fatal("Unable to contact the slack API", zap.Error(err))
 	}
-	api.Router.PathPrefix("/application/").Handler(http.FileServer(ui.HTTP))
+	if devPort == 0 {
+		api.Router.PathPrefix("/application/").Handler(http.FileServer(ui.HTTP))
+	} else {
+		rpURL, err := url.Parse(fmt.Sprintf("http://127.0.0.1:%d/", devPort))
+		if err != nil {
+			panic(err)
+		}
+		rp := httputil.NewSingleHostReverseProxy(rpURL)
+		rp.Director = func(r *http.Request) {
+			r.URL, _ = url.Parse(fmt.Sprintf("http://127.0.0.1:%d%s", devPort, r.URL.String()[12:]))
+		}
+		api.Router.PathPrefix("/application/").Handler(rp)
+	}
 	api.Run(data, events.Data)
 }
