@@ -13,7 +13,7 @@
                                 "../dashboard-ui/dev/export/"
                          ],
                         "base": "../dashboard-ui/dev/export/",
-                        "prefix": "application"
+                        "prefix": ""
                 }
         ]
 }

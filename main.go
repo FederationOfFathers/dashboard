@@ -56,17 +56,14 @@ func main() {
 		logger.Fatal("Unable to contact the slack API", zap.Error(err))
 	}
 	if devPort == 0 {
-		api.Router.PathPrefix("/application/").Handler(http.FileServer(ui.HTTP))
+		api.Router.PathPrefix("/").Handler(http.FileServer(ui.HTTP))
 	} else {
 		rpURL, err := url.Parse(fmt.Sprintf("http://127.0.0.1:%d/", devPort))
 		if err != nil {
 			panic(err)
 		}
 		rp := httputil.NewSingleHostReverseProxy(rpURL)
-		rp.Director = func(r *http.Request) {
-			r.URL, _ = url.Parse(fmt.Sprintf("http://127.0.0.1:%d%s", devPort, r.URL.String()[12:]))
-		}
-		api.Router.PathPrefix("/application/").Handler(rp)
+		api.Router.PathPrefix("/").Handler(rp)
 	}
 	api.Run(data, events.Data)
 }
