@@ -31,9 +31,10 @@ func init() {
 				Name:     "Authorization",
 				Value:    tokenString,
 				Expires:  time.Now().Add(365 * 24 * time.Hour),
-				HttpOnly: true,
+				HttpOnly: false,
+				Path:     "/",
 			})
-			http.Redirect(w, r, "/api/v0/ping", http.StatusTemporaryRedirect)
+			http.Redirect(w, r, "/", http.StatusTemporaryRedirect)
 			return
 		}
 		w.WriteHeader(http.StatusForbidden)
