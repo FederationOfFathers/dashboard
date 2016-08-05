@@ -31,29 +31,39 @@ var jMW = jwtmiddleware.New(jwtmiddleware.Options{
 })
 
 func handlerFunc(fn func(w http.ResponseWriter, r *http.Request)) http.Handler {
+	c := cors.New(cors.Options{
+		AllowedOrigins:   []string{"http://localhost:*", "http://127.0.0.*"},
+		AllowCredentials: true,
+	})
 	return gziphandler.GzipHandler(
-		negroni.New(
-			&httpLogger{},
-			cors.New(cors.Options{AllowedOrigins: []string{"*"}}),
-			negroni.NewRecovery(),
-			nocache.New(true),
-			negroni.Wrap(
-				http.HandlerFunc(fn),
+		c.Handler(
+			negroni.New(
+				&httpLogger{},
+				negroni.NewRecovery(),
+				nocache.New(true),
+				negroni.Wrap(
+					http.HandlerFunc(fn),
+				),
 			),
 		),
 	)
 }
 
 func jwtHandlerFunc(fn func(w http.ResponseWriter, r *http.Request)) http.Handler {
+	c := cors.New(cors.Options{
+		AllowedOrigins:   []string{"http://localhost:*", "http://127.0.0.*"},
+		AllowCredentials: true,
+	})
 	return gziphandler.GzipHandler(
-		jMW.Handler(
-			negroni.New(
-				&httpLogger{},
-				cors.New(cors.Options{AllowedOrigins: []string{"*"}}),
-				negroni.NewRecovery(),
-				nocache.New(true),
-				negroni.Wrap(
-					http.HandlerFunc(fn),
+		c.Handler(
+			jMW.Handler(
+				negroni.New(
+					&httpLogger{},
+					negroni.NewRecovery(),
+					nocache.New(true),
+					negroni.Wrap(
+						http.HandlerFunc(fn),
+					),
 				),
 			),
 		),
