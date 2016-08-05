@@ -26,6 +26,7 @@ import (
 var slackAPIKey = "xox...."
 var logger = zap.NewJSON()
 var devPort = 0
+var noUI = false
 
 func init() {
 	scfg := cfg.New("cfg-slack")
@@ -42,6 +43,9 @@ func init() {
 	ecfg := cfg.New("cfg-events")
 	ecfg.StringVar(&events.SaveFile, "savefile", events.SaveFile, "path to the file in which events should be persisted")
 	ecfg.DurationVar(&events.SaveInterval, "saveinterval", events.SaveInterval, "how often to check and see if we need to save data")
+
+	ucfg := cfg.New("ui")
+	ucfg.BoolVar(&noUI, "noui", noUI, "Disable Serving of the UI")
 }
 
 func main() {
@@ -55,15 +59,17 @@ func main() {
 	if err != nil {
 		logger.Fatal("Unable to contact the slack API", zap.Error(err))
 	}
-	if devPort == 0 {
-		api.Router.PathPrefix("/").Handler(http.FileServer(ui.HTTP))
-	} else {
-		rpURL, err := url.Parse(fmt.Sprintf("http://127.0.0.1:%d/", devPort))
-		if err != nil {
-			panic(err)
+	if !noUI {
+		if devPort == 0 {
+			api.Router.PathPrefix("/").Handler(http.FileServer(ui.HTTP))
+		} else {
+			rpURL, err := url.Parse(fmt.Sprintf("http://127.0.0.1:%d/", devPort))
+			if err != nil {
+				panic(err)
+			}
+			rp := httputil.NewSingleHostReverseProxy(rpURL)
+			api.Router.PathPrefix("/").Handler(rp)
 		}
-		rp := httputil.NewSingleHostReverseProxy(rpURL)
-		api.Router.PathPrefix("/").Handler(rp)
 	}
 	api.Run(data, events.Data)
 }
