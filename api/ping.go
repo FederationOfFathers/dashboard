@@ -1,20 +1,22 @@
 package api
 
 import (
-	"fmt"
+	"encoding/json"
 	"net/http"
 )
 
 func init() {
 	Router.Path("/api/v0/ping").Methods("GET").Handler(jwtHandlerFunc(
 		func(w http.ResponseWriter, r *http.Request) {
-			w.Header().Set("Content-Type", "text/plain; charset=utf-8")
+			w.Header().Set("Content-Type", "application/json")
 			id := getSlackUserID(r)
 			user, _ := slackData.User(id)
-			fmt.Fprintf(w, "This is an authenticated request\n\n\n")
-			fmt.Fprintf(w, "user: %#v\n\n\n", user)
-			fmt.Fprintf(w, "groups: %#v\n\n\n", slackData.UserGroups(id))
-			fmt.Fprintf(w, "channels: %#v", slackData.UserChannels(id))
+			enc := json.NewEncoder(w)
+			enc.Encode(map[string]interface{}{
+				"user":     user,
+				"groups":   slackData.UserGroups(id),
+				"channels": slackData.UserChannels(id),
+			})
 		},
 	))
 }
