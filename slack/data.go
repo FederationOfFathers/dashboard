@@ -31,6 +31,14 @@ type SlackData struct {
 	Channels []slack.Channel
 }
 
+func (s *SlackData) load() {
+	db.Pull("v1-data", &s)
+}
+
+func (s *SlackData) save() {
+	db.Put("v1-data", s)
+}
+
 // Data is the living representation of the current SlackData
 var data = new(SlackData)
 
@@ -167,11 +175,27 @@ func populateLists() {
 
 	if g, e := api.GetGroups(false); e == nil {
 		data.Lock()
-		data.Groups = g
+		groups := []slack.Group{}
 		data.Unlock()
 		for _, gr := range g {
+			if gr.IsArchived {
+				// Archived groups aren't real groups
+				api.LeaveGroup(gr.ID)
+				continue
+			}
+			if len(gr.Members) < 2 {
+				// If I am the only member of a group then leave it
+				api.LeaveGroup(gr.ID)
+				continue
+			}
+			if len(gr.Name) > 5 && gr.Name[:5] == "mpdm-" {
+				// Multi Party Direct MEssages don't count
+				continue
+			}
 			logger.Debug("am in group", zap.String("group_id", gr.ID), zap.String("group_name", gr.Name))
+			groups = append(groups, gr)
 		}
+		data.Groups = groups
 		logger.Info("Updated Group list from slack", zap.Int("count", len(g)))
 	} else {
 		logger.Error("Failed to fetch group list from slack", zap.Error(e))
@@ -219,4 +243,7 @@ func populateLists() {
 	} else {
 		logger.Error("Failed to fetch channel list from slack", zap.Error(e))
 	}
+	data.Lock()
+	data.save()
+	data.Unlock()
 }

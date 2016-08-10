@@ -16,6 +16,7 @@ import (
 	"net/url"
 
 	"github.com/FederationOfFathers/dashboard/api"
+	"github.com/FederationOfFathers/dashboard/db"
 	"github.com/FederationOfFathers/dashboard/events"
 	"github.com/FederationOfFathers/dashboard/slack"
 	"github.com/FederationOfFathers/dashboard/ui"
@@ -45,13 +46,18 @@ func init() {
 	ecfg.DurationVar(&events.SaveInterval, "saveinterval", events.SaveInterval, "how often to check and see if we need to save data")
 
 	ucfg := cfg.New("ui")
-	ucfg.BoolVar(&noUI, "noui", noUI, "Disable Serving of the UI")
+	ucfg.BoolVar(&noUI, "disable-serving", noUI, "Disable Serving of the UI")
+
+	dcfg := cfg.New("db")
+	dcfg.StringVar(&store.DBPath, "path", store.DBPath, "Path to the database file")
 }
 
 func main() {
 	cfg.Parse()
-	bot.AuthTokenGenerator = api.GenerateValidAuthTokens
 
+	store.Mind()
+
+	bot.AuthTokenGenerator = api.GenerateValidAuthTokens
 	bot.LoginLink = fmt.Sprintf("http://fofgaming.com%s/", api.ListenOn)
 
 	data, err := bot.SlackConnect(slackAPIKey)
