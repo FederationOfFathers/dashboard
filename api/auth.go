@@ -9,6 +9,7 @@ import (
 
 	"github.com/dgrijalva/jwt-go"
 	"github.com/gorilla/context"
+	"github.com/uber-go/zap"
 )
 
 // AuthSecret is the secret used when generating mini auth tokens
@@ -42,6 +43,19 @@ func init() {
 	})
 	Router.Path("/api/v0/logout").Methods("GET").HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 	})
+}
+
+func requireAdmin(w http.ResponseWriter, r *http.Request) error {
+	id := getSlackUserID(r)
+	if admin, err := slackData.IsUserIDAdmin(id); err != nil {
+		logger.Error("error determining admin status", zap.Error(err))
+		w.WriteHeader(http.StatusInternalServerError)
+		return err
+	} else if !admin {
+		w.WriteHeader(http.StatusForbidden)
+		return fmt.Errorf("error")
+	}
+	return nil
 }
 
 // GenerateValidAuthTokens generates all possible valid auth tokens for right now.
