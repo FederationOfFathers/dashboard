@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"os"
 
+	"github.com/FederationOfFathers/dashboard/db"
 	"github.com/FederationOfFathers/dashboard/events"
 	"github.com/FederationOfFathers/dashboard/slack"
 	"github.com/gorilla/mux"
@@ -27,6 +28,7 @@ func myURL() string {
 }
 
 func Run(slData *bot.SlackData, eData *events.Events) {
+	visDB = store.DB.Groups().NewNestedStore([]byte("visibility-v1"))
 	if URLHostName == "" {
 		URLHostName, _ = os.Hostname()
 	}
