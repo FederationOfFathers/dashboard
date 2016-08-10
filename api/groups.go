@@ -39,10 +39,12 @@ func init() {
 					members = append(members, user.Name)
 				}
 				groups[group.ID] = map[string]interface{}{
-					"ID":      group.ID,
-					"Name":    group.Name,
-					"Members": members,
-					"Visible": visible,
+					"id":      group.ID,
+					"name":    group.Name,
+					"topic":   group.Topic.Value,
+					"purpose": group.Purpose.Value,
+					"members": members,
+					"visible": visible,
 				}
 			}
 			enc := json.NewEncoder(w)
