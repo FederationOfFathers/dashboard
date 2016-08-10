@@ -65,7 +65,7 @@ func doGZBackup(fn string) {
 func dailyBackup() {
 	dbBackupLock.Lock()
 	defer dbBackupLock.Unlock()
-	for i := range []int{13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1} {
+	for _, i := range []int{13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1} {
 		oldFileName := fmt.Sprintf(".%s.daily.%d.gz", DBPath, i)
 		if _, err := os.Stat(oldFileName); os.IsNotExist(err) {
 			continue
