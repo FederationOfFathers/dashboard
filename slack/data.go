@@ -42,6 +42,14 @@ func (s *SlackData) save() {
 // Data is the living representation of the current SlackData
 var data = new(SlackData)
 
+func (s *SlackData) IsUserIDAdmin(id string) (bool, error) {
+	return IsUserIDAdmin(id)
+}
+
+func (s *SlackData) IsUsernameAdmin(name string) (bool, error) {
+	return IsUsernameAdmin(name)
+}
+
 func (s *SlackData) User(id string) (*slack.User, error) {
 	s.Lock()
 	defer s.Unlock()

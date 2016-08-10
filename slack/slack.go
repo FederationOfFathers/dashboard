@@ -202,3 +202,8 @@ func mindSlack() error {
 		}
 	}
 }
+
+func GroupInvite(groupID, userID string) error {
+	_, _, err := api.InviteUserToGroup(groupID, userID)
+	return err
+}
