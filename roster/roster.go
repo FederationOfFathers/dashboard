@@ -5,14 +5,8 @@ import (
 	stow "gopkg.in/djherbis/stow.v2"
 )
 
-var db *stow.Store
-
-func Init() {
-	db = store.DB.Friends()
-}
-
 func member(userID string) *stow.Store {
-	return db.NewNestedStore([]byte(userID))
+	return store.DB.Friends().NewNestedStore([]byte(userID))
 }
 
 func Get(userID string) []string {

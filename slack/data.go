@@ -5,6 +5,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/FederationOfFathers/dashboard/store"
 	"github.com/nlopes/slack"
 	"github.com/uber-go/zap"
 )
@@ -32,11 +33,11 @@ type SlackData struct {
 }
 
 func (s *SlackData) load() {
-	db.Pull("v1-data", &s)
+	store.DB.Slack().Pull("v1-data", &s)
 }
 
 func (s *SlackData) save() {
-	db.Put("v1-data", s)
+	store.DB.Slack().Put("v1-data", s)
 }
 
 // Data is the living representation of the current SlackData

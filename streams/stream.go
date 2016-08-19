@@ -10,7 +10,6 @@ import (
 	"github.com/FederationOfFathers/dashboard/store"
 	"github.com/levi/twch"
 	"github.com/uber-go/zap"
-	stow "gopkg.in/djherbis/stow.v2"
 )
 
 var Streams = map[string]*Stream{}
@@ -26,11 +25,9 @@ var twitchClient *twch.Client
 
 var YoutubeAPIKey string
 
-var db *stow.Store
 var channel string
 
 type Stream struct {
-	db        *stow.Store
 	Kind      string
 	UserID    string
 	ServiceID string
@@ -88,7 +85,7 @@ func (s *Stream) updateTwitch() {
 		twlog.Debug("stopped and then started again", zap.String("key", s.ServiceID))
 		b, _ := json.MarshalIndent(s, "", "  ")
 		log.Println(string(b))
-		s.db.Put(s.Key(), s)
+		store.DB.Streams().Put(s.Key(), s)
 		return
 	}
 	s.Start = &now
@@ -96,22 +93,20 @@ func (s *Stream) updateTwitch() {
 	twlog.Debug("started", zap.String("key", s.ServiceID))
 	b, _ := json.MarshalIndent(s, "", "  ")
 	log.Println(string(b))
-	s.db.Put(s.Key(), s)
+	store.DB.Streams().Put(s.Key(), s)
 }
 
 func Init(notifySlackChannel string) error {
 	logger.SetLevel(zap.DebugLevel)
 	twlog.SetLevel(zap.DebugLevel)
 	ytlog.SetLevel(zap.DebugLevel)
-	db = store.DB.Streams()
 	channel = notifySlackChannel
 	tclient, err := twch.NewClient(TwitchOAuthKey, nil)
 	if err != nil {
 		return err
 	}
 	twitchClient = tclient
-	db.ForEach(func(key string, value *Stream) {
-		value.db = db
+	store.DB.Streams().ForEach(func(key string, value *Stream) {
 		Streams[key] = value
 	})
 	go mind()
@@ -170,7 +165,7 @@ func Add(kind, identifier, userID string) error {
 		UserID:    userID,
 		ServiceID: identifier,
 	}
-	if err := db.Put(key, s); err != nil {
+	if err := store.DB.Streams().Put(key, s); err != nil {
 		logger.Error("error adding", zap.String("key", key), zap.Error(err))
 		return err
 	}
@@ -181,7 +176,7 @@ func Add(kind, identifier, userID string) error {
 
 func Remove(kind, identifier string) error {
 	key := fmt.Sprintf("%s:%s", kind, identifier)
-	if err := db.Delete(key); err != nil {
+	if err := store.DB.Streams().Delete(key); err != nil {
 		logger.Error("error deleting", zap.String("key", key), zap.Error(err))
 		return err
 	}

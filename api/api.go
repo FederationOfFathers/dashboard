@@ -7,7 +7,6 @@ import (
 
 	"github.com/FederationOfFathers/dashboard/events"
 	"github.com/FederationOfFathers/dashboard/slack"
-	"github.com/FederationOfFathers/dashboard/store"
 	"github.com/gorilla/mux"
 	"github.com/uber-go/zap"
 )
@@ -28,7 +27,6 @@ func myURL() string {
 }
 
 func Run(slData *bot.SlackData, eData *events.Events) {
-	visDB = store.DB.Groups().NewNestedStore([]byte("visibility-v1"))
 	if URLHostName == "" {
 		URLHostName, _ = os.Hostname()
 	}

@@ -5,9 +5,6 @@ import (
 	"strings"
 	"time"
 
-	stow "gopkg.in/djherbis/stow.v2"
-
-	"github.com/FederationOfFathers/dashboard/store"
 	"github.com/nlopes/slack"
 	"github.com/uber-go/zap"
 )
@@ -22,11 +19,8 @@ var logger = zap.NewJSON().With(zap.String("module", "bot"))
 // LogLevel sets the logging verbosity for the package
 var LogLevel = zap.InfoLevel
 
-var db *stow.Store
-
 // SlackConnect gets the whole party stated
 func SlackConnect(slackToken string) (*SlackData, error) {
-	db = store.DB.Slack()
 	data.load()
 	logger.SetLevel(LogLevel)
 	api = slack.New(slackToken)

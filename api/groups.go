@@ -5,12 +5,15 @@ import (
 	"net/http"
 
 	"github.com/FederationOfFathers/dashboard/slack"
+	"github.com/FederationOfFathers/dashboard/store"
 	"github.com/gorilla/mux"
 	"github.com/uber-go/zap"
 	stow "gopkg.in/djherbis/stow.v2"
 )
 
-var visDB *stow.Store
+func visDB() *stow.Store {
+	return store.DB.Groups().NewNestedStore([]byte("visibility-v1"))
+}
 
 func init() {
 	Router.Path("/api/v0/groups").Methods("GET").Handler(jwtHandlerFunc(
@@ -21,7 +24,7 @@ func init() {
 			var groups = map[string]map[string]interface{}{}
 			for _, group := range slackData.GetGroups() {
 				var visible string
-				visDB.Get(group.ID, &visible)
+				visDB().Get(group.ID, &visible)
 				if visible != "true" {
 					visible = "false"
 				}
@@ -58,7 +61,7 @@ func init() {
 			id := getSlackUserID(r)
 			want := mux.Vars(r)["groupID"]
 			var visible string
-			visDB.Get(want, &visible)
+			visDB().Get(want, &visible)
 			if visible == "true" {
 				for _, group := range slackData.GetGroups() {
 					if group.ID != want {
@@ -81,7 +84,7 @@ func init() {
 			if err != nil {
 				return
 			}
-			err = visDB.Put(
+			err = visDB().Put(
 				mux.Vars(r)["groupID"],
 				r.FormValue("visible"))
 			if err != nil {
