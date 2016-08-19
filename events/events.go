@@ -7,13 +7,13 @@ import (
 	"sync"
 	"time"
 
-	"github.com/FederationOfFathers/dashboard/slack"
+	"github.com/FederationOfFathers/dashboard/bridge"
 	"github.com/uber-go/zap"
 )
 
 var logger = zap.NewJSON().With(zap.String("module", "event"))
 var Data = &Events{}
-var slackData *bot.SlackData
+var slackData = bridge.Data.Slack
 var SaveFile = "events.json"
 var SaveInterval = time.Minute
 
@@ -121,8 +121,7 @@ func (e *Events) AddEvent(ev *Event) {
 	e.childUpdate()
 }
 
-func Start(slData *bot.SlackData) {
-	slackData = slData
+func Start() {
 	logger.SetLevel(zap.DebugLevel)
 	Data.Lock()
 	if Data.started {

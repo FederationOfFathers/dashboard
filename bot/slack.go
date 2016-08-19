@@ -5,6 +5,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/FederationOfFathers/dashboard/bridge"
 	"github.com/nlopes/slack"
 	"github.com/uber-go/zap"
 )
@@ -20,13 +21,14 @@ var logger = zap.NewJSON().With(zap.String("module", "bot"))
 var LogLevel = zap.InfoLevel
 
 // SlackConnect gets the whole party stated
-func SlackConnect(slackToken string) (*SlackData, error) {
+func SlackConnect(slackToken string) error {
+	bridge.Data.Slack = data
 	data.load()
 	logger.SetLevel(LogLevel)
 	api = slack.New(slackToken)
 	populateLists()
 	if len(data.Users) < 1 {
-		return data, ErrSlackAPIUnresponsive
+		return ErrSlackAPIUnresponsive
 	}
 	token = slackToken
 	rtm = api.NewRTM()
@@ -40,7 +42,7 @@ func SlackConnect(slackToken string) (*SlackData, error) {
 			}
 		}
 	}()
-	return data, nil
+	return nil
 }
 
 func mindSlack() error {

@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"github.com/FederationOfFathers/dashboard/slack"
+	"github.com/FederationOfFathers/dashboard/bot"
 	"github.com/FederationOfFathers/dashboard/store"
 	"github.com/gorilla/mux"
 	"github.com/uber-go/zap"

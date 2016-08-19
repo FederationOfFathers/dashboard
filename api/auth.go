@@ -83,7 +83,7 @@ func validateMiniAuthToken(forWhat, token string) bool {
 			valid = true
 		}
 	}
-	for _, user := range slackData.Users {
+	for _, user := range slackData.GetUsers() {
 		if user.ID == forWhat {
 			userValid = true
 		}

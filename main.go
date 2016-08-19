@@ -16,8 +16,8 @@ import (
 	"net/url"
 
 	"github.com/FederationOfFathers/dashboard/api"
+	"github.com/FederationOfFathers/dashboard/bot"
 	"github.com/FederationOfFathers/dashboard/events"
-	"github.com/FederationOfFathers/dashboard/slack"
 	"github.com/FederationOfFathers/dashboard/store"
 	"github.com/FederationOfFathers/dashboard/streams"
 	"github.com/FederationOfFathers/dashboard/ui"
@@ -61,12 +61,12 @@ func main() {
 	bot.AuthTokenGenerator = api.GenerateValidAuthTokens
 	bot.LoginLink = fmt.Sprintf("http://fofgaming.com%s/", api.ListenOn)
 
-	data, err := bot.SlackConnect(slackAPIKey)
-	streams.Init("#-fof-streaming")
-	events.Start(data)
+	err := bot.SlackConnect(slackAPIKey)
 	if err != nil {
 		logger.Fatal("Unable to contact the slack API", zap.Error(err))
 	}
+	streams.Init("#-fof-streaming")
+	events.Start()
 	if !noUI {
 		if devPort == 0 {
 			api.Router.PathPrefix("/").Handler(http.FileServer(ui.HTTP))
@@ -79,5 +79,5 @@ func main() {
 			api.Router.PathPrefix("/").Handler(rp)
 		}
 	}
-	api.Run(data, events.Data)
+	api.Run()
 }
