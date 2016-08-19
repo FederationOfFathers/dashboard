@@ -1,9 +1,7 @@
 package streams
 
 import (
-	"encoding/json"
 	"fmt"
-	"log"
 	"sync"
 	"time"
 
@@ -17,13 +15,6 @@ var Streams = map[string]*Stream{}
 var lock sync.Mutex
 
 var logger = zap.NewJSON().With(zap.String("module", "streams"))
-var twlog = zap.NewJSON().With(zap.String("module", "streams"), zap.String("service", "twitch"))
-var ytlog = zap.NewJSON().With(zap.String("module", "streams"), zap.String("service", "twitch"))
-
-var TwitchOAuthKey string
-var twitchClient *twch.Client
-
-var YoutubeAPIKey string
 
 var channel string
 
@@ -50,52 +41,6 @@ func (s *Stream) update() {
 	}
 }
 
-func (s *Stream) updateYoutube() {
-}
-
-func (s *Stream) updateTwitch() {
-	now := time.Now()
-	stream, _, err := twitchClient.Streams.GetStream(s.ServiceID)
-	if err != nil {
-		twlog.Error("error fetching stream", zap.String("key", s.ServiceID), zap.Error(err))
-		return
-	}
-
-	bs, _ := json.MarshalIndent(stream, "", "  ")
-	log.Println(string(bs))
-
-	if stream.ID == nil {
-		s.Stop = &now
-		// TODO detect stopped stream
-		return
-	}
-	if s.Twitch == nil {
-		s.Twitch = &twch.Stream{}
-	}
-
-	if s.Twitch.ID != nil {
-		if *s.Twitch.ID == *stream.ID {
-			twlog.Debug("still streaming", zap.String("key", s.ServiceID))
-			return
-		}
-		s.Twitch = stream
-		then := now.Add(0 - time.Second)
-		s.Stop = &then
-		s.Start = &now
-		twlog.Debug("stopped and then started again", zap.String("key", s.ServiceID))
-		b, _ := json.MarshalIndent(s, "", "  ")
-		log.Println(string(b))
-		store.DB.Streams().Put(s.Key(), s)
-		return
-	}
-	s.Start = &now
-	s.Twitch = stream
-	twlog.Debug("started", zap.String("key", s.ServiceID))
-	b, _ := json.MarshalIndent(s, "", "  ")
-	log.Println(string(b))
-	store.DB.Streams().Put(s.Key(), s)
-}
-
 func Init(notifySlackChannel string) error {
 	logger.SetLevel(zap.DebugLevel)
 	twlog.SetLevel(zap.DebugLevel)
@@ -111,30 +56,6 @@ func Init(notifySlackChannel string) error {
 	})
 	go mind()
 	return nil
-}
-
-func mindTwitch() {
-	twlog.Debug("begin minding")
-	for key, stream := range Streams {
-		if stream.Kind != "twitch" {
-			continue
-		}
-		twlog.Debug("minding", zap.String("key", key))
-		stream.update()
-	}
-	twlog.Debug("end minding")
-}
-
-func mindYoutube() {
-	ytlog.Debug("begin minding")
-	for key, stream := range Streams {
-		if stream.Kind != "youtube" {
-			continue
-		}
-		ytlog.Debug("minding", zap.String("key", key))
-		stream.update()
-	}
-	ytlog.Debug("end minding")
 }
 
 func mind() {

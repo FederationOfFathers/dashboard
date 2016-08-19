@@ -23,6 +23,8 @@ var LogLevel = zap.InfoLevel
 // SlackConnect gets the whole party stated
 func SlackConnect(slackToken string) error {
 	bridge.Data.Slack = data
+	bridge.SendMessage = SendMessage
+	bridge.PostMessage = PostMessage
 	data.load()
 	logger.SetLevel(LogLevel)
 	api = slack.New(slackToken)

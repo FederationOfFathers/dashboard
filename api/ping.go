@@ -3,6 +3,8 @@ package api
 import (
 	"encoding/json"
 	"net/http"
+
+	"github.com/FederationOfFathers/dashboard/bridge"
 )
 
 func init() {
@@ -10,14 +12,14 @@ func init() {
 		func(w http.ResponseWriter, r *http.Request) {
 			w.Header().Set("Content-Type", "application/json")
 			id := getSlackUserID(r)
-			user, _ := slackData.User(id)
-			admin, _ := slackData.IsUserIDAdmin(id)
+			user, _ := bridge.Data.Slack.User(id)
+			admin, _ := bridge.Data.Slack.IsUserIDAdmin(id)
 			enc := json.NewEncoder(w)
 			enc.Encode(map[string]interface{}{
 				"user":     user,
 				"admin":    admin,
-				"groups":   slackData.UserGroups(id),
-				"channels": slackData.UserChannels(id),
+				"groups":   bridge.Data.Slack.UserGroups(id),
+				"channels": bridge.Data.Slack.UserChannels(id),
 			})
 		},
 	))

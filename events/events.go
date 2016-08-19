@@ -13,7 +13,6 @@ import (
 
 var logger = zap.NewJSON().With(zap.String("module", "event"))
 var Data = &Events{}
-var slackData = bridge.Data.Slack
 var SaveFile = "events.json"
 var SaveInterval = time.Minute
 
@@ -26,10 +25,10 @@ type Events struct {
 
 func (e *Events) FindForSlackUserID(userID string) []*Event {
 	var whereIDs = []string{}
-	for _, c := range slackData.UserChannels(userID) {
+	for _, c := range bridge.Data.Slack.UserChannels(userID) {
 		whereIDs = append(whereIDs, c.ID)
 	}
-	for _, g := range slackData.UserGroups(userID) {
+	for _, g := range bridge.Data.Slack.UserGroups(userID) {
 		whereIDs = append(whereIDs, g.ID)
 	}
 	var rval = []*Event{}

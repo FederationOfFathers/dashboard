@@ -25,3 +25,6 @@ var Data = &struct {
 	Slack  SlackData
 	Events EventData
 }{}
+
+var SendMessage func(string, string)
+var PostMessage func(string, string, slack.PostMessageParameters) error

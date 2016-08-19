@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/FederationOfFathers/dashboard/bot"
+	"github.com/FederationOfFathers/dashboard/bridge"
 	"github.com/FederationOfFathers/dashboard/store"
 	"github.com/gorilla/mux"
 	"github.com/uber-go/zap"
@@ -20,9 +21,9 @@ func init() {
 		func(w http.ResponseWriter, r *http.Request) {
 			w.Header().Set("Content-Type", "application/json")
 			id := getSlackUserID(r)
-			admin, _ := slackData.IsUserIDAdmin(id)
+			admin, _ := bridge.Data.Slack.IsUserIDAdmin(id)
 			var groups = map[string]map[string]interface{}{}
-			for _, group := range slackData.GetGroups() {
+			for _, group := range bridge.Data.Slack.GetGroups() {
 				var visible string
 				visDB().Get(group.ID, &visible)
 				if visible != "true" {
@@ -35,7 +36,7 @@ func init() {
 				}
 				members := []string{}
 				for _, memberID := range group.Members {
-					user, err := slackData.User(memberID)
+					user, err := bridge.Data.Slack.User(memberID)
 					if err != nil {
 						continue
 					}
@@ -63,7 +64,7 @@ func init() {
 			var visible string
 			visDB().Get(want, &visible)
 			if visible == "true" {
-				for _, group := range slackData.GetGroups() {
+				for _, group := range bridge.Data.Slack.GetGroups() {
 					if group.ID != want {
 						continue
 					}

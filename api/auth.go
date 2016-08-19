@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/FederationOfFathers/dashboard/bridge"
 	"github.com/dgrijalva/jwt-go"
 	"github.com/gorilla/context"
 	"github.com/uber-go/zap"
@@ -47,7 +48,7 @@ func init() {
 
 func requireAdmin(w http.ResponseWriter, r *http.Request) error {
 	id := getSlackUserID(r)
-	if admin, err := slackData.IsUserIDAdmin(id); err != nil {
+	if admin, err := bridge.Data.Slack.IsUserIDAdmin(id); err != nil {
 		logger.Error("error determining admin status", zap.Error(err))
 		w.WriteHeader(http.StatusInternalServerError)
 		return err
@@ -83,7 +84,7 @@ func validateMiniAuthToken(forWhat, token string) bool {
 			valid = true
 		}
 	}
-	for _, user := range slackData.GetUsers() {
+	for _, user := range bridge.Data.Slack.GetUsers() {
 		if user.ID == forWhat {
 			userValid = true
 		}

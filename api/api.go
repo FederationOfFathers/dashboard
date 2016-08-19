@@ -5,7 +5,6 @@ import (
 	"net/http"
 	"os"
 
-	"github.com/FederationOfFathers/dashboard/bridge"
 	"github.com/gorilla/mux"
 	"github.com/uber-go/zap"
 )
@@ -13,9 +12,6 @@ import (
 var ListenOn = ":8866"
 var Router = mux.NewRouter()
 var logger = zap.NewJSON().With(zap.String("module", "api"))
-
-var slackData = bridge.Data.Slack
-var eventData = bridge.Data.Events
 
 var URLHostName = ""
 var URLPrefix = ""
