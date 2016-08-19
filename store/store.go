@@ -72,7 +72,7 @@ func dailyBackup() {
 		}
 		os.Rename(oldFileName, fmt.Sprintf(".%s.daily.%d.gz", DBPath, i+1))
 	}
-	doGZBackup(fmt.Sprintf(".%.daily.%d.gz", DBPath, 1))
+	doGZBackup(fmt.Sprintf(".%s.daily.%d.gz", DBPath, 1))
 }
 
 func hourlyBackupDB() {

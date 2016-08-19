@@ -16,9 +16,10 @@ import (
 	"net/url"
 
 	"github.com/FederationOfFathers/dashboard/api"
-	"github.com/FederationOfFathers/dashboard/db"
 	"github.com/FederationOfFathers/dashboard/events"
 	"github.com/FederationOfFathers/dashboard/slack"
+	"github.com/FederationOfFathers/dashboard/store"
+	"github.com/FederationOfFathers/dashboard/streams"
 	"github.com/FederationOfFathers/dashboard/ui"
 	"github.com/apokalyptik/cfg"
 	"github.com/uber-go/zap"
@@ -61,6 +62,7 @@ func main() {
 	bot.LoginLink = fmt.Sprintf("http://fofgaming.com%s/", api.ListenOn)
 
 	data, err := bot.SlackConnect(slackAPIKey)
+	streams.Init("#-fof-streaming")
 	events.Start(data)
 	if err != nil {
 		logger.Fatal("Unable to contact the slack API", zap.Error(err))

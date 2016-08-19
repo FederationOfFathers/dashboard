@@ -7,7 +7,7 @@ import (
 
 	stow "gopkg.in/djherbis/stow.v2"
 
-	"github.com/FederationOfFathers/dashboard/db"
+	"github.com/FederationOfFathers/dashboard/store"
 	"github.com/nlopes/slack"
 	"github.com/uber-go/zap"
 )

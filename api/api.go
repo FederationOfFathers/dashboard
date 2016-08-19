@@ -5,9 +5,9 @@ import (
 	"net/http"
 	"os"
 
-	"github.com/FederationOfFathers/dashboard/db"
 	"github.com/FederationOfFathers/dashboard/events"
 	"github.com/FederationOfFathers/dashboard/slack"
+	"github.com/FederationOfFathers/dashboard/store"
 	"github.com/gorilla/mux"
 	"github.com/uber-go/zap"
 )
