@@ -43,6 +43,13 @@ func init() {
 		w.Write([]byte("Invalid link. Please get another"))
 	})
 	Router.Path("/api/v0/logout").Methods("GET").HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		http.SetCookie(w, &http.Cookie{
+			Name:     "Authorization",
+			Value:    "",
+			Expires:  time.Now().Add(0 - (365 * 24 * time.Hour)),
+			HttpOnly: false,
+			Path:     "/",
+		})
 	})
 }
 
@@ -96,6 +103,7 @@ func validateMiniAuthToken(forWhat, token string) bool {
 }
 
 func getSlackUserID(r *http.Request) string {
+	// github.com/auth0/go-jwt-middleware/blob/b4ec5e466f0aaaa4daaefdb277e7d0d5040c96c0/jwtmiddleware.go#L232
 	user := context.Get(r, "user").(*jwt.Token)
 	if userid, ok := user.Claims.(jwt.MapClaims)["userid"]; ok {
 		return userid.(string)

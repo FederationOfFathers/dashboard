@@ -25,5 +25,8 @@ func Run() {
 	if URLHostName == "" {
 		URLHostName, _ = os.Hostname()
 	}
-	logger.Fatal("error starting API http server", zap.String("listenOn", ListenOn), zap.Error(http.ListenAndServe(ListenOn, Router)))
+	logger.Fatal(
+		"error starting API http server",
+		zap.String("listenOn", ListenOn),
+		zap.Error(http.ListenAndServe(ListenOn, Router)))
 }
