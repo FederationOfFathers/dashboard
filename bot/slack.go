@@ -39,7 +39,7 @@ func SlackConnect(slackToken string) error {
 	go func() {
 		for {
 			if err := mindSlack(); err != nil {
-				logger.Error(err.Error())
+				logger.Error("error Minding slack", zap.Error(err))
 				time.Sleep(30 * time.Second)
 			}
 		}
