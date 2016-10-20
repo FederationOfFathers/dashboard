@@ -2,7 +2,7 @@ package streams
 
 import "github.com/uber-go/zap"
 
-var ytlog = zap.NewJSON().With(zap.String("module", "streams"), zap.String("service", "twitch"))
+var ytlog = zap.New(zap.NewJSONEncoder()).With(zap.String("module", "streams"), zap.String("service", "twitch"))
 var YoutubeAPIKey string
 
 func (s *Stream) updateYoutube() {

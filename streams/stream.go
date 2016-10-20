@@ -14,7 +14,7 @@ var Streams = map[string]*Stream{}
 
 var lock sync.Mutex
 
-var logger = zap.NewJSON().With(zap.String("module", "streams"))
+var logger = zap.New(zap.NewJSONEncoder()).With(zap.String("module", "streams"))
 
 var channel string
 

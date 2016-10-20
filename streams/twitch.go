@@ -11,7 +11,7 @@ import (
 	"github.com/uber-go/zap"
 )
 
-var twlog = zap.NewJSON().With(zap.String("module", "streams"), zap.String("service", "twitch"))
+var twlog = zap.New(zap.NewJSONEncoder()).With(zap.String("module", "streams"), zap.String("service", "twitch"))
 var TwitchOAuthKey string
 var twitchClient *twch.Client
 
