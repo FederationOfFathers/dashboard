@@ -34,6 +34,8 @@ func handlerFunc(fn func(w http.ResponseWriter, r *http.Request)) http.Handler {
 	c := cors.New(cors.Options{
 		AllowedOrigins:   []string{"http://localhost:*", "http://127.0.0.*"},
 		AllowCredentials: true,
+		AllowedMethods:   []string{"GET", "POST", "PUT", "OPTIONS", "DELETE"},
+		AllowedHeaders:   []string{"Content-Type"},
 	})
 	return gziphandler.GzipHandler(
 		c.Handler(
@@ -53,6 +55,8 @@ func jwtHandlerFunc(fn func(w http.ResponseWriter, r *http.Request)) http.Handle
 	c := cors.New(cors.Options{
 		AllowedOrigins:   []string{"http://localhost:*", "http://127.0.0.*"},
 		AllowCredentials: true,
+		AllowedMethods:   []string{"GET", "POST", "PUT", "OPTIONS", "DELETE"},
+		AllowedHeaders:   []string{"Content-Type"},
 	})
 	return gziphandler.GzipHandler(
 		c.Handler(

@@ -78,7 +78,7 @@ func init() {
 		},
 	))
 
-	Router.Path("/api/v0/groups/{groupID}/visibility").Methods("PUT").Handler(jwtHandlerFunc(
+	Router.Path("/api/v0/groups/{groupID}/visibility").Methods("PUT", "POST", "OPTIONS").Handler(jwtHandlerFunc(
 		func(w http.ResponseWriter, r *http.Request) {
 			w.Header().Set("Content-Type", "application/json")
 			err := requireAdmin(w, r)
