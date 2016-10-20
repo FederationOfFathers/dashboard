@@ -1,19 +1,23 @@
 {
-        "pkg": "ui",
-        "dest": "./ui/",
-        "fmt": true,
-        "compression": {
-                "compress": false,
-                "method": "DefaultCompression",
-                "keep": false
-        },
-        "custom": [
-                {
-                        "files": [
-                                "../dashboard-ui/dev/export/"
-                         ],
-                        "base": "../dashboard-ui/dev/export/",
-                        "prefix": ""
-                }
-        ]
+    "pkg": "ui",
+    "dest": "./ui/",
+    "fmt": true,
+    "compression": {
+        "compress": false,
+        "method": "DefaultCompression",
+        "keep": false
+    },
+    "custom": [{
+        "files": [
+            "../dashboard-ui/dashboard/index.html"
+        ],
+        "base": "../dashboard-ui/dashboard/",
+        "prefix": ""
+    }, {
+        "files": [
+            "../dashboard-ui/dashboard/scripts/"
+        ],
+        "base": "../dashboard-ui/dashboard/scripts",
+        "prefix": "scripts"
+    }]
 }

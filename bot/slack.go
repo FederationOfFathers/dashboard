@@ -15,7 +15,7 @@ var rtm *slack.RTM
 var connection *slack.Info
 var connected bool
 var token string
-var logger = zap.NewJSON().With(zap.String("module", "bot"))
+var logger = zap.New(zap.NewJSONEncoder()).With(zap.String("module", "bot"))
 
 // LogLevel sets the logging verbosity for the package
 var LogLevel = zap.InfoLevel

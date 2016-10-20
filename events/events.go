@@ -11,7 +11,7 @@ import (
 	"github.com/uber-go/zap"
 )
 
-var logger = zap.NewJSON().With(zap.String("module", "event"))
+var logger = zap.New(zap.NewJSONEncoder()).With(zap.String("module", "event"))
 var Data = &Events{}
 var SaveFile = "events.json"
 var SaveInterval = time.Minute
