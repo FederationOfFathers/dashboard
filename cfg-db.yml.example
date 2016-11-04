@@ -1,0 +1,2 @@
+---
+mysql: "username:password@/databasename?charset=utf8mb4&parseTime=True"

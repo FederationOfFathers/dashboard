@@ -5,57 +5,28 @@ import (
 	"sync"
 	"time"
 
-	"github.com/FederationOfFathers/dashboard/store"
-	"github.com/levi/twch"
+	"github.com/FederationOfFathers/dashboard/db"
 	"github.com/uber-go/zap"
 )
 
-var Streams = map[string]*Stream{}
-
+var Streams = []*db.Stream{}
 var lock sync.Mutex
-
 var logger = zap.New(zap.NewJSONEncoder()).With(zap.String("module", "streams"))
-
 var channel string
 
-type Stream struct {
-	Kind      string
-	UserID    string
-	ServiceID string
-	Start     *time.Time
-	Stop      *time.Time
-
-	Twitch *twch.Stream
-}
-
-func (s Stream) Key() string {
-	return fmt.Sprintf("%s:%s", s.Kind, s.ServiceID)
-}
-
-func (s *Stream) update() {
-	switch s.Kind {
-	case "twitch":
-		s.updateTwitch()
-	case "youtube":
-		s.updateYoutube()
-	}
-}
+var DB *db.DB
 
 func Init(notifySlackChannel string) error {
-	logger.SetLevel(zap.DebugLevel)
-	twlog.SetLevel(zap.DebugLevel)
-	ytlog.SetLevel(zap.DebugLevel)
-	channel = notifySlackChannel
-	tclient, err := twch.NewClient(TwitchOAuthKey, nil)
-	if err != nil {
-		return err
-	}
-	twitchClient = tclient
-	store.DB.Streams().ForEach(func(key string, value *Stream) {
-		Streams[key] = value
-	})
-	go mind()
+	updated()
 	return nil
+}
+
+func updated() {
+	if s, err := DB.Streams(); err != nil {
+		logger.Error("Error updating streams", zap.Error(err))
+	} else {
+		Streams = s
+	}
 }
 
 func mind() {
@@ -73,35 +44,48 @@ func mind() {
 	}
 }
 
-func Add(kind, identifier, userID string) error {
-	lock.Lock()
-	defer lock.Unlock()
-	var key = fmt.Sprintf("%s:%s", kind, identifier)
-	if _, ok := Streams[key]; ok {
-		logger.Info("adding idempotently", zap.String("key", key))
-		return nil
-	}
-	s := &Stream{
-		Kind:      kind,
-		UserID:    userID,
-		ServiceID: identifier,
-	}
-	if err := store.DB.Streams().Put(key, s); err != nil {
-		logger.Error("error adding", zap.String("key", key), zap.Error(err))
-		return err
-	}
-	Streams[key] = s
-	logger.Info("added", zap.String("key", key))
-	return nil
+func Owner(s *db.Stream) (*db.Member, error) {
+	return DB.MemberByID(s.MemberID)
 }
 
-func Remove(kind, identifier string) error {
-	key := fmt.Sprintf("%s:%s", kind, identifier)
-	if err := store.DB.Streams().Delete(key); err != nil {
-		logger.Error("error deleting", zap.String("key", key), zap.Error(err))
+func Add(kind, identifier, userID string) error {
+	member, err := DB.MemberBySlackID(userID)
+	if err != nil {
 		return err
 	}
-	delete(Streams, key)
-	logger.Info("deleted", zap.String("key", key))
-	return nil
+	switch kind {
+	case "twitch":
+		err := DB.Exec(
+			"INSERT INTO `streams` (`member_id`,`twitch`) VALUES (?,?) ON DUPLICATE KEY UPDATE `twitch`=?",
+			member.ID,
+			identifier,
+			identifier,
+		).Error
+		updated()
+		return err
+	case "youtube":
+		err := DB.Exec(
+			"INSERT INTO `streams` (`member_id`,`youtube`) VALUES (?,?) ON DUPLICATE KEY UPDATE `youtube`=?",
+			member.ID,
+			identifier,
+			identifier,
+		).Error
+		updated()
+		return err
+	}
+	return fmt.Errorf("unknown kind!")
+}
+
+func Remove(memberID int, kind string) error {
+	switch kind {
+	case "twitch":
+		err := DB.Exec("UPDATE `streams` SET `twitch` = '' WHERE `id` = ?", memberID).Error
+		updated()
+		return err
+	case "youtube":
+		err := DB.Exec("UPDATE `streams` SET `youtube` = '' WHERE `id` = ?", memberID).Error
+		updated()
+		return err
+	}
+	return fmt.Errorf("unknown kind!")
 }

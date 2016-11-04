@@ -5,7 +5,7 @@ import (
 	"time"
 
 	"github.com/FederationOfFathers/dashboard/bridge"
-	"github.com/FederationOfFathers/dashboard/store"
+	"github.com/FederationOfFathers/dashboard/db"
 	"github.com/levi/twch"
 	"github.com/nlopes/slack"
 	"github.com/uber-go/zap"
@@ -19,8 +19,15 @@ type twitchStream struct {
 	*twch.Stream
 }
 
-func (t twitchStream) startMessage(userID string) (string, slack.PostMessageParameters, error) {
+func (t twitchStream) startMessage(memberID int) (string, slack.PostMessageParameters, error) {
 	var messageParams = slack.NewPostMessageParameters()
+	var userID string
+
+	member, err := DB.MemberByID(memberID)
+	if err != nil {
+		return "", messageParams, err
+	}
+	userID = member.Name
 
 	user, err := bridge.Data.Slack.User(userID)
 	if err != nil {
@@ -65,63 +72,53 @@ func (t twitchStream) startMessage(userID string) (string, slack.PostMessagePara
 
 func mindTwitch() {
 	twlog.Debug("begin minding")
-	for key, stream := range Streams {
-		if stream.Kind != "twitch" {
+	for _, stream := range Streams {
+		if stream.Twitch == "" {
 			continue
 		}
-		twlog.Debug("minding", zap.String("key", key))
-		stream.update()
+		twlog.Debug("minding twitch stream", zap.String("twithc id", stream.Twitch))
+		updateTwitch(stream)
 	}
 	twlog.Debug("end minding")
 }
 
-func (s *Stream) updateTwitch() {
-	now := time.Now()
-
-	t, _, err := twitchClient.Streams.GetStream(s.ServiceID)
+func updateTwitch(s *db.Stream) {
+	t, _, err := twitchClient.Streams.GetStream(s.Twitch)
 	if err != nil {
-		twlog.Error("error fetching stream", zap.String("key", s.Key()), zap.Error(err))
+		twlog.Error("error fetching stream", zap.String("key", s.Twitch), zap.Error(err))
 		return
 	}
 	var stream = &twitchStream{t}
-
 	if stream.ID == nil {
-		if s.Twitch != nil {
-			twlog.Debug("stopped streaming", zap.String("key", s.Key()))
-			s.Twitch = nil
-			s.Stop = &now
-			store.DB.Streams().Put(s.Key(), s)
+		if s.TwitchStreamID != "" {
+			// Was streaming. Stopped..
+			s.TwitchStreamID = ""
+			s.TwitchStop = time.Now().Unix()
+			s.Save()
 		}
 		return
 	}
-
-	if s.Twitch == nil {
-		s.Twitch = &twch.Stream{}
-	}
-
-	if s.Twitch.ID != nil {
-		if *s.Twitch.ID == *stream.ID {
-			twlog.Debug("still streaming", zap.String("key", s.Key()))
-			return
-		}
-		s.Twitch = t
-		then := now.Add(0 - time.Second)
-		s.Stop = &then
-		s.Start = &now
-		twlog.Debug("stopped and then started again", zap.String("key", s.Key()))
-		store.DB.Streams().Put(s.Key(), s)
+	streamID := fmt.Sprintf("%d", *stream.ID)
+	if s.TwitchStreamID == streamID {
+		// Continued streaming
 		return
 	}
-	s.Start = &now
-	s.Twitch = t
-	store.DB.Streams().Put(s.Key(), s)
-	twlog.Debug("started", zap.String("key", s.Key()))
-	if msg, params, err := stream.startMessage(s.UserID); err == nil {
+	if s.TwitchStreamID == "" {
+		twlog.Debug("started", zap.String("key", s.Twitch))
+		s.TwitchStart = time.Now().Unix()
+		s.TwitchStreamID = streamID
+	} else {
+		twlog.Debug("stopped and then started again", zap.String("key", s.Twitch))
+		s.TwitchStart = time.Now().Unix()
+		s.TwitchStop = s.TwitchStart - 1
+		s.TwitchStreamID = streamID
+	}
+	s.Save()
+	if msg, params, err := stream.startMessage(s.MemberID); err == nil {
 		if err := bridge.PostMessage("@demitriousk", msg, params); err != nil {
-			twlog.Error("error posting start message to slack", zap.String("key", s.Key()), zap.Error(err))
+			twlog.Error("error posting start message to slack", zap.String("key", s.Twitch), zap.Error(err))
 		}
 	} else {
-		twlog.Error("error building start message", zap.String("key", s.Key()), zap.Error(err))
+		twlog.Error("error building start message", zap.String("key", s.Twitch), zap.Error(err))
 	}
-
 }

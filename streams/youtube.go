@@ -5,17 +5,13 @@ import "github.com/uber-go/zap"
 var ytlog = zap.New(zap.NewJSONEncoder()).With(zap.String("module", "streams"), zap.String("service", "twitch"))
 var YoutubeAPIKey string
 
-func (s *Stream) updateYoutube() {
-}
-
 func mindYoutube() {
 	ytlog.Debug("begin minding")
-	for key, stream := range Streams {
-		if stream.Kind != "youtube" {
+	for _, stream := range Streams {
+		if stream.Youtube == "" {
 			continue
 		}
-		ytlog.Debug("minding", zap.String("key", key))
-		stream.update()
+		ytlog.Debug("minding", zap.String("key", stream.Youtube))
 	}
 	ytlog.Debug("end minding")
 }

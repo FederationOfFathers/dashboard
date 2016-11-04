@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"os"
 
+	"github.com/FederationOfFathers/dashboard/db"
 	"github.com/gorilla/mux"
 	"github.com/uber-go/zap"
 )
@@ -16,6 +17,7 @@ var logger = zap.New(zap.NewJSONEncoder()).With(zap.String("module", "api"))
 var URLHostName = ""
 var URLPrefix = ""
 var URLScheme = "https"
+var DB *db.DB
 
 func myURL() string {
 	return fmt.Sprintf("%s://%s:%s%s", URLScheme, URLHostName, ListenOn, URLPrefix)

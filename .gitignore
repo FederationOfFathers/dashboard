@@ -2,6 +2,7 @@ dashboard
 ui/ab0x.go
 cfg-slack.yml
 cfg-api.yml
+cfg-db.yml
 database.bolt.*
 .database.bolt.*
 # Compiled Object files, Static and Dynamic libs (Shared Objects)
