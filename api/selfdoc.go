@@ -95,12 +95,12 @@ func init() {
 		Description: "List all registered streams",
 	})
 
-	docRouteMethod("/api/v0/streams/{key}", methodDocEntry{
+	docRouteMethod("/api/v0/streams/{slackID}", methodDocEntry{
 		Method:      "GET",
-		Description: "Get details for a specific stream. Probably not used",
+		Description: "Get details for a specific streamer. Probably not used",
 	})
 
-	docRouteMethod("/api/v0/streams/{key}", methodDocEntry{
+	docRouteMethod("/api/v0/streams/{slackID}/{type}", methodDocEntry{
 		Method:      "DELETE",
 		Description: "Delete a stream if the user is the owner or an admin",
 	})

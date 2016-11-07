@@ -3,12 +3,12 @@ package api
 import (
 	"encoding/json"
 	"net/http"
-	"strconv"
 	"strings"
 
 	"github.com/FederationOfFathers/dashboard/bridge"
 	"github.com/FederationOfFathers/dashboard/streams"
 	"github.com/gorilla/mux"
+	"github.com/jinzhu/gorm"
 	"github.com/uber-go/zap"
 )
 
@@ -50,20 +50,25 @@ func init() {
 	Router.Path("/api/v0/streams/{memberID}").Methods("GET").Handler(jwtHandlerFunc(
 		func(w http.ResponseWriter, r *http.Request) {
 			w.Header().Set("Content-Type", "application/json")
-			streamMemberID, err := strconv.Atoi(mux.Vars(r)["memberID"])
-			if err != nil {
-				logger.Error("Error converting memberID", zap.String("uri", r.URL.RawPath), zap.Error(err))
+			member, err := DB.MemberBySlackID(mux.Vars(r)["memberID"])
+			if err == gorm.ErrRecordNotFound {
 				http.NotFound(w, r)
 				return
 			}
-			for _, stream := range streams.Streams {
-				if stream.MemberID != streamMemberID {
-					continue
-				}
-				json.NewEncoder(w).Encode(stream)
+			if err != nil {
+				w.WriteHeader(http.StatusInternalServerError)
 				return
 			}
-			w.WriteHeader(http.StatusNotFound)
+			stream, err := DB.StreamByMemberID(member.ID)
+			if err == gorm.ErrRecordNotFound {
+				http.NotFound(w, r)
+				return
+			}
+			if err != nil {
+				w.WriteHeader(http.StatusInternalServerError)
+				return
+			}
+			json.NewEncoder(w).Encode(stream)
 		},
 	))
 
