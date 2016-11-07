@@ -3,15 +3,15 @@ package db
 import "time"
 
 type Stream struct {
-	ID             int       `gorm:"primary_key"`
-	MemberID       int       `gorm:"index"`
-	Twitch         string    `gorm:"type:varchar(191);index"`
-	TwitchStreamID string    `gorm:"type:varchar(191)"`
-	TwitchStart    int64     ``
-	TwitchStop     int64     ``
-	Youtube        string    `gorm:"type:varchar(191);index"`
-	YoutubeStart   int64     ``
-	YoutubeStop    int64     ``
+	ID             int       `sql:"bigint(20) NOT NULL AUTO_INCREMENT"`
+	MemberID       int       `gorm:"type:bigint;not null;default:0;unique_index"`
+	Twitch         string    `gorm:"type:varchar(191);not null;default:'';index"`
+	TwitchStreamID string    `gorm:"type:varchar(191);not null;default:''"`
+	TwitchStart    int64     `gorm:"type:bigint;not null;default:0"`
+	TwitchStop     int64     `gorm:"type:bigint;not null;default:0"`
+	Youtube        string    `gorm:"type:varchar(191);not null;default:'';index"`
+	YoutubeStart   int64     `gorm:"type:bigint;not null;default:0"`
+	YoutubeStop    int64     `gorm:"type:bigint;not null;default:0"`
 	CreatedAt      time.Time ``
 	UpdatedAt      time.Time ``
 	db             *DB       `gorm:"-"`

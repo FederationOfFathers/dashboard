@@ -10,8 +10,8 @@ type DB struct {
 }
 
 func (d *DB) migrate() {
-	d.DB.Set("gorm:table_options", "ENGINE=InnoDB").AutoMigrate(&Member{})
-	d.DB.Set("gorm:table_options", "ENGINE=InnoDB").AutoMigrate(&Stream{})
+	d.DB.Set("gorm:table_options", "ENGINE=InnoDB CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci").AutoMigrate(&Member{})
+	d.DB.Set("gorm:table_options", "ENGINE=InnoDB CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci").AutoMigrate(&Stream{})
 }
 
 func New(dialect string, args ...interface{}) *DB {

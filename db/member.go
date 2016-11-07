@@ -3,13 +3,14 @@ package db
 import "time"
 
 type Member struct {
-	ID      int    `gorm:"primary_key"`
-	Name    string ``
-	Slack   string `gorm:"index"`
-	Xbl     string `gorm:"index"`
-	Psn     string ``
-	Destiny string ``
-	Seen    int    `gorm:"index"`
+	ID      int    `sql:"bigint(20) NOT NULL AUTO_INCREMENT"`
+	Slack   string `gorm:"type:varchar(191);not null;default:'';unique_index"`
+	Xbl     string `gorm:"type:varchar(191);not null;default:'';index"`
+	Psn     string `gorm:"type:varchar(191);not null;default:''"`
+	Destiny string `gorm:"type:varchar(191);not null;default:''"`
+	Seen    int    `gorm:"type:bigint;not null;index;default:0"`
+	Name    string `gorm:"type:varchar(191);not null;default:''"`
+	TZ      string `gorm:"type:varchar(191);not null;default:''"`
 	db      *DB    `gorm:"-"`
 }
 
