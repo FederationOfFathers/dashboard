@@ -1,12 +1,16 @@
 package db
 
 import (
+	"sync"
+
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/mysql"
 )
 
 type DB struct {
 	*gorm.DB
+	eventCacheLock sync.RWMutex
+	eventCache     []*Event
 }
 
 func (d *DB) migrate() {
@@ -24,6 +28,7 @@ func New(dialect string, args ...interface{}) *DB {
 	var rval = &DB{
 		DB: d,
 	}
+	rval.eventCache = []*Event{}
 	rval.LogMode(true)
 	rval.migrate()
 	return rval
