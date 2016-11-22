@@ -2,12 +2,14 @@ package api
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 
 	"github.com/FederationOfFathers/dashboard/bot"
 	"github.com/FederationOfFathers/dashboard/bridge"
 	"github.com/FederationOfFathers/dashboard/store"
 	"github.com/gorilla/mux"
+	"github.com/nlopes/slack"
 	"github.com/uber-go/zap"
 	stow "gopkg.in/djherbis/stow.v2"
 )
@@ -81,8 +83,35 @@ func init() {
 	Router.Path("/api/v0/groups/{groupID}/visibility").Methods("PUT", "POST", "OPTIONS").Handler(jwtHandlerFunc(
 		func(w http.ResponseWriter, r *http.Request) {
 			w.Header().Set("Content-Type", "application/json")
-			err := requireAdmin(w, r)
+
+			var group *slack.Group
+			for _, g := range bridge.Data.Slack.GetGroups() {
+				if mux.Vars(r)["groupID"] == g.ID {
+					group = &g
+					break
+				}
+			}
+			if group == nil {
+				w.WriteHeader(http.StatusInternalServerError)
+				return
+			}
+
+			id := getSlackUserID(r)
+			member, err := DB.MemberBySlackID(id)
 			if err != nil {
+				w.WriteHeader(http.StatusInternalServerError)
+				return
+			}
+			if err := requireAdmin(w, r); err != nil {
+				// Not an admin... so a request
+				bot.SendMessage(
+					"damnbot-admin",
+					fmt.Sprintf(
+						"Request to change group visibility for *%s* received from *%s*",
+						group.Name,
+						member.Name,
+					),
+				)
 				return
 			}
 			err = visDB().Put(
