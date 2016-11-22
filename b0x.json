@@ -9,15 +9,15 @@
     },
     "custom": [{
         "files": [
-            "../dashboard-ui/dashboard/index.html"
+            "../dashboard-ui/index.html"
         ],
-        "base": "../dashboard-ui/dashboard/",
+        "base": "../dashboard-ui/",
         "prefix": ""
     }, {
         "files": [
-            "../dashboard-ui/dashboard/scripts/"
+            "../dashboard-ui/scripts/"
         ],
-        "base": "../dashboard-ui/dashboard/scripts",
+        "base": "../dashboard-ui/scripts",
         "prefix": "scripts"
     }]
 }
