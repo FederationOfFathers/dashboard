@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"strings"
 
 	"github.com/FederationOfFathers/dashboard/bot"
 	"github.com/FederationOfFathers/dashboard/bridge"
@@ -81,17 +80,21 @@ func init() {
 		},
 	))
 
-	Router.Path("/api/v0/groups/{groupID}/visibility").Methods("PUT", "POST", "OPTIONS").Handler(jwtHandlerFunc(
+	Router.Path("/api/v0/groups/{groupID}/visibility").Methods("PUT", "POST").Handler(jwtHandlerFunc(
 		func(w http.ResponseWriter, r *http.Request) {
-			w.Header().Set("Content-Type", "application/json")
+			defer r.Body.Close()
 
 			var group *slack.Group
+
+			w.Header().Set("Content-Type", "application/json")
+
 			for _, g := range bridge.Data.Slack.GetGroups() {
 				if mux.Vars(r)["groupID"] == g.ID {
 					group = &g
 					break
 				}
 			}
+
 			if group == nil {
 				w.WriteHeader(http.StatusInternalServerError)
 				return
@@ -99,10 +102,12 @@ func init() {
 
 			id := getSlackUserID(r)
 			member, err := DB.MemberBySlackID(id)
+
 			if err != nil {
 				w.WriteHeader(http.StatusInternalServerError)
 				return
 			}
+
 			if err := requireAdmin(w, r); err != nil {
 				// Not an admin... so a request
 				bot.SendMessage(
@@ -115,21 +120,18 @@ func init() {
 				)
 				return
 			}
-			var visibility string
-			if strings.Contains(strings.ToLower(r.Header.Get("Content-Type")), "json") {
-				var doc = map[string]interface{}{}
-				json.NewDecoder(r.Body).Decode(&doc)
-				r.Body.Close()
-				if v, ok := doc["visible"]; ok {
-					if vs, ok := v.(string); ok {
-						visibility = vs
-					}
-				}
-			} else {
-				visibility = r.FormValue("visible")
+
+			var doc = struct {
+				Visibility string `json:"visible"`
+			}{}
+
+			if err := json.NewDecoder(r.Body).Decode(&doc); err != nil {
+				logger.Error("Failed decoding json for group visibility change", zap.Error(err))
+				w.WriteHeader(http.StatusBadRequest)
+				return
 			}
-			err = visDB().Put(mux.Vars(r)["groupID"], visibility)
-			if err != nil {
+
+			if err = visDB().Put(mux.Vars(r)["groupID"], doc.Visibility); err != nil {
 				logger.Error("error putting a value to visDB", zap.Error(err))
 				w.WriteHeader(http.StatusInternalServerError)
 			}
