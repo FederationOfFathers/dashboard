@@ -205,3 +205,8 @@ func GroupInvite(groupID, userID string) error {
 	_, _, err := api.InviteUserToGroup(groupID, userID)
 	return err
 }
+
+func ChannelInvite(channelID, userID string) error {
+	_, err := api.InviteUserToChannel(channelID, userID)
+	return err
+}
