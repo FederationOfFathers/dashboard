@@ -210,3 +210,11 @@ func ChannelInvite(channelID, userID string) error {
 	_, err := api.InviteUserToChannel(channelID, userID)
 	return err
 }
+
+func GroupKick(groupID, userID string) error {
+	return api.KickUserFromGroup(groupID, userID)
+}
+
+func ChannelKick(channelID, userID string) error {
+	return api.KickUserFromChannel(channelID, userID)
+}

@@ -80,6 +80,28 @@ func init() {
 		},
 	))
 
+	Router.Path("/api/v0/groups/{groupID}/leave").Methods("GET").Handler(jwtHandlerFunc(
+		func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Content-Type", "application/json")
+			id := getSlackUserID(r)
+			want := mux.Vars(r)["groupID"]
+			var visible string
+			visDB().Get(want, &visible)
+			if visible == "true" {
+				for _, group := range bridge.Data.Slack.GetGroups() {
+					if group.ID != want {
+						continue
+					}
+					if err := bot.GroupKick(group.ID, id); err != nil {
+						w.WriteHeader(http.StatusInternalServerError)
+					}
+					return
+				}
+			}
+			w.WriteHeader(http.StatusNotFound)
+		},
+	))
+
 	Router.Path("/api/v0/groups/{groupID}/visibility").Methods("PUT", "POST", "OPTIONS").Handler(jwtHandlerFunc(
 		func(w http.ResponseWriter, r *http.Request) {
 			defer r.Body.Close()
