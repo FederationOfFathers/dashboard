@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strings"
 
 	"github.com/FederationOfFathers/dashboard/bot"
 	"github.com/FederationOfFathers/dashboard/bridge"
@@ -114,9 +115,20 @@ func init() {
 				)
 				return
 			}
-			err = visDB().Put(
-				mux.Vars(r)["groupID"],
-				r.FormValue("visible"))
+			var visibility string
+			if strings.Contains(strings.ToLower(r.Header.Get("Content-Type")), "json") {
+				var doc = map[string]interface{}{}
+				json.NewDecoder(r.Body).Decode(&doc)
+				r.Body.Close()
+				if v, ok := doc["visible"]; ok {
+					if vs, ok := v.(string); ok {
+						visibility = vs
+					}
+				}
+			} else {
+				visibility = r.FormValue("visible")
+			}
+			err = visDB().Put(mux.Vars(r)["groupID"], visibility)
 			if err != nil {
 				logger.Error("error putting a value to visDB", zap.Error(err))
 				w.WriteHeader(http.StatusInternalServerError)
