@@ -80,9 +80,12 @@ func init() {
 		},
 	))
 
-	Router.Path("/api/v0/groups/{groupID}/visibility").Methods("PUT", "POST").Handler(jwtHandlerFunc(
+	Router.Path("/api/v0/groups/{groupID}/visibility").Methods("PUT", "POST", "OPTIONS").Handler(jwtHandlerFunc(
 		func(w http.ResponseWriter, r *http.Request) {
 			defer r.Body.Close()
+			if r.Method == "OPTIONS" {
+				return
+			}
 
 			var group *slack.Group
 
