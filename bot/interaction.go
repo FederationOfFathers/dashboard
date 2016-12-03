@@ -13,11 +13,13 @@ import (
 type MessageHandler func(*slack.MessageEvent) bool
 
 var ChannelMessageHandlers = []MessageHandler{
+	handleJoinPartEvents,
 	handleChannelUpload,
 	handleFortune,
 	handleSaySomething,
 }
 var GroupMessageHandlers = []MessageHandler{
+	handleJoinPartEvents,
 	handleChannelUpload,
 	handleFortune,
 	handleSaySomething,
@@ -142,6 +144,15 @@ func handleSaySomething(m *slack.MessageEvent) bool {
 			Text:    parsed[3],
 			Type:    "message",
 		})
+		return true
+	}
+	return false
+}
+
+func handleJoinPartEvents(m *slack.MessageEvent) bool {
+	switch m.SubType {
+	case "channel_leave", "channel_join", "group_leave", "group_join":
+		UpdateRequest <- struct{}{}
 		return true
 	}
 	return false

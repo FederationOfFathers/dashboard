@@ -21,7 +21,8 @@ var ErrGroupNotFound = fmt.Errorf("Unable to find any group by that name")
 var ErrSlackAPIUnresponsive = fmt.Errorf("The slack api returned no data. Error assumed")
 
 // UpdateTimer sets how often to check for updated users, group, and channel lists in slack
-var UpdateTimer = time.Minute
+var UpdateTimer = 30 * time.Minute
+var UpdateRequest = make(chan struct{})
 
 // SlackData is the structure for the state that we are geeping "up to date" during runtime. It is
 // ephemeral and goes away to be repopulated on program shutdown
@@ -163,11 +164,23 @@ func (s *SlackData) GetUsers() []slack.User {
 }
 
 func mindLists() {
-	t := time.Tick(UpdateTimer)
+	passiveUpdate := time.Tick(UpdateTimer)
+	tick := time.Tick(10 * time.Millisecond)
+	last := time.Now().Add(0 - (5 * time.Second))
+	want := false
 	for {
 		select {
-		case <-t:
-			populateLists()
+		case <-passiveUpdate:
+			want = true
+		case <-UpdateRequest:
+			want = true
+		case <-tick:
+			if want {
+				if time.Now().Sub(last) >= (5 * time.Second) {
+					want = false
+					populateLists()
+				}
+			}
 		}
 	}
 }
@@ -201,7 +214,6 @@ func populateLists() {
 				// Multi Party Direct MEssages don't count
 				continue
 			}
-			logger.Debug("am in group", zap.String("group_id", gr.ID), zap.String("group_name", gr.Name))
 			groups = append(groups, gr)
 		}
 		data.Groups = groups
@@ -215,11 +227,6 @@ func populateLists() {
 		chans := []slack.Channel{}
 		for _, channel := range c {
 			if channel.IsArchived == true {
-				logger.Debug(
-					"Filtering channel from channel list",
-					zap.String("channel_id", channel.ID),
-					zap.String("channel_name", channel.Name),
-					zap.String("reason", "archived"))
 				continue
 			}
 			chans = append(chans, channel)
@@ -230,10 +237,6 @@ func populateLists() {
 		if connected {
 			for _, channel := range chans {
 				if channel.IsMember {
-					logger.Debug(
-						"already in channel",
-						zap.String("channel_id", channel.ID),
-						zap.String("channel_name", channel.Name))
 					continue
 				}
 				if _, err := rtm.JoinChannel(channel.ID); err != nil {
