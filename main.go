@@ -1,7 +1,3 @@
-//go:generate echo "---[ making sure fileb0x is installed ]"
-//go:generate go get -v github.com/UnnoTed/fileb0x
-//go:generate echo "---[ updating ../dashboard-ui ]"
-//go:generate /bin/bash -c "cd ../dashboard-ui && git pull && npm install && au build"
 //go:generate echo "---[ importing ../dashboard-ui/application/ ]"
 //go:generate fileb0x ./b0x.json
 //go:generate echo "---[ building ]"
@@ -17,6 +13,7 @@ import (
 
 	"github.com/FederationOfFathers/dashboard/api"
 	"github.com/FederationOfFathers/dashboard/bot"
+	"github.com/FederationOfFathers/dashboard/bridge"
 	"github.com/FederationOfFathers/dashboard/db"
 	"github.com/FederationOfFathers/dashboard/events"
 	"github.com/FederationOfFathers/dashboard/store"
@@ -73,6 +70,9 @@ func main() {
 	if err != nil {
 		logger.Fatal("Unable to contact the slack API", zap.Error(err))
 	}
+
+	bridge.SlackCoreDataUpdated = bot.SlackCoreDataUpdated
+
 	streams.Init("#-fof-streaming")
 	events.Start()
 	if !noUI {
