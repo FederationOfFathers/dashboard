@@ -12,6 +12,7 @@ func init() {
 			w.Header().Set("Content-Type", "application/json")
 			bridge.SlackCoreDataUpdated.L.Lock()
 			bridge.SlackCoreDataUpdated.Wait()
+			bridge.SlackCoreDataUpdated.L.Unlock()
 		},
 	))
 }
