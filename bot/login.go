@@ -2,6 +2,7 @@ package bot
 
 import (
 	"fmt"
+	"os"
 	"time"
 
 	"github.com/nlopes/slack"
@@ -24,11 +25,17 @@ func handleLogin(m *slack.MessageEvent) bool {
 		return false
 	}
 
+	var linkText = "Login with this link"
+	if home := os.Getenv("SERVICE_DIR"); home != "" {
+		linkText = "Dev login with this link"
+	}
+
 	var msg = fmt.Sprintf(
-		"<%sapi/v0/login?w=%s&t=%s|Login with this link>",
+		"<%sapi/v0/login?w=%s&t=%s|%s>",
 		LoginLink,
 		m.Msg.User,
-		AuthTokenGenerator(m.Msg.User)[0])
+		AuthTokenGenerator(m.Msg.User)[0],
+		linkText)
 
 	for i := 0; i < 5; i++ {
 		_, _, err := rtm.PostMessage(
