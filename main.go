@@ -45,6 +45,7 @@ func init() {
 	ecfg := cfg.New("cfg-events")
 	ecfg.StringVar(&events.SaveFile, "savefile", events.SaveFile, "path to the file in which events should be persisted")
 	ecfg.DurationVar(&events.SaveInterval, "saveinterval", events.SaveInterval, "how often to check and see if we need to save data")
+	ecfg.StringVar(&events.OldEventLinkHMAC, "hmackey", events.OldEventLinkHMAC, "hmac key for generating team tool login links")
 
 	ucfg := cfg.New("cfg-ui")
 	ucfg.BoolVar(&noUI, "disable-serving", noUI, "Disable Serving of the UI")
@@ -72,6 +73,7 @@ func main() {
 	}
 
 	bridge.SlackCoreDataUpdated = bot.SlackCoreDataUpdated
+	bridge.OldEventToolLink = events.OldEventToolLink
 
 	streams.Init("#-fof-streaming")
 	events.Start()

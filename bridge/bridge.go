@@ -29,7 +29,7 @@ var Data = &struct {
 	Slack  SlackData
 	Events EventData
 }{}
-
+var OldEventToolLink func(string) string
 var SlackCoreDataUpdated *sync.Cond
 var SendMessage func(string, string)
 var PostMessage func(string, string, slack.PostMessageParameters) error
