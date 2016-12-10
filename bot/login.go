@@ -18,10 +18,10 @@ var AuthTokenGenerator = func(s string) []string {
 }
 
 func handleLogin(m *slack.MessageEvent) bool {
-	if len(m.Msg.Text) != 5 {
+	if len(strings.TrimSpace(m.Msg.Text)) != 5 {
 		return false
 	}
-	if strings.ToLower(m.Msg.Text) != "login" {
+	if strings.ToLower(strings.TrimSpace(m.Msg.Text)) != "login" {
 		return false
 	}
 
