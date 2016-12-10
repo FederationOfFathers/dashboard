@@ -3,6 +3,7 @@ package bot
 import (
 	"fmt"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/nlopes/slack"
@@ -17,7 +18,7 @@ var AuthTokenGenerator = func(s string) []string {
 }
 
 func handleLogin(m *slack.MessageEvent) bool {
-	if m.Msg.Text != "login" {
+	if strings.ToLower(m.Msg.Text[:5]) != "login" {
 		return false
 	}
 
