@@ -27,7 +27,6 @@ func SlackConnect(slackToken string) error {
 	bridge.SendMessage = SendMessage
 	bridge.PostMessage = PostMessage
 	data.load()
-	logger.SetLevel(LogLevel)
 	api = slack.New(slackToken)
 	populateLists()
 	if len(data.Users) < 1 {

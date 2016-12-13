@@ -121,7 +121,6 @@ func (e *Events) AddEvent(ev *Event) {
 }
 
 func Start() {
-	logger.SetLevel(zap.DebugLevel)
 	Data.Lock()
 	if Data.started {
 		Data.Unlock()
