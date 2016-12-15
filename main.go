@@ -1,8 +1,4 @@
-//go:generate echo "---[ importing ../dashboard-ui/application/ ]"
 //go:generate fileb0x ./b0x.json
-//go:generate echo "---[ building ]"
-//go:generate go build -v
-//go:generate echo "---[ done ]"
 package main
 
 import (
