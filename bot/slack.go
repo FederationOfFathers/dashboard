@@ -2,6 +2,7 @@ package bot
 
 import (
 	"fmt"
+	"os"
 	"strings"
 	"time"
 
@@ -26,7 +27,6 @@ func SlackConnect(slackToken string) error {
 	bridge.SendMessage = SendMessage
 	bridge.PostMessage = PostMessage
 	data.load()
-	logger.SetLevel(LogLevel)
 	api = slack.New(slackToken)
 	populateLists()
 	if len(data.Users) < 1 {
@@ -44,6 +44,9 @@ func SlackConnect(slackToken string) error {
 			}
 		}
 	}()
+	if home := os.Getenv("SERVICE_DIR"); home != "" {
+		SendMessage("#-fof-dashboard", "Dev Dashboard starting up...")
+	}
 	return nil
 }
 

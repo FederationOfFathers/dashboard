@@ -1,6 +1,10 @@
 package bridge
 
-import "github.com/nlopes/slack"
+import (
+	"sync"
+
+	"github.com/nlopes/slack"
+)
 
 type SlackData interface {
 	IsUsernameAdmin(string) (bool, error)
@@ -25,6 +29,7 @@ var Data = &struct {
 	Slack  SlackData
 	Events EventData
 }{}
-
+var OldEventToolLink func(string) string
+var SlackCoreDataUpdated *sync.Cond
 var SendMessage func(string, string)
 var PostMessage func(string, string, slack.PostMessageParameters) error

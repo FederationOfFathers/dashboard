@@ -10,6 +10,8 @@ import (
 	"github.com/uber-go/zap"
 )
 
+var SlackCoreDataUpdated = sync.NewCond(new(sync.Mutex))
+
 // ErrUsernameNotFound represents being unable to find a user by a given name (they can change)
 var ErrUsernameNotFound = fmt.Errorf("Unable to find any user by that name")
 var ErrChannelNotFound = fmt.Errorf("Unable to find any channel by that name")
@@ -185,77 +187,108 @@ func mindLists() {
 	}
 }
 
-func populateLists() {
-	if u, e := api.GetUsers(); e == nil {
-		data.Lock()
-		data.Users = u
-		data.Unlock()
-		logger.Info("Updated user list from slack", zap.Int("count", len(u)))
-	} else {
+func updateSlackUserList() error {
+	u, e := api.GetUsers()
+	if e != nil {
 		logger.Error("Failed to fetch user list from slack", zap.Error(e))
-	}
-
-	if g, e := api.GetGroups(false); e == nil {
-		data.Lock()
-		groups := []slack.Group{}
-		data.Unlock()
-		for _, gr := range g {
-			if gr.IsArchived {
-				// Archived groups aren't real groups
-				api.LeaveGroup(gr.ID)
-				continue
-			}
-			if len(gr.Members) < 2 {
-				// If I am the only member of a group then leave it
-				api.LeaveGroup(gr.ID)
-				continue
-			}
-			if len(gr.Name) > 5 && gr.Name[:5] == "mpdm-" {
-				// Multi Party Direct MEssages don't count
-				continue
-			}
-			groups = append(groups, gr)
-		}
-		data.Groups = groups
-		logger.Info("Updated Group list from slack", zap.Int("count", len(g)))
-	} else {
-		logger.Error("Failed to fetch group list from slack", zap.Error(e))
-	}
-
-	if c, e := api.GetChannels(false); e == nil {
-		data.Lock()
-		chans := []slack.Channel{}
-		for _, channel := range c {
-			if channel.IsArchived == true {
-				continue
-			}
-			chans = append(chans, channel)
-		}
-		data.Channels = chans
-		data.Unlock()
-		logger.Info("Updated Channel list from slack", zap.Int("count", len(c)))
-		if connected {
-			for _, channel := range chans {
-				if channel.IsMember {
-					continue
-				}
-				if _, err := rtm.JoinChannel(channel.ID); err != nil {
-					logger.Error("failed to join channel",
-						zap.String("channel_id", channel.ID),
-						zap.String("channel_name", channel.Name),
-						zap.Error(err))
-				} else {
-					logger.Info(
-						"joined channel",
-						zap.String("channel_id", channel.ID),
-						zap.String("channel_name", channel.Name))
-				}
-			}
-		}
-	} else {
-		logger.Error("Failed to fetch channel list from slack", zap.Error(e))
+		return e
 	}
 	data.Lock()
+	data.Users = u
+	data.Unlock()
+	logger.Info("Updated user list from slack", zap.Int("count", len(u)))
+	return nil
+}
+
+func updateSlackGroupsList() error {
+	g, e := api.GetGroups(false)
+	if e != nil {
+		logger.Error("Failed to fetch group list from slack", zap.Error(e))
+		return e
+	}
+	data.Lock()
+	groups := []slack.Group{}
+	data.Unlock()
+	for _, gr := range g {
+		if gr.IsArchived {
+			// Archived groups aren't real groups
+			api.LeaveGroup(gr.ID)
+			continue
+		}
+		if len(gr.Members) < 2 {
+			// If I am the only member of a group then leave it
+			api.LeaveGroup(gr.ID)
+			continue
+		}
+		if len(gr.Name) > 5 && gr.Name[:5] == "mpdm-" {
+			// Multi Party Direct MEssages don't count
+			continue
+		}
+		groups = append(groups, gr)
+	}
+	data.Groups = groups
+	logger.Info("Updated Group list from slack", zap.Int("count", len(g)))
+	return nil
+}
+
+func updateSlackChannelsList() error {
+	c, e := api.GetChannels(false)
+	if e != nil {
+		logger.Error("Failed to fetch channel list from slack", zap.Error(e))
+		return e
+	}
+	data.Lock()
+	chans := []slack.Channel{}
+	for _, channel := range c {
+		if channel.IsArchived == true {
+			continue
+		}
+		chans = append(chans, channel)
+	}
+	data.Channels = chans
+	data.Unlock()
+	logger.Info("Updated Channel list from slack", zap.Int("count", len(c)))
+	if connected {
+		for _, channel := range chans {
+			if channel.IsMember {
+				continue
+			}
+			if _, err := rtm.JoinChannel(channel.ID); err != nil {
+				logger.Error("failed to join channel",
+					zap.String("channel_id", channel.ID),
+					zap.String("channel_name", channel.Name),
+					zap.Error(err))
+			} else {
+				logger.Info(
+					"joined channel",
+					zap.String("channel_id", channel.ID),
+					zap.String("channel_name", channel.Name))
+			}
+		}
+	}
+	return nil
+}
+
+func populateLists() {
+	var wg sync.WaitGroup
+	wg.Add(3)
+	go func() {
+		updateSlackUserList()
+		wg.Done()
+	}()
+	go func() {
+		updateSlackGroupsList()
+		wg.Done()
+	}()
+	go func() {
+		updateSlackChannelsList()
+		wg.Done()
+	}()
+	wg.Wait()
+	data.Lock()
 	data.save()
+	SlackCoreDataUpdated.L.Lock()
+	SlackCoreDataUpdated.Broadcast()
+	SlackCoreDataUpdated.L.Unlock()
 	data.Unlock()
 }

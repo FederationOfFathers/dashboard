@@ -14,13 +14,24 @@ func init() {
 			id := getSlackUserID(r)
 			user, _ := bridge.Data.Slack.User(id)
 			admin, _ := bridge.Data.Slack.IsUserIDAdmin(id)
-			enc := json.NewEncoder(w)
-			enc.Encode(map[string]interface{}{
-				"user":     user,
-				"admin":    admin,
-				"groups":   bridge.Data.Slack.UserGroups(id),
-				"channels": bridge.Data.Slack.UserChannels(id),
-			})
+			userGroups := bridge.Data.Slack.UserGroups(id)
+			userGroupsVisible := map[string]string{}
+			for _, group := range userGroups {
+				var visible string
+				visDB().Get(group.ID, &visible)
+				if visible != "true" {
+					visible = "false"
+				}
+				userGroupsVisible[group.ID] = visible
+			}
+			var rval = map[string]interface{}{
+				"user":          user,
+				"admin":         admin,
+				"groups":        userGroups,
+				"group_visible": userGroupsVisible,
+				"channels":      bridge.Data.Slack.UserChannels(id),
+			}
+			json.NewEncoder(w).Encode(rval)
 		},
 	))
 }

@@ -2,6 +2,8 @@ package bot
 
 import (
 	"fmt"
+	"os"
+	"strings"
 	"time"
 
 	"github.com/nlopes/slack"
@@ -16,7 +18,10 @@ var AuthTokenGenerator = func(s string) []string {
 }
 
 func handleLogin(m *slack.MessageEvent) bool {
-	if m.Msg.Text != "login" {
+	if len(strings.TrimSpace(m.Msg.Text)) != 5 {
+		return false
+	}
+	if strings.ToLower(strings.TrimSpace(m.Msg.Text)) != "login" {
 		return false
 	}
 
@@ -24,11 +29,17 @@ func handleLogin(m *slack.MessageEvent) bool {
 		return false
 	}
 
+	var linkText = "Login with this link"
+	if home := os.Getenv("SERVICE_DIR"); home != "" {
+		linkText = "Dev login with this link"
+	}
+
 	var msg = fmt.Sprintf(
-		"<%sapi/v0/login?w=%s&t=%s|Login with this link>",
+		"<%sapi/v0/login?w=%s&t=%s|%s>",
 		LoginLink,
 		m.Msg.User,
-		AuthTokenGenerator(m.Msg.User)[0])
+		AuthTokenGenerator(m.Msg.User)[0],
+		linkText)
 
 	for i := 0; i < 5; i++ {
 		_, _, err := rtm.PostMessage(
