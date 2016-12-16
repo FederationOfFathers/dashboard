@@ -46,6 +46,8 @@ func SlackConnect(slackToken string) error {
 	}()
 	if home := os.Getenv("SERVICE_DIR"); home != "" {
 		SendMessage("#-fof-dashboard", "Dev Dashboard starting up...")
+	} else {
+		SendMessage("#-fof-dashboard", "Production Dashboard starting up...")
 	}
 	return nil
 }
