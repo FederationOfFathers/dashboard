@@ -67,7 +67,7 @@ func main() {
 
 	bot.AuthTokenGenerator = api.GenerateValidAuthTokens
 	if home := os.Getenv("SERVICE_DIR"); home == "" {
-		bot.LoginLink = fmt.Sprintf("http://dashboard.fofgaming.com/", api.ListenOn)
+		bot.LoginLink = fmt.Sprintf("http://dashboard.fofgaming.com/")
 	} else {
 		bot.LoginLink = fmt.Sprintf("http://fofgaming.com%s/", api.ListenOn)
 	}
