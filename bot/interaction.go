@@ -29,6 +29,7 @@ var DirectMessageHandlers = []MessageHandler{
 	handleDMUpload,
 	handleFortune,
 	handleSaySomething,
+	handleDevLogin,
 }
 
 func handleChannelMessage(m *slack.MessageEvent) bool {

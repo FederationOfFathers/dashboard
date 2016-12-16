@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"net/http/httputil"
 	"net/url"
+	"os"
 
 	"github.com/FederationOfFathers/dashboard/api"
 	"github.com/FederationOfFathers/dashboard/bot"
@@ -61,7 +62,11 @@ func main() {
 	api.DB = DB
 
 	bot.AuthTokenGenerator = api.GenerateValidAuthTokens
-	bot.LoginLink = fmt.Sprintf("http://fofgaming.com%s/", api.ListenOn)
+	if home := os.Getenv("SERVICE_DIR"); home == "" {
+		bot.LoginLink = fmt.Sprintf("http://dashboard.fofgaming.com/", api.ListenOn)
+	} else {
+		bot.LoginLink = fmt.Sprintf("http://fofgaming.com%s/", api.ListenOn)
+	}
 
 	err := bot.SlackConnect(slackAPIKey)
 	if err != nil {
