@@ -18,6 +18,21 @@ func visDB() *stow.Store {
 	return store.DB.Groups().NewNestedStore([]byte("visibility-v1"))
 }
 
+func isSlackUserInGroup(slackID, groupID string) bool {
+	for _, group := range bridge.Data.Slack.GetGroups() {
+		if group.ID != groupID {
+			continue
+		}
+		for _, member := range group.Members {
+			if member == slackID {
+				return true
+			}
+		}
+		return false
+	}
+	return false
+}
+
 func init() {
 	Router.Path("/api/v0/groups").Methods("GET").Handler(jwtHandlerFunc(
 		func(w http.ResponseWriter, r *http.Request) {
@@ -65,7 +80,7 @@ func init() {
 			want := mux.Vars(r)["groupID"]
 			var visible string
 			visDB().Get(want, &visible)
-			if visible == "true" {
+			if visible == "true" || isSlackUserInGroup(id, want) {
 				for _, group := range bridge.Data.Slack.GetGroups() {
 					if group.ID != want {
 						continue
@@ -87,7 +102,7 @@ func init() {
 			want := mux.Vars(r)["groupID"]
 			var visible string
 			visDB().Get(want, &visible)
-			if visible == "true" {
+			if visible == "true" || isSlackUserInGroup(id, want) {
 				for _, group := range bridge.Data.Slack.GetGroups() {
 					if group.ID != want {
 						continue
