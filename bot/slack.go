@@ -44,6 +44,13 @@ func SlackConnect(slackToken string) error {
 			}
 		}
 	}()
+	messagingClient = &rtm.Client
+	if MessagingKey != "" {
+		logger.Warn("Using special key for fofbot messaging", zap.String("key", MessagingKey))
+		messagingClient = slack.New(MessagingKey)
+	} else {
+		logger.Warn("Using default client for fofbot messaging")
+	}
 	if home := os.Getenv("SERVICE_DIR"); home != "" {
 		SendMessage("#-fof-dashboard", "Dev Dashboard starting up...")
 	} else {
@@ -55,6 +62,15 @@ func SlackConnect(slackToken string) error {
 func mindSlack() error {
 	for {
 		select {
+		case msg := <-fofbotMessage:
+			_, _, err := messagingClient.PostMessage(msg.to, msg.text, slack.PostMessageParameters{
+				AsUser:      true,
+				UnfurlLinks: true,
+				UnfurlMedia: true,
+			})
+			if err != nil {
+				logger.Error("client.PostMessage failed", zap.Error(err))
+			}
 		case msg := <-postMessage:
 			_, _, err := rtm.PostMessage(msg.to, msg.text, slack.PostMessageParameters{
 				AsUser:      true,
@@ -204,7 +220,8 @@ func mindSlack() error {
 
 			// Errors
 			case *slack.UnmarshallingErrorEvent:
-				return ev
+				// new and/or unhandled message type
+				continue;
 			case *slack.OutgoingErrorEvent:
 				return ev
 			case *slack.AckErrorEvent:

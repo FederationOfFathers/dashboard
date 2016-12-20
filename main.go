@@ -21,6 +21,7 @@ import (
 )
 
 var slackAPIKey = "xox...."
+var slackMessagingKey = ""
 var logger = zap.New(zap.NewJSONEncoder())
 var devPort = 0
 var noUI = false
@@ -30,6 +31,7 @@ var mysqlURI string
 func init() {
 	scfg := cfg.New("cfg-slack")
 	scfg.StringVar(&slackAPIKey, "apiKey", slackAPIKey, "Slack API Key (env: SLACK_APIKEY)")
+	scfg.StringVar(&slackMessagingKey, "messagingKey", slackMessagingKey, "Slack Messaging API Key (env: SLACK_MESSAGINGAPIKEY)")
 	scfg.StringVar(&bot.CdnPrefix, "cdnPrefix", bot.CdnPrefix, "http url base from which to store saved uploads")
 	scfg.StringVar(&bot.CdnPath, "cdnPath", bot.CdnPath, "Filesystem path to store uploads in")
 
@@ -68,6 +70,11 @@ func main() {
 		bot.LoginLink = fmt.Sprintf("http://fofgaming.com%s/", api.ListenOn)
 	}
 
+	if slackMessagingKey != "" {
+		bot.MessagingKey = slackMessagingKey
+	} else {
+		bot.MessagingKey = slackAPIKey
+	}
 	err := bot.SlackConnect(slackAPIKey)
 	if err != nil {
 		logger.Fatal("Unable to contact the slack API", zap.Error(err))
