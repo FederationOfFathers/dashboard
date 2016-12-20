@@ -83,23 +83,6 @@ func handleLogin(m *slack.MessageEvent) bool {
 		m.Msg.User,
 		AuthTokenGenerator(m.Msg.User)[0],
 		linkText)
-
-	for i := 0; i < 5; i++ {
-		_, _, err := rtm.PostMessage(
-			m.Channel,
-			msg,
-			slack.PostMessageParameters{
-				Text:        msg,
-				AsUser:      true,
-				Username:    "fofbot",
-				UnfurlLinks: true,
-				UnfurlMedia: true,
-				IconEmoji:   ":link:",
-			})
-		if err == nil {
-			break
-		}
-		time.Sleep(time.Duration(i) * time.Second)
-	}
+	fofbotMessage<- sendMessage{m.User,msg}
 	return true
 }
