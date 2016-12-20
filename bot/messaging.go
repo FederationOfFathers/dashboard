@@ -1,10 +1,6 @@
 package bot
 
-import (
-	"sync"
-
-	"github.com/nlopes/slack"
-)
+import "github.com/nlopes/slack"
 
 type sendMessage struct {
 	to   string
