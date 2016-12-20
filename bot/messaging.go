@@ -16,6 +16,19 @@ func SendMessage(to, message string) {
 	}
 }
 
+func SendMessageAs(to, message, as string) {
+	go PostMessage(
+		to,
+		message,
+		slack.PostMessageParameters{
+			Username:    as,
+			AsUser:      true,
+			UnfurlLinks: true,
+			UnfurlMedia: true,
+		},
+	)
+}
+
 func PostMessage(to, message string, params slack.PostMessageParameters) error {
 	_, _, err := api.PostMessage(to, message, params)
 	return err

@@ -91,6 +91,7 @@ func handleLogin(m *slack.MessageEvent) bool {
 			slack.PostMessageParameters{
 				Text:        msg,
 				AsUser:      true,
+				Username:    "fofbot",
 				UnfurlLinks: true,
 				UnfurlMedia: true,
 				IconEmoji:   ":link:",
