@@ -1,8 +1,6 @@
 package bot
 
 import (
-	"sync"
-
 	"github.com/nlopes/slack"
 )
 
