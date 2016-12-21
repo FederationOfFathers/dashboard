@@ -121,6 +121,7 @@ func init() {
 		func(w http.ResponseWriter, r *http.Request) {
 			defer r.Body.Close()
 			if r.Method == "OPTIONS" {
+				w.WriteHeader(http.StatusOK)
 				return
 			}
 
