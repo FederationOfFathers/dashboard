@@ -158,6 +158,7 @@ func init() {
 						member.Name,
 					),
 				)
+				w.WriteHeader(http.StatusOK)
 				return
 			}
 
