@@ -28,6 +28,7 @@ func (h *httpLogger) ServeHTTP(w http.ResponseWriter, r *http.Request, next http
 		"HTTP Request",
 		zap.String("uri", r.RequestURI),
 		zap.Int("http_status", nw.status),
+		zap.String("username", getSlackUserName(r)),
 		zap.String("remote_address", r.RemoteAddr),
 		zap.String("method", r.Method),
 		zap.Int64("content_length", r.ContentLength),

@@ -104,9 +104,19 @@ func validateMiniAuthToken(forWhat, token string) bool {
 
 func getSlackUserID(r *http.Request) string {
 	// github.com/auth0/go-jwt-middleware/blob/b4ec5e466f0aaaa4daaefdb277e7d0d5040c96c0/jwtmiddleware.go#L232
-	user := context.Get(r, "user").(*jwt.Token)
-	if userid, ok := user.Claims.(jwt.MapClaims)["userid"]; ok {
-		return userid.(string)
+	jwtoken := context.Get(r, "user")
+	if user, ok := jwtoken.(*jwt.Token); ok {
+		if userid, ok := user.Claims.(jwt.MapClaims)["userid"]; ok {
+			return userid.(string)
+		}
 	}
 	return ""
+}
+
+func getSlackUserName(r *http.Request) string {
+	member, err := DB.MemberBySlackID(getSlackUserID(r))
+	if err != nil || member == nil {
+		return ""
+	}
+	return member.Name
 }

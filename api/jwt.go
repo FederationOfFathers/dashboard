@@ -9,6 +9,7 @@ import (
 	"github.com/dgrijalva/jwt-go"
 	"github.com/rabeesh/negroni-nocache"
 	"github.com/rs/cors"
+	"github.com/uber-go/zap"
 )
 
 // JWTSecret is the Secret used when signing JTW tokens
@@ -28,6 +29,18 @@ var jMW = jwtmiddleware.New(jwtmiddleware.Options{
 		return c.Value, nil
 	},
 	SigningMethod: jwt.SigningMethodHS256,
+	ErrorHandler: func(w http.ResponseWriter, r *http.Request, err string) {
+		logger.Info(
+			"HTTP Request",
+			zap.String("uri", r.RequestURI),
+			zap.Int("http_status", -1),
+			zap.String("username", getSlackUserName(r)),
+			zap.String("remote_address", r.RemoteAddr),
+			zap.String("method", r.Method),
+			zap.Int64("content_length", r.ContentLength),
+			zap.String("error", err),
+		)
+	},
 })
 
 func handlerFunc(fn func(w http.ResponseWriter, r *http.Request)) http.Handler {
