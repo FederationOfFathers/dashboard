@@ -21,6 +21,18 @@ func Init(notifySlackChannel string) error {
 	return nil
 }
 
+func Mind() {
+	go func() {
+		tick := time.Tick(30 * time.Second)
+		for {
+			select {
+			case <-tick:
+				mind()
+			}
+		}
+	}()
+}
+
 func updated() {
 	if s, err := DB.Streams(); err != nil {
 		logger.Error("Error updating streams", zap.Error(err))

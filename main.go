@@ -84,6 +84,7 @@ func main() {
 	bridge.OldEventToolLink = events.OldEventToolLink
 
 	streams.Init("#-fof-streaming")
+	streams.Mind()
 	events.Start()
 	if !noUI {
 		if devPort == 0 {
