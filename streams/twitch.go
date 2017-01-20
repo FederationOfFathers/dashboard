@@ -19,6 +19,18 @@ type twitchStream struct {
 	*twch.Stream
 }
 
+func Twitch(oauth string) error {
+	c, err := twch.NewClient(oauth, nil)
+	twitchClient = c
+	return err
+}
+
+func MustTwitch(oauth string) {
+	if err := Twitch(oauth); err != nil {
+		panic(err)
+	}
+}
+
 func (t twitchStream) startMessage(memberID int) (string, slack.PostMessageParameters, error) {
 	var messageParams = slack.NewPostMessageParameters()
 	var userID string

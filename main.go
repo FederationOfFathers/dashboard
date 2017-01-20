@@ -20,6 +20,7 @@ import (
 	"github.com/uber-go/zap"
 )
 
+var twitchOauth = ""
 var slackAPIKey = "xox...."
 var slackMessagingKey = ""
 var logger = zap.New(zap.NewJSONEncoder())
@@ -52,6 +53,9 @@ func init() {
 	dcfg := cfg.New("cfg-db")
 	dcfg.StringVar(&mysqlURI, "mysql", mysqlURI, "MySQL Connection URI")
 	dcfg.StringVar(&store.DBPath, "path", store.DBPath, "Path to the database file")
+
+	tcfg := cfg.New("cfg-twitch")
+	tcfg.StringVar(&twitchOauth, "oauth", "", "Twitch OAuth key")
 }
 
 func main() {
@@ -84,7 +88,8 @@ func main() {
 	bridge.OldEventToolLink = events.OldEventToolLink
 
 	streams.Init("#-fof-streaming")
-	// streams.Mind()
+	streams.MustTwitch(twitchOauth)
+	streams.Mind()
 	events.Start()
 	if !noUI {
 		if devPort == 0 {
