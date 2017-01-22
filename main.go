@@ -28,6 +28,7 @@ var devPort = 0
 var noUI = false
 var DB *db.DB
 var mysqlURI string
+var streamChannel = "-fof-dashboard"
 
 func init() {
 	scfg := cfg.New("cfg-slack")
@@ -36,6 +37,7 @@ func init() {
 	scfg.StringVar(&bot.CdnPrefix, "cdnPrefix", bot.CdnPrefix, "http url base from which to store saved uploads")
 	scfg.StringVar(&bot.CdnPath, "cdnPath", bot.CdnPath, "Filesystem path to store uploads in")
 	scfg.BoolVar(&bot.StartupNotice, "startupNotice", bot.StartupNotice, "send a start-up notice to slack")
+	scfg.StringVar(&streamChannel, "streamChannel", streamChannel, "where to send streaming notices")
 
 	acfg := cfg.New("cfg-api")
 	acfg.StringVar(&api.ListenOn, "listen", api.ListenOn, "API bind address (env: API_LISTEN)")
@@ -88,8 +90,7 @@ func main() {
 	bridge.SlackCoreDataUpdated = bot.SlackCoreDataUpdated
 	bridge.OldEventToolLink = events.OldEventToolLink
 
-	// streams.Init("#-fof-streaming")
-	streams.Init("-fof-dashboard")
+	streams.Init(streamChannel)
 	streams.MustTwitch(twitchClientID)
 	streams.Mind()
 	events.Start()

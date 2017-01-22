@@ -81,7 +81,6 @@ func (t twitchStream) startMessage(memberID int) (string, slack.PostMessageParam
 
 func mindTwitch() {
 	twlog.Debug("begin minding")
-	tick := time.Tick(time.Second)
 	for _, stream := range Streams {
 		if stream.Twitch == "" {
 			twlog.Debug("not a twitch stream", zap.Int("id", stream.ID), zap.Int("member_id", stream.MemberID))
@@ -89,7 +88,6 @@ func mindTwitch() {
 		}
 		twlog.Debug("minding twitch stream", zap.String("twithc id", stream.Twitch))
 		updateTwitch(stream)
-		<-tick
 	}
 	twlog.Debug("end minding")
 }
@@ -116,6 +114,22 @@ func updateTwitch(s *db.Stream) {
 	}
 
 	if !foundStream {
+		var save bool
+		if s.TwitchStreamID != "" {
+			s.TwitchStreamID = ""
+			save = true
+		}
+		if s.TwitchStop < s.TwitchStart {
+			s.TwitchStop = time.Now().Unix()
+			save = true
+		}
+		if s.TwitchStop < s.TwitchStart {
+			s.TwitchStop = s.TwitchStart + 1
+			save = true
+		}
+		if save {
+			s.Save()
+		}
 		return
 	}
 
@@ -135,9 +149,12 @@ func updateTwitch(s *db.Stream) {
 
 	s.TwitchStreamID = streamID
 	s.TwitchStart = time.Now().Unix()
+	if s.TwitchStop > s.TwitchStart {
+		s.TwitchStop = s.TwitchStart - 1
+	}
 	s.Save()
 	if msg, params, err := stream.startMessage(s.MemberID); err == nil {
-		if err := bridge.PostMessage("@demitriousk", msg, params); err != nil {
+		if err := bridge.PostMessage(channel, msg, params); err != nil {
 			twlog.Error("error posting start message to slack", zap.String("key", s.Twitch), zap.Error(err))
 		}
 	} else {
