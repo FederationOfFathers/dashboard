@@ -17,6 +17,7 @@ var connection *slack.Info
 var connected bool
 var token string
 var logger = zap.New(zap.NewJSONEncoder()).With(zap.String("module", "bot"))
+var StartupNotice = false
 
 // LogLevel sets the logging verbosity for the package
 var LogLevel = zap.InfoLevel
@@ -51,10 +52,12 @@ func SlackConnect(slackToken string) error {
 	} else {
 		logger.Warn("Using default client for fofbot messaging")
 	}
-	if home := os.Getenv("SERVICE_DIR"); home != "" {
-		SendMessage("#-fof-dashboard", "Dev Dashboard starting up...")
-	} else {
-		SendMessage("#-fof-dashboard", "Production Dashboard starting up...")
+	if StartupNotice {
+		if home := os.Getenv("SERVICE_DIR"); home != "" {
+			SendMessage("#-fof-dashboard", "Dev Dashboard starting up...")
+		} else {
+			SendMessage("#-fof-dashboard", "Production Dashboard starting up...")
+		}
 	}
 	return nil
 }
@@ -221,7 +224,7 @@ func mindSlack() error {
 			// Errors
 			case *slack.UnmarshallingErrorEvent:
 				// new and/or unhandled message type
-				continue;
+				continue
 			case *slack.OutgoingErrorEvent:
 				return ev
 			case *slack.AckErrorEvent:
