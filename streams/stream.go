@@ -11,26 +11,15 @@ import (
 
 var Streams = []*db.Stream{}
 var lock sync.Mutex
-var logger = zap.New(zap.NewJSONEncoder()).With(zap.String("module", "streams"))
+var logger = zap.New(zap.NewJSONEncoder(), zap.DebugLevel).With(zap.String("module", "streams"))
 var channel string
 
 var DB *db.DB
 
 func Init(notifySlackChannel string) error {
+	channel = notifySlackChannel
 	updated()
 	return nil
-}
-
-func Mind() {
-	go func() {
-		tick := time.Tick(30 * time.Second)
-		for {
-			select {
-			case <-tick:
-				mind()
-			}
-		}
-	}()
 }
 
 func updated() {
@@ -41,13 +30,20 @@ func updated() {
 	}
 }
 
+func Mind() {
+	go mind()
+}
+
 func mind() {
 	mindYoutube()
 	mindTwitch()
-	twtimer := time.Tick(5 * time.Minute)
+	uptimer := time.Tick(5 * time.Minute)
+	twtimer := time.Tick(30 * time.Second)
 	yttimer := time.Tick(5 * time.Minute)
 	for {
 		select {
+		case <-uptimer:
+			updated()
 		case <-twtimer:
 			mindTwitch()
 		case <-yttimer:
