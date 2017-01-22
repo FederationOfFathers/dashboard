@@ -93,9 +93,12 @@ func main() {
 	bridge.OldEventToolLink = events.OldEventToolLink
 
 	if mindStreams {
+		logger.Info("Minding streams", zap.String("channel", streamChannel), zap.String("twitch_client_id", twitchClientID))
 		streams.Init(streamChannel)
 		streams.MustTwitch(twitchClientID)
 		streams.Mind()
+	} else {
+		logger.Info("Not minding streams")
 	}
 
 	events.Start()
