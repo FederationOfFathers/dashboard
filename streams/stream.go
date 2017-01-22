@@ -37,9 +37,9 @@ func Mind() {
 func mind() {
 	mindYoutube()
 	mindTwitch()
-	uptimer := time.Tick(5 * time.Minute)
-	twtimer := time.Tick(5 * time.Minute)
-	yttimer := time.Tick(5 * time.Minute)
+	uptimer := time.Tick(1 * time.Minute)
+	twtimer := time.Tick(1 * time.Minute)
+	yttimer := time.Tick(1 * time.Minute)
 	for {
 		select {
 		case <-uptimer:
