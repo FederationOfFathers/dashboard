@@ -38,7 +38,7 @@ func mind() {
 	mindYoutube()
 	mindTwitch()
 	uptimer := time.Tick(5 * time.Minute)
-	twtimer := time.Tick(30 * time.Second)
+	twtimer := time.Tick(5 * time.Minute)
 	yttimer := time.Tick(5 * time.Minute)
 	for {
 		select {
