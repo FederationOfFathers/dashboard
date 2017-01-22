@@ -29,6 +29,7 @@ var noUI = false
 var DB *db.DB
 var mysqlURI string
 var streamChannel = "-fof-dashboard"
+var mindStreams bool
 
 func init() {
 	scfg := cfg.New("cfg-slack")
@@ -38,6 +39,7 @@ func init() {
 	scfg.StringVar(&bot.CdnPath, "cdnPath", bot.CdnPath, "Filesystem path to store uploads in")
 	scfg.BoolVar(&bot.StartupNotice, "startupNotice", bot.StartupNotice, "send a start-up notice to slack")
 	scfg.StringVar(&streamChannel, "streamChannel", streamChannel, "where to send streaming notices")
+	scfg.BoolVar(&mindStreams, "mindStreams", mindStreams, "should we mind streaming?")
 
 	acfg := cfg.New("cfg-api")
 	acfg.StringVar(&api.ListenOn, "listen", api.ListenOn, "API bind address (env: API_LISTEN)")
@@ -90,9 +92,12 @@ func main() {
 	bridge.SlackCoreDataUpdated = bot.SlackCoreDataUpdated
 	bridge.OldEventToolLink = events.OldEventToolLink
 
-	streams.Init(streamChannel)
-	streams.MustTwitch(twitchClientID)
-	streams.Mind()
+	if mindStreams {
+		streams.Init(streamChannel)
+		streams.MustTwitch(twitchClientID)
+		streams.Mind()
+	}
+
 	events.Start()
 	if !noUI {
 		if devPort == 0 {
