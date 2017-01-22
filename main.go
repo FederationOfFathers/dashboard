@@ -20,7 +20,7 @@ import (
 	"github.com/uber-go/zap"
 )
 
-var twitchOauth = ""
+var twitchClientID = ""
 var slackAPIKey = "xox...."
 var slackMessagingKey = ""
 var logger = zap.New(zap.NewJSONEncoder())
@@ -35,6 +35,7 @@ func init() {
 	scfg.StringVar(&slackMessagingKey, "messagingKey", slackMessagingKey, "Slack Messaging API Key (env: SLACK_MESSAGINGAPIKEY)")
 	scfg.StringVar(&bot.CdnPrefix, "cdnPrefix", bot.CdnPrefix, "http url base from which to store saved uploads")
 	scfg.StringVar(&bot.CdnPath, "cdnPath", bot.CdnPath, "Filesystem path to store uploads in")
+	scfg.BoolVar(&bot.StartupNotice, "startupNotice", bot.StartupNotice, "send a start-up notice to slack")
 
 	acfg := cfg.New("cfg-api")
 	acfg.StringVar(&api.ListenOn, "listen", api.ListenOn, "API bind address (env: API_LISTEN)")
@@ -55,7 +56,7 @@ func init() {
 	dcfg.StringVar(&store.DBPath, "path", store.DBPath, "Path to the database file")
 
 	tcfg := cfg.New("cfg-twitch")
-	tcfg.StringVar(&twitchOauth, "oauth", "", "Twitch OAuth key")
+	tcfg.StringVar(&twitchClientID, "clientID", "", "Twitch OAuth key")
 }
 
 func main() {
@@ -87,8 +88,9 @@ func main() {
 	bridge.SlackCoreDataUpdated = bot.SlackCoreDataUpdated
 	bridge.OldEventToolLink = events.OldEventToolLink
 
-	streams.Init("#-fof-streaming")
-	streams.MustTwitch(twitchOauth)
+	// streams.Init("#-fof-streaming")
+	streams.Init("-fof-dashboard")
+	streams.MustTwitch(twitchClientID)
 	streams.Mind()
 	events.Start()
 	if !noUI {
