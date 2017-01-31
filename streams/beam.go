@@ -82,7 +82,8 @@ func (b *Beam) Update() error {
 		return err
 	}
 	b.StartedAt = m.StartedAt
-	if err := json.Unmarshal([]byte(b.StartedAt), &b.StartedTime); err != nil {
+	b.StartedTime, err = time.Parse(time.RFC3339Nano, m.StartedAt)
+	if err != nil {
 		return err
 	}
 	return nil
