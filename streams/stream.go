@@ -40,6 +40,7 @@ func mind() {
 	uptimer := time.Tick(1 * time.Minute)
 	twtimer := time.Tick(1 * time.Minute)
 	yttimer := time.Tick(1 * time.Minute)
+	bptimer := time.Tick(1 * time.Minute)
 	for {
 		select {
 		case <-uptimer:
@@ -48,6 +49,8 @@ func mind() {
 			mindTwitch()
 		case <-yttimer:
 			mindYoutube()
+		case <-bptimer:
+			mindBeam()
 		}
 	}
 }
@@ -71,6 +74,15 @@ func Add(kind, identifier, userID string) error {
 		).Error
 		updated()
 		return err
+	case "beam":
+		err := DB.Exec(
+			"INSERT INTO `streams` (`member_id`,`beam`) VALUES (?,?) ON DUPLICATE KEY UPDATE `beam`=?",
+			member.ID,
+			identifier,
+			identifier,
+		).Error
+		updated()
+		return err
 	case "youtube":
 		err := DB.Exec(
 			"INSERT INTO `streams` (`member_id`,`youtube`) VALUES (?,?) ON DUPLICATE KEY UPDATE `youtube`=?",
@@ -88,6 +100,10 @@ func Remove(memberID int, kind string) error {
 	switch kind {
 	case "twitch":
 		err := DB.Exec("UPDATE `streams` SET `twitch` = '' WHERE `id` = ?", memberID).Error
+		updated()
+		return err
+	case "beam":
+		err := DB.Exec("UPDATE `streams` SET `beam` = '' WHERE `id` = ?", memberID).Error
 		updated()
 		return err
 	case "youtube":
