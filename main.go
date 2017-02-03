@@ -98,6 +98,7 @@ func main() {
 		streams.MustTwitch(twitchClientID)
 		streams.Mind()
 	} else {
+		streams.MindList()
 		logger.Info("Not minding streams")
 	}
 

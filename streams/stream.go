@@ -34,6 +34,16 @@ func Mind() {
 	go mind()
 }
 
+func MindList() {
+	uptimer := time.Tick(1 * time.Minute)
+	for {
+		select {
+		case <-uptimer:
+			updated()
+		}
+	}
+}
+
 func mind() {
 	mindYoutube()
 	mindTwitch()
