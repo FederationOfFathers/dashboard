@@ -92,9 +92,9 @@ func main() {
 	bridge.SlackCoreDataUpdated = bot.SlackCoreDataUpdated
 	bridge.OldEventToolLink = events.OldEventToolLink
 
+	streams.Init(streamChannel)
 	if mindStreams {
 		logger.Info("Minding streams", zap.String("channel", streamChannel), zap.String("twitch_client_id", twitchClientID))
-		streams.Init(streamChannel)
 		streams.MustTwitch(twitchClientID)
 		streams.Mind()
 	} else {
