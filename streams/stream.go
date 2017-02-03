@@ -35,13 +35,15 @@ func Mind() {
 }
 
 func MindList() {
-	uptimer := time.Tick(1 * time.Minute)
-	for {
-		select {
-		case <-uptimer:
-			updated()
+	go func() {
+		uptimer := time.Tick(1 * time.Minute)
+		for {
+			select {
+			case <-uptimer:
+				updated()
+			}
 		}
-	}
+	}()
 }
 
 func mind() {
