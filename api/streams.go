@@ -72,7 +72,7 @@ func init() {
 		},
 	))
 
-	Router.Path("/api/v0/streams").Methods("POST").Handler(jwtHandlerFunc(
+	Router.Path("/api/v0/streams").Methods("POST", "PUT").Handler(jwtHandlerFunc(
 		func(w http.ResponseWriter, r *http.Request) {
 			w.Header().Set("Content-Type", "application/json")
 			kind := r.FormValue("kind")
