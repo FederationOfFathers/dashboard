@@ -1,6 +1,12 @@
 package db
 
-import "time"
+import (
+	"regexp"
+	"strconv"
+	"time"
+)
+
+var cTypeDigit = regexp.MustCompile("^[0-9]+$")
 
 type Member struct {
 	ID      int    `sql:"bigint(20) NOT NULL AUTO_INCREMENT"`
@@ -16,6 +22,20 @@ type Member struct {
 
 func (m *Member) Save() error {
 	return m.db.Save(m).Error
+}
+
+func (d *DB) MemberByAny(some string) (*Member, error) {
+	if cTypeDigit.MatchString(some) {
+		i, err := strconv.Atoi(some)
+		if err != nil {
+			return nil, err
+		}
+		return d.MemberByID(i)
+	}
+	if member, _ := d.MemberBySlackID(some); member != nil {
+		return member, nil
+	}
+	return d.MemberByName(some)
 }
 
 func (d *DB) MemberByID(id int) (*Member, error) {

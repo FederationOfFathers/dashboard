@@ -50,7 +50,7 @@ func init() {
 	Router.Path("/api/v0/streams/{memberID}").Methods("GET").Handler(jwtHandlerFunc(
 		func(w http.ResponseWriter, r *http.Request) {
 			w.Header().Set("Content-Type", "application/json")
-			member, err := DB.MemberBySlackID(mux.Vars(r)["memberID"])
+			member, err := DB.MemberByAny(mux.Vars(r)["memberID"])
 			if err == gorm.ErrRecordNotFound {
 				http.NotFound(w, r)
 				return
