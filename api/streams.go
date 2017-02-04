@@ -74,10 +74,29 @@ func init() {
 
 	Router.Path("/api/v0/streams").Methods("POST", "PUT").Handler(jwtHandlerFunc(
 		func(w http.ResponseWriter, r *http.Request) {
+			defer r.Body.Close()
+			var kind string
+			var id string
+			var userID string
+			if strings.Contains(strings.ToLower(r.Header.Get("Content-Type")), "json") {
+				var form = struct {
+					Kind   string `json:"kind"`
+					ID     string `json:"id"`
+					UserID string `json:"userID"`
+				}{}
+				err := json.NewDecoder(r.Body).Decode(&form)
+				if err != nil {
+					logger.Error("Error decoding JSON", zap.String("uri", r.URL.RawPath), zap.Error(err))
+				}
+				kind = form.Kind
+				id = form.ID
+				userID = form.UserID
+			} else {
+				kind = r.FormValue("kind")
+				id = r.FormValue("id")
+				userID = r.FormValue("userID")
+			}
 			w.Header().Set("Content-Type", "application/json")
-			kind := r.FormValue("kind")
-			id := r.FormValue("id")
-			userID := r.FormValue("userID")
 			if userID == "" {
 				userID = getSlackUserID(r)
 			}
