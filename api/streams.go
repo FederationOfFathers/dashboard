@@ -72,7 +72,7 @@ func init() {
 		},
 	))
 
-	Router.Path("/api/v0/streams").Methods("POST", "PUT").Handler(jwtHandlerFunc(
+	streamSetHandler := jwtHandlerFunc(
 		func(w http.ResponseWriter, r *http.Request) {
 			defer r.Body.Close()
 			var kind string
@@ -102,9 +102,17 @@ func init() {
 			}
 			err := streams.Add(kind, id, userID)
 			if err != nil {
-				logger.Error("Error adding stream", zap.String("uri", r.URL.RawPath), zap.String("kind", kind), zap.String("id", id), zap.String("userID", userID), zap.Error(err))
+				logger.Error(
+					"Error adding stream",
+					zap.String("uri", r.URL.RawPath),
+					zap.String("kind", kind),
+					zap.String("id", id),
+					zap.String("userID", userID),
+					zap.Error(err))
 				w.WriteHeader(http.StatusInternalServerError)
 			}
 		},
-	))
+	)
+	Router.Path("/api/v0/streams").Methods("PUT").Handler(streamSetHandler)
+	Router.Path("/api/v0/streams").Methods("POST").Handler(streamSetHandler)
 }

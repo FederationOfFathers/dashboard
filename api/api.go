@@ -12,7 +12,7 @@ import (
 
 var ListenOn = ":8866"
 var Router = mux.NewRouter()
-var logger = zap.New(zap.NewJSONEncoder()).With(zap.String("module", "api"))
+var logger = zap.New(zap.NewJSONEncoder(zap.RFC3339Formatter("time"))).With(zap.String("module", "api"))
 
 var URLHostName = ""
 var URLPrefix = ""
