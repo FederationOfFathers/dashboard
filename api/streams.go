@@ -83,7 +83,7 @@ func init() {
 			}
 			err := streams.Add(kind, id, userID)
 			if err != nil {
-				logger.Error("Error adding stream", zap.String("uri", r.URL.RawPath), zap.Error(err))
+				logger.Error("Error adding stream", zap.String("uri", r.URL.RawPath), zap.String("kind", kind), zap.String("id", id), zap.String("userID", userID), zap.Error(err))
 				w.WriteHeader(http.StatusInternalServerError)
 			}
 		},
