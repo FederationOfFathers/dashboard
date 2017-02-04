@@ -48,7 +48,7 @@ func handlerFunc(fn func(w http.ResponseWriter, r *http.Request)) http.Handler {
 		AllowedOrigins:   []string{"http://localhost:*", "http://127.0.0.*"},
 		AllowCredentials: true,
 		AllowedMethods:   []string{"GET", "POST", "PUT", "OPTIONS", "DELETE"},
-		AllowedHeaders:   []string{"Content-Type"},
+		AllowedHeaders:   []string{"*"},
 	})
 	return gziphandler.GzipHandler(
 		c.Handler(
@@ -69,7 +69,7 @@ func jwtHandlerFunc(fn func(w http.ResponseWriter, r *http.Request)) http.Handle
 		AllowedOrigins:   []string{"http://localhost:*", "http://127.0.0.*"},
 		AllowCredentials: true,
 		AllowedMethods:   []string{"GET", "POST", "PUT", "OPTIONS", "DELETE"},
-		AllowedHeaders:   []string{"Content-Type"},
+		AllowedHeaders:   []string{"*"},
 	})
 	return gziphandler.GzipHandler(
 		c.Handler(
