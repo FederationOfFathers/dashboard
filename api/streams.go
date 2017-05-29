@@ -60,11 +60,7 @@ func init() {
 				return
 			}
 			stream, err := DB.StreamByMemberID(member.ID)
-			if err == gorm.ErrRecordNotFound {
-				http.NotFound(w, r)
-				return
-			}
-			if err != nil {
+			if err != nil && err != gorm.ErrRecordNotFound {
 				w.WriteHeader(http.StatusInternalServerError)
 				return
 			}
