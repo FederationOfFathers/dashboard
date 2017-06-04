@@ -100,6 +100,16 @@ func init() {
 			if userID == "" {
 				userID = getSlackUserID(r)
 			}
+
+			sid := getSlackUserID(r)
+			admin, _ := bridge.Data.Slack.IsUserIDAdmin(sid)
+			if sid != userID {
+				if !admin {
+					http.NotFound(w, r)
+					return
+				}
+			}
+
 			err := streams.Add(kind, id, userID)
 			if err != nil {
 				logger.Error(
