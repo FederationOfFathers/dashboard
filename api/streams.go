@@ -102,15 +102,13 @@ func init() {
 			}
 
 			sid := getSlackUserID(r)
-			admin, _ := bridge.Data.Slack.IsUserIDAdmin(id)
-
-			logger.Info(
-				"streamSetHandler",
-				zap.String("kind", kind),
-				zap.String("id", id),
-				zap.String("userID", userID),
-				zap.String("sid", sid),
-				zap.Bool("admin", admin))
+			admin, _ := bridge.Data.Slack.IsUserIDAdmin(sid)
+			if sid != userID {
+				if !admin {
+					http.NotFound(w, r)
+					return
+				}
+			}
 
 			err := streams.Add(kind, id, userID)
 			if err != nil {
