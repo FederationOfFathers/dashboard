@@ -88,42 +88,36 @@ func init() {
 			func(w http.ResponseWriter, r *http.Request) {
 				w.Header().Set("Content-Type", "application/json")
 				defer r.Body.Close()
+				member, err := DB.MemberBySlackID(mux.Vars(r)["memberID"])
+				if err != nil {
+					http.NotFound(w, r)
+					return
+				}
 				if !strings.Contains(strings.ToLower(r.Header.Get("Content-Type")), "json") {
 					http.NotFound(w, r)
 					return
 				}
-				var form = &struct {
-					SlackID string            `json:"userID"`
-					Meta    map[string]string `json:"meta"`
-				}{}
+				var form = map[string]string{}
 
-				err := json.NewDecoder(r.Body).Decode(&form)
+				err = json.NewDecoder(r.Body).Decode(&form)
 				if err != nil {
 					logger.Error("Error decoding JSON", zap.String("uri", r.URL.RawPath), zap.Error(err))
 				}
 
 				sid := getSlackUserID(r)
-				if form.SlackID == "" {
-					form.SlackID = sid
+				admin, _ := bridge.Data.Slack.IsUserIDAdmin(sid)
+				if sid != member.Slack && !admin {
+					http.NotFound(w, r)
+					return
 				}
 
-				admin, _ := bridge.Data.Slack.IsUserIDAdmin(sid)
-				if sid != form.SlackID && !admin {
-					http.NotFound(w, r)
-					return
-				}
-				user, err := DB.MemberBySlackID(form.SlackID)
-				if err != nil {
-					http.NotFound(w, r)
-					return
-				}
-				var unimportant interface{}
-				for k, v := range form.Meta {
+				var unimportant *db.MemberMeta
+				for k, v := range form {
 					DB.Where(db.MemberMeta{
-						MemberID: user.ID,
+						MemberID: member.ID,
 						MetaKey:  k,
 					}).Assign(db.MemberMeta{
-						MemberID: user.ID,
+						MemberID: member.ID,
 						MetaKey:  k,
 						MetaJSON: []byte(v),
 					}).FirstOrCreate(&unimportant)
