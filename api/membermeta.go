@@ -27,7 +27,7 @@ func init() {
 				http.NotFound(w, r)
 				return
 			}
-			DB.Delete(db.MemberMeta{}, "member_ID = ? AND meta_key = ?", id, mux.Vars(r)["key"])
+			DB.Delete(db.MemberMeta{}, "member_ID = ? AND meta_key = ?", member.ID, mux.Vars(r)["key"])
 		},
 	))
 
@@ -75,7 +75,7 @@ func init() {
 			}
 			var out = map[string]string{}
 			var entries []*db.MemberMeta
-			DB.Where("member_ID = ? AND member_key = ?", member.ID, mux.Vars(r)["key"]).Find(&entries)
+			DB.Where("member_ID = ? AND meta_key = ?", member.ID, mux.Vars(r)["key"]).Find(&entries)
 			for _, entry := range entries {
 				out[entry.MetaKey] = string(entry.MetaJSON)
 			}
@@ -111,16 +111,21 @@ func init() {
 					return
 				}
 
-				var unimportant *db.MemberMeta
 				for k, v := range form {
-					DB.Where(db.MemberMeta{
-						MemberID: member.ID,
-						MetaKey:  k,
-					}).Assign(db.MemberMeta{
-						MemberID: member.ID,
-						MetaKey:  k,
-						MetaJSON: []byte(v),
-					}).FirstOrCreate(&unimportant)
+					err := DB.Exec(
+						"INSERT INTO member_meta (`member_id`,`meta_key`,`meta_json`,`created_at`,`updated_at`) "+
+							"VALUES(?,?,?,NOW(),NOW()) "+
+							"ON DUPLICATE KEY UPDATE "+
+							"`meta_json` = ?, `updated_at` = NOW(), `deleted_at` = NULL",
+						member.ID,
+						k,
+						[]byte(v),
+						[]byte(v),
+					).Error
+					if err != nil {
+						w.WriteHeader(http.StatusInternalServerError)
+						return
+					}
 				}
 			},
 		),
