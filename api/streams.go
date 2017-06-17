@@ -12,6 +12,16 @@ import (
 	"github.com/uber-go/zap"
 )
 
+type StreamForm struct {
+	UserID string  `json:"userID"`
+	Streams []StreamData `json:"streams"`
+}
+
+type StreamData struct {
+	Kind string `json:"kind"`
+	ID string `json:"id"`
+}
+
 func init() {
 	Router.Path("/api/v0/streams").Methods("GET").Handler(jwtHandlerFunc(
 		func(w http.ResponseWriter, r *http.Request) {
@@ -75,26 +85,24 @@ func init() {
 	streamSetHandler := jwtHandlerFunc(
 		func(w http.ResponseWriter, r *http.Request) {
 			defer r.Body.Close()
-			var kind string
-			var id string
 			var userID string
+			var streamData = []StreamData{}
 			if strings.Contains(strings.ToLower(r.Header.Get("Content-Type")), "json") {
-				var form = struct {
-					Kind   string `json:"kind"`
-					ID     string `json:"id"`
-					UserID string `json:"userID"`
-				}{}
+				var form = StreamForm{}
+
 				err := json.NewDecoder(r.Body).Decode(&form)
 				if err != nil {
 					logger.Error("Error decoding JSON", zap.String("uri", r.URL.RawPath), zap.Error(err))
 				}
-				kind = form.Kind
-				id = form.ID
 				userID = form.UserID
+				streamData = form.Streams
 			} else {
-				kind = r.FormValue("kind")
-				id = r.FormValue("id")
 				userID = r.FormValue("userID")
+				var streamDatum = StreamData{}
+				streamDatum.Kind = r.FormValue("kind")
+				streamDatum.ID = r.FormValue("id")
+
+				streamData = append(streamData, streamDatum)
 			}
 			w.Header().Set("Content-Type", "application/json")
 			if userID == "" {
@@ -110,16 +118,18 @@ func init() {
 				}
 			}
 
-			err := streams.Add(kind, id, userID)
-			if err != nil {
-				logger.Error(
-					"Error adding stream",
-					zap.String("uri", r.URL.RawPath),
-					zap.String("kind", kind),
-					zap.String("id", id),
-					zap.String("userID", userID),
-					zap.Error(err))
-				w.WriteHeader(http.StatusInternalServerError)
+			for _, streamDatum := range streamData {
+				err := streams.Add(streamDatum.Kind, streamDatum.ID, userID)
+				if err != nil {
+					logger.Error(
+						"Error adding stream",
+						zap.String("uri", r.URL.RawPath),
+						zap.String("kind", streamDatum.Kind),
+						zap.String("id", streamDatum.ID),
+						zap.String("userID", userID),
+						zap.Error(err))
+					w.WriteHeader(http.StatusInternalServerError)
+				}
 			}
 		},
 	)
