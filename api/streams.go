@@ -51,7 +51,11 @@ func init() {
 		func(w http.ResponseWriter, r *http.Request) {
 			w.Header().Set("Content-Type", "application/json")
 			member, err := DB.MemberByAny(mux.Vars(r)["memberID"])
-			if err == gorm.ErrRecordNotFound {
+			if err != nil {
+				w.WriteHeader(http.StatusInternalServerError)
+				return
+			}
+			if err == gorm.ErrRecordNotFound || member == nil {
 				http.NotFound(w, r)
 				return
 			}
@@ -60,11 +64,7 @@ func init() {
 				return
 			}
 			stream, err := DB.StreamByMemberID(member.ID)
-			if err == gorm.ErrRecordNotFound {
-				http.NotFound(w, r)
-				return
-			}
-			if err != nil {
+			if err != nil && err != gorm.ErrRecordNotFound {
 				w.WriteHeader(http.StatusInternalServerError)
 				return
 			}
