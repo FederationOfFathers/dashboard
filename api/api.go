@@ -1,7 +1,6 @@
 package api
 
 import (
-	"fmt"
 	"net/http"
 	"os"
 
@@ -15,14 +14,17 @@ var Router = mux.NewRouter()
 var logger = zap.New(zap.NewJSONEncoder(zap.RFC3339Formatter("time"))).With(zap.String("module", "api"))
 
 var URLHostName = ""
-var URLPrefix = ""
 var URLScheme = "https"
 var DB *db.DB
+var UseHttps = false
 
-func myURL() string {
-	return fmt.Sprintf("%s://%s:%s%s", URLScheme, URLHostName, ListenOn, URLPrefix)
+func InitURLScheme() {
+	if UseHttps {
+		URLScheme = "https"
+	} else {
+		URLScheme = "http"
+	}
 }
-
 func Run() {
 	if URLHostName == "" {
 		URLHostName, _ = os.Hostname()
