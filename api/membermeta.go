@@ -113,16 +113,7 @@ func init() {
 				}
 
 				for k, v := range form {
-					err := DB.Exec(
-						"INSERT INTO member_meta (`member_id`,`meta_key`,`meta_json`,`created_at`,`updated_at`) "+
-							"VALUES(?,?,?,NOW(),NOW()) "+
-							"ON DUPLICATE KEY UPDATE "+
-							"`meta_json` = ?, `updated_at` = NOW(), `deleted_at` = NULL",
-						member.ID,
-						k,
-						[]byte(v),
-						[]byte(v),
-					).Error
+					err := InsertMemberMeta(member.ID, k,v)
 					if err != nil {
 						w.WriteHeader(http.StatusInternalServerError)
 						return
@@ -131,4 +122,22 @@ func init() {
 			},
 		),
 	)
+}
+
+func InsertMemberMeta(memberId int, key string, value string) interface{} {
+	return DB.Exec(
+		"INSERT INTO member_meta (`member_id`,`meta_key`,`meta_json`,`created_at`,`updated_at`) "+
+			"VALUES(?,?,?,NOW(),NOW()) "+
+			"ON DUPLICATE KEY UPDATE "+
+			"`meta_json` = ?, `updated_at` = NOW(), `deleted_at` = NULL",
+		memberId,
+		key,
+		[]byte(value),
+		[]byte(value),
+	).Error
+}
+
+func InsertMemberMetaBySlackId(slackId string, key string, value string) interface{} {
+	member, _ := DB.MemberBySlackID(slackId)
+	return InsertMemberMeta(member.ID, key, value)
 }
