@@ -28,6 +28,7 @@ func init() {
 				return
 			}
 			DB.Delete(db.MemberMeta{}, "member_ID = ? AND meta_key = ?", member.ID, mux.Vars(r)["key"])
+			w.Write([]byte("{}"))
 		},
 	))
 
