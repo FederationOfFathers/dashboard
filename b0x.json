@@ -19,5 +19,11 @@
         ],
         "base": "../dashboard-ui/scripts",
         "prefix": "scripts"
+    }, {
+        "files": [
+            "../dashboard-ui/static/"
+        ],
+        "base": "../dashboard-ui/static",
+        "prefix": "static"
     }]
 }
