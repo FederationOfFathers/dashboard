@@ -74,13 +74,8 @@ func init() {
 				w.WriteHeader(http.StatusInternalServerError)
 				return
 			}
-			var out = map[string]string{}
-			var entries []*db.MemberMeta
-			DB.Where("member_ID = ? AND meta_key = ?", member.ID, mux.Vars(r)["key"]).Find(&entries)
-			for _, entry := range entries {
-				out[entry.MetaKey] = string(entry.MetaJSON)
-			}
-			json.NewEncoder(w).Encode(out)
+
+			json.NewEncoder(w).Encode( getMemberMeta(member.ID, mux.Vars(r)["key"] ))
 		},
 	))
 
@@ -140,4 +135,22 @@ func InsertMemberMeta(memberId int, key string, value string) interface{} {
 func InsertMemberMetaBySlackId(slackId string, key string, value string) interface{} {
 	member, _ := DB.MemberBySlackID(slackId)
 	return InsertMemberMeta(member.ID, key, value)
+}
+
+func getMemberMeta(memberId int, key string) map[string]string {
+	var out = map[string]string{}
+	entry := getMemberMetaEntry(memberId, key)
+	out[entry.MetaKey] = string(entry.MetaJSON)
+	return out
+}
+
+func getMemberMetaEntry(memberId int, key string) db.MemberMeta {
+	var entry db.MemberMeta
+	DB.Where("member_ID = ? AND meta_key = ?", memberId, key).Order("created_at desc").FirstOrInit(&entry)
+	return entry
+}
+
+func getMemberMetaEntryBySlackID(slackId string, key string) db.MemberMeta {
+	member, _ := DB.MemberBySlackID(slackId)
+	return getMemberMetaEntry( member.ID, key)
 }

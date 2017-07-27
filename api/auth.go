@@ -37,6 +37,7 @@ func init() {
 				Path:     "/",
 			})
 			http.Redirect(w, r, "/", http.StatusTemporaryRedirect)
+			// TODO reset state cookies if any
 			return
 		}
 		w.WriteHeader(http.StatusForbidden)
