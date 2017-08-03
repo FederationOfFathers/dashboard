@@ -15,11 +15,11 @@ import (
 var bplog = zap.New(zap.NewJSONEncoder()).With(zap.String("module", "streams"), zap.String("service", "beam"))
 
 type beamChannelResponse struct {
-	Name string `json:"name"`
+	Name  string `json:"name"`
 	Token string `json:"token"`
-	User struct {
+	User  struct {
 		AvatarUrl string `json:"avatarUrl"`
-		Channel struct {
+		Channel   struct {
 			ID     int64 `json:"id"`
 			Online bool  `json:"online"`
 		} `json:"channel"`
@@ -37,11 +37,11 @@ type Beam struct {
 	BeamUsername string
 	ChannelID    int64
 	Online       bool
-	Title		 string
+	Title        string
 	Game         string
 	StartedAt    string
 	StartedTime  time.Time
-	AvatarUrl	 string
+	AvatarUrl    string
 }
 
 func (b *Beam) Update() error {

@@ -143,7 +143,7 @@ func updateTwitch(s *db.Stream) {
 		return
 	}
 
-	var isRecent bool = time.Now().Unix() - s.TwitchStart <= 1800
+	var isRecent bool = time.Now().Unix()-s.TwitchStart <= 1800
 	streamID := fmt.Sprintf("%d", stream.ID)
 	postStreamMessage := true
 	if streamID == s.TwitchStreamID && s.TwitchGame == stream.Game {

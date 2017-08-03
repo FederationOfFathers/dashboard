@@ -7,7 +7,7 @@ type Stream struct {
 	MemberID       int       `gorm:"type:bigint;not null;default:0;unique_index"`
 	Twitch         string    `gorm:"type:varchar(191);not null;default:'';index"`
 	TwitchStreamID string    `gorm:"type:varchar(191);not null;default:''"`
-	TwitchGame	   string    `form:"type:varchar(191);not null;default:''"`
+	TwitchGame     string    `form:"type:varchar(191);not null;default:''"`
 	TwitchStart    int64     `gorm:"type:bigint;not null;default:0"`
 	TwitchStop     int64     `gorm:"type:bigint;not null;default:0"`
 	Youtube        string    `gorm:"type:varchar(191);not null;default:'';index"`
