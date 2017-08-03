@@ -14,6 +14,7 @@ type Stream struct {
 	YoutubeStart   int64     `gorm:"type:bigint;not null;default:0"`
 	YoutubeStop    int64     `gorm:"type:bigint;not null;default:0"`
 	Beam           string    `gorm:"type:varchar(191);not null;default:'';index"`
+	BeamGame       string    `form:"type:varchar(191);not null;default:''"`
 	BeamStart      int64     `gorm:"type:bigint;not null;default:0"`
 	BeamStop       int64     `gorm:"type:bigint;not null;default:0"`
 	CreatedAt      time.Time `sql:"DEFAULT:current_timestamp"`
