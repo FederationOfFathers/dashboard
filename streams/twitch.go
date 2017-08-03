@@ -60,7 +60,7 @@ func (t twitchStream) startMessage(memberID int) (string, slack.PostMessageParam
 	messageParams.Parse = "full"
 	messageParams.LinkNames = 1
 	messageParams.UnfurlMedia = true
-	messageParams.UnfurlLinks = true
+	messageParams.UnfurlLinks = false
 	messageParams.EscapeText = false
 	messageParams.Attachments = append(messageParams.Attachments, slack.Attachment{
 		Color:      "#6441A4",
@@ -73,9 +73,10 @@ func (t twitchStream) startMessage(memberID int) (string, slack.PostMessageParam
 		Ts:         streamTime.Unix(),
 	})
 	message := fmt.Sprintf(
-		"*@%s* is streaming *%s* on Twitch",
+		"*@%s* is streaming *%s* at %s",
 		user.Name,
 		playing,
+		t.Channel.URL,
 	)
 	return message, messageParams, err
 }
