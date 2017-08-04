@@ -13,14 +13,10 @@ import (
 )
 
 var bplog = zap.New(zap.NewJSONEncoder()).With(zap.String("module", "streams"), zap.String("service", "beam"))
-var beamEnabled bool = false
 
 type beamChannelResponse struct {
-	Name  string `json:"name"`
-	Token string `json:"token"`
-	User  struct {
-		AvatarUrl string `json:"avatarUrl"`
-		Channel   struct {
+	User struct {
+		Channel struct {
 			ID     int64 `json:"id"`
 			Online bool  `json:"online"`
 		} `json:"channel"`
@@ -38,11 +34,9 @@ type Beam struct {
 	BeamUsername string
 	ChannelID    int64
 	Online       bool
-	Title        string
 	Game         string
 	StartedAt    string
 	StartedTime  time.Time
-	AvatarUrl    string
 }
 
 func (b *Beam) Update() error {
@@ -50,7 +44,7 @@ func (b *Beam) Update() error {
 	b.Game = ""
 	b.StartedAt = ""
 	var c = new(beamChannelResponse)
-	var cURL = fmt.Sprintf("https://mixer.com/api/v1/channels/%s", b.BeamUsername)
+	var cURL = fmt.Sprintf("https://beam.pro/api/v1/channels/%s", b.BeamUsername)
 	bplog.Info("fetching channel", zap.String("url", cURL))
 	chResponse, err := http.Get(cURL)
 	if err != nil {
@@ -69,11 +63,8 @@ func (b *Beam) Update() error {
 	b.Online = c.User.Channel.Online
 	b.ChannelID = c.User.Channel.ID
 	b.Game = c.Type.Name
-	b.Title = c.Name
-	b.BeamUsername = c.Token
-	b.AvatarUrl = c.User.AvatarUrl
 	var m = new(beamManifestResponse)
-	var mURL = fmt.Sprintf("https://mixer.com/api/v1/channels/%d/manifest.light2", b.ChannelID)
+	var mURL = fmt.Sprintf("https://beam.pro/api/v1/channels/%d/manifest.light2", b.ChannelID)
 	bplog.Info("fetching manifest", zap.String("url", mURL))
 	rsp, err := http.Get(mURL)
 	if err != nil {
@@ -116,25 +107,15 @@ func (b *Beam) startMessage(memberID int) (string, slack.PostMessageParameters, 
 		playing = "something"
 	}
 
-	var chURL = fmt.Sprintf("https://mixer.com/%s", b.BeamUsername)
+	var chURL = fmt.Sprintf("https://beam.pro/%s", b.BeamUsername)
 	messageParams.AsUser = true
 	messageParams.Parse = "full"
 	messageParams.LinkNames = 1
 	messageParams.UnfurlMedia = true
-	messageParams.UnfurlLinks = false
+	messageParams.UnfurlLinks = true
 	messageParams.EscapeText = false
-	messageParams.Attachments = append(messageParams.Attachments, slack.Attachment{
-		Fallback:   fmt.Sprintf("Watch %s play %s at %s", user.Profile.RealNameNormalized, playing, chURL),
-		Color:      "#1FBAED",
-		AuthorIcon: "https://mixer.com/_latest/assets/favicons/favicon-16x16.png",
-		AuthorName: "Mixer",
-		Title:      fmt.Sprintf("%s playing %s", b.BeamUsername, b.Game),
-		TitleLink:  chURL,
-		ThumbURL:   b.AvatarUrl,
-		Text:     b.Title,
-	})
 	message := fmt.Sprintf(
-		"*@%s* is streaming *%s* at %s",
+		"*@%s* has begun streaming *%s* at %s",
 		user.Name,
 		playing,
 		chURL,
@@ -143,16 +124,13 @@ func (b *Beam) startMessage(memberID int) (string, slack.PostMessageParameters, 
 }
 
 func mindBeam() {
-	if !beamEnabled {
-		return
-	}
 	bplog.Debug("begin minding")
 	for _, stream := range Streams {
 		if stream.Beam == "" {
-			bplog.Debug("not a mixer.com stream", zap.Int("id", stream.ID), zap.Int("member_id", stream.MemberID))
+			bplog.Debug("not a beam.pro stream", zap.Int("id", stream.ID), zap.Int("member_id", stream.MemberID))
 			continue
 		}
-		bplog.Debug("minding mixer.com stream", zap.String("beam id", stream.Beam))
+		bplog.Debug("minding beam.pro stream", zap.String("beam id", stream.Beam))
 		updateBeam(stream)
 	}
 	bplog.Debug("end minding")
@@ -185,13 +163,12 @@ func updateBeam(s *db.Stream) {
 	}
 
 	var startedAt = beam.StartedTime.Unix()
-	if startedAt <= s.BeamStart && s.BeamGame == beam.Game {
+	if startedAt <= s.BeamStart {
 		// Continuation of known stream
 		return
 	}
 
 	s.BeamStart = startedAt
-	s.BeamGame = beam.Game
 	if s.BeamStop > s.BeamStart {
 		s.BeamStop = s.BeamStart - 1
 	}
