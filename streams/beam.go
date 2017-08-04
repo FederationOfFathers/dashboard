@@ -123,14 +123,13 @@ func (b *Beam) startMessage(memberID int) (string, slack.PostMessageParameters, 
 	messageParams.UnfurlLinks = false
 	messageParams.EscapeText = false
 	messageParams.Attachments = append(messageParams.Attachments, slack.Attachment{
-		Fallback:   fmt.Sprintf("Watch %s play %s at %s", user.Profile.RealNameNormalized, playing, chURL),
 		Color:      "#1FBAED",
-		AuthorIcon: "https://mixer.com/_latest/assets/favicons/favicon-16x16.png",
-		AuthorName: "Mixer",
-		Title:      fmt.Sprintf("%s playing %s", b.BeamUsername, b.Game),
+		Fallback:   fmt.Sprintf("Watch %s play %s at %s", user.Profile.RealNameNormalized, playing, chURL),
+		Title:      b.Title,
 		TitleLink:  chURL,
-		ThumbURL:   b.AvatarUrl,
-		Text:     b.Title,
+		FooterIcon: b.AvatarUrl,
+		Footer:     fmt.Sprintf("%s playing %s", b.BeamUsername, b.Game),
+		Ts:         b.StartedTime.Unix(),
 	})
 	message := fmt.Sprintf(
 		"*@%s* is streaming *%s* at %s",

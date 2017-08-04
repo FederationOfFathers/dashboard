@@ -51,6 +51,11 @@ func (t twitchStream) startMessage(memberID int) (string, slack.PostMessageParam
 		playing = "something"
 	}
 
+	streamTime, err := time.Parse("2006-01-02T15:04:05Z", t.Channel.UpdatedAt)
+	if err != nil {
+		streamTime = time.Now()
+	}
+
 	messageParams.AsUser = true
 	messageParams.Parse = "full"
 	messageParams.LinkNames = 1
@@ -58,14 +63,14 @@ func (t twitchStream) startMessage(memberID int) (string, slack.PostMessageParam
 	messageParams.UnfurlLinks = false
 	messageParams.EscapeText = false
 	messageParams.Attachments = append(messageParams.Attachments, slack.Attachment{
-		Fallback:   fmt.Sprintf("Watch %s play %s at %s", user.Profile.RealNameNormalized, playing, t.Channel.URL),
 		Color:      "#6441A4",
-		AuthorIcon: "https://slack-imgs.com/?c=1&o1=wi16.he16.si.ip&url=https%3A%2F%2Fwww.twitch.tv%2Ffavicon.ico",
-		AuthorName: "Twitch",
-		Title:      fmt.Sprintf("%s playing %s", t.Channel.DisplayName, t.Channel.Game),
+		Fallback:   fmt.Sprintf("Watch %s play %s at %s", user.Profile.RealNameNormalized, playing, t.Channel.URL),
+		Title:      t.Channel.Status,
 		TitleLink:  t.Channel.URL,
-		ThumbURL:   t.Channel.Logo,
-		Text:     t.Channel.Status,
+		FooterIcon: t.Channel.Logo,
+		Footer:     fmt.Sprintf("%s playing %s", t.Channel.DisplayName, t.Channel.Game),
+		ImageURL:   t.Preview["medium"],
+		Ts:         streamTime.Unix(),
 	})
 	message := fmt.Sprintf(
 		"*@%s* is streaming *%s* at %s",
