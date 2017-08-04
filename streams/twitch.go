@@ -51,29 +51,27 @@ func (t twitchStream) startMessage(memberID int) (string, slack.PostMessageParam
 		playing = "something"
 	}
 
-	streamTime, err := time.Parse("2006-01-02T15:04:05Z", t.Channel.UpdatedAt)
-	if err != nil {
-		streamTime = time.Now()
+	var preview = ""
+	for _, kind := range []string{"large", "medium", "small"} {
+		if v, ok := t.Preview[kind]; ok {
+			preview = v
+			break
+		}
 	}
 
 	messageParams.AsUser = true
 	messageParams.Parse = "full"
 	messageParams.LinkNames = 1
 	messageParams.UnfurlMedia = true
-	messageParams.UnfurlLinks = false
+	messageParams.UnfurlLinks = true
 	messageParams.EscapeText = false
 	messageParams.Attachments = append(messageParams.Attachments, slack.Attachment{
-		Color:      "#6441A4",
-		Fallback:   fmt.Sprintf("Watch %s play %s at %s", user.Profile.RealNameNormalized, playing, t.Channel.URL),
-		Title:      t.Channel.Status,
-		TitleLink:  t.Channel.URL,
-		FooterIcon: t.Channel.Logo,
-		Footer:     fmt.Sprintf("%s playing %s", t.Channel.DisplayName, t.Channel.Game),
-		ImageURL:   t.Preview["medium"],
-		Ts:         streamTime.Unix(),
+		Title:     fmt.Sprintf("Watch %s play %s", user.Profile.RealNameNormalized, playing),
+		TitleLink: t.Channel.URL,
+		ThumbURL:  preview,
 	})
 	message := fmt.Sprintf(
-		"*@%s* is streaming *%s* at %s",
+		"*@%s* has begun streaming *%s* at %s",
 		user.Name,
 		playing,
 		t.Channel.URL,
@@ -143,15 +141,10 @@ func updateTwitch(s *db.Stream) {
 		return
 	}
 
-	var isRecent bool = time.Now().Unix()-s.TwitchStart <= 1800
 	streamID := fmt.Sprintf("%d", stream.ID)
-	postStreamMessage := true
-	if streamID == s.TwitchStreamID && s.TwitchGame == stream.Game {
+	if streamID == s.TwitchStreamID {
 		twlog.Debug("still streaming...", zap.String("key", s.Twitch))
 		return
-	} else if isRecent && s.TwitchGame == stream.Game {
-		twlog.Debug("new ID, but still streaming...", zap.String("key", s.Twitch))
-		postStreamMessage = false
 	}
 
 	s.TwitchStreamID = streamID
@@ -159,11 +152,7 @@ func updateTwitch(s *db.Stream) {
 	if s.TwitchStop > s.TwitchStart {
 		s.TwitchStop = s.TwitchStart - 1
 	}
-	s.TwitchGame = stream.Channel.Game
 	s.Save()
-	if !postStreamMessage {
-		return
-	}
 	if msg, params, err := stream.startMessage(s.MemberID); err == nil {
 		if err := bridge.PostMessage(channel, msg, params); err != nil {
 			twlog.Error("error posting start message to slack", zap.String("key", s.Twitch), zap.Error(err))
