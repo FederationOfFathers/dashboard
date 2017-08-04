@@ -13,7 +13,6 @@ import (
 )
 
 var bplog = zap.New(zap.NewJSONEncoder()).With(zap.String("module", "streams"), zap.String("service", "beam"))
-var beamEnabled bool = false
 
 type beamChannelResponse struct {
 	Name  string `json:"name"`
@@ -143,9 +142,6 @@ func (b *Beam) startMessage(memberID int) (string, slack.PostMessageParameters, 
 }
 
 func mindBeam() {
-	if !beamEnabled {
-		return
-	}
 	bplog.Debug("begin minding")
 	for _, stream := range Streams {
 		if stream.Beam == "" {
