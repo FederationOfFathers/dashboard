@@ -130,7 +130,7 @@ func (b *Beam) startMessage(memberID int) (string, slack.PostMessageParameters, 
 		Title:      fmt.Sprintf("%s playing %s", b.BeamUsername, b.Game),
 		TitleLink:  chURL,
 		ThumbURL:   b.AvatarUrl,
-		Text:     b.Title,
+		Text:       b.Title,
 	})
 	message := fmt.Sprintf(
 		"*@%s* is streaming *%s* at %s",
@@ -175,7 +175,10 @@ func updateBeam(s *db.Stream) {
 			save = true
 		}
 		if save {
-			s.Save()
+			stopError := s.Save()
+			if stopError != nil {
+				bplog.Error(fmt.Sprintf("Unable to save stop data: %v", stopError))
+			}
 		}
 		return
 	}
@@ -191,7 +194,11 @@ func updateBeam(s *db.Stream) {
 	if s.BeamStop > s.BeamStart {
 		s.BeamStop = s.BeamStart - 1
 	}
-	s.Save()
+	updateErr := s.Save()
+	if updateErr != nil {
+		bplog.Error(fmt.Sprintf("Unable to save stream data: %v", updateErr))
+		return
+	}
 
 	if msg, params, err := beam.startMessage(s.MemberID); err == nil {
 		if err := bridge.PostMessage(channel, msg, params); err != nil {
