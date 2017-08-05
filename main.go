@@ -48,6 +48,8 @@ func init() {
 	acfg.StringVar(&api.AuthSecret, "secret", api.AuthSecret, "Authentication secret for use in generating login tokens")
 	acfg.StringVar(&api.JWTSecret, "hmac", api.JWTSecret, "Authentication secret used for JWT tokens")
 	acfg.IntVar(&devPort, "ui-dev", devPort, "proxy /application/ to localhost:devport/")
+	acfg.StringVar(&api.BattleNetKey, "battletnet_key", api.BattleNetKey, "Battle.net Application Key")
+	acfg.StringVar(&api.BattleNetSecret, "battletnet_secret", api.BattleNetSecret, "Battle.net Application Secret")
 
 	ecfg := cfg.New("cfg-events")
 	ecfg.StringVar(&events.SaveFile, "savefile", events.SaveFile, "path to the file in which events should be persisted")
