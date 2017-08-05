@@ -123,13 +123,14 @@ func (b *Beam) startMessage(memberID int) (string, slack.PostMessageParameters, 
 	messageParams.UnfurlLinks = false
 	messageParams.EscapeText = false
 	messageParams.Attachments = append(messageParams.Attachments, slack.Attachment{
-		Color:      "#1FBAED",
 		Fallback:   fmt.Sprintf("Watch %s play %s at %s", user.Profile.RealNameNormalized, playing, chURL),
-		Title:      b.Title,
+		Color:      "#1FBAED",
+		AuthorIcon: "https://mixer.com/_latest/assets/favicons/favicon-16x16.png",
+		AuthorName: "Mixer",
+		Title:      fmt.Sprintf("%s playing %s", b.BeamUsername, b.Game),
 		TitleLink:  chURL,
-		FooterIcon: b.AvatarUrl,
-		Footer:     fmt.Sprintf("%s playing %s", b.BeamUsername, b.Game),
-		Ts:         b.StartedTime.Unix(),
+		ThumbURL:   b.AvatarUrl,
+		Text:       b.Title,
 	})
 	message := fmt.Sprintf(
 		"*@%s* is streaming *%s* at %s",
@@ -174,7 +175,10 @@ func updateBeam(s *db.Stream) {
 			save = true
 		}
 		if save {
-			s.Save()
+			stopError := s.Save()
+			if stopError != nil {
+				bplog.Error(fmt.Sprintf("Unable to save stop data: %v", stopError))
+			}
 		}
 		return
 	}
@@ -190,7 +194,11 @@ func updateBeam(s *db.Stream) {
 	if s.BeamStop > s.BeamStart {
 		s.BeamStop = s.BeamStart - 1
 	}
-	s.Save()
+	updateErr := s.Save()
+	if updateErr != nil {
+		bplog.Error(fmt.Sprintf("Unable to save stream data: %v", updateErr))
+		return
+	}
 
 	if msg, params, err := beam.startMessage(s.MemberID); err == nil {
 		if err := bridge.PostMessage(channel, msg, params); err != nil {

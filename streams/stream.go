@@ -49,6 +49,7 @@ func MindList() {
 func mind() {
 	mindYoutube()
 	mindTwitch()
+	mindBeam()
 	uptimer := time.Tick(1 * time.Minute)
 	twtimer := time.Tick(1 * time.Minute)
 	yttimer := time.Tick(1 * time.Minute)
