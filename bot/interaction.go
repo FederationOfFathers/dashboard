@@ -14,15 +14,18 @@ type MessageHandler func(*slack.MessageEvent) bool
 
 var ChannelMessageHandlers = []MessageHandler{
 	handleJoinPartEvents,
+	handleTimeoutMessages,
 	handleChannelUpload,
 	handleFortune,
 	handleSaySomething,
+	handleTimeout,
 }
 var GroupMessageHandlers = []MessageHandler{
 	handleJoinPartEvents,
 	handleChannelUpload,
 	handleFortune,
 	handleSaySomething,
+	handleTimeout,
 }
 var DirectMessageHandlers = []MessageHandler{
 	handleLogin,
@@ -30,6 +33,7 @@ var DirectMessageHandlers = []MessageHandler{
 	handleFortune,
 	handleSaySomething,
 	handleDevLogin,
+	handleTimeout,
 }
 
 func handleChannelMessage(m *slack.MessageEvent) bool {
