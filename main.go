@@ -43,8 +43,6 @@ func init() {
 
 	acfg := cfg.New("cfg-api")
 	acfg.StringVar(&api.ListenOn, "listen", api.ListenOn, "API bind address (env: API_LISTEN)")
-	acfg.StringVar(&api.URLHostName, "urlHostname", api.URLHostName, "API Hostname")
-	acfg.BoolVar(&api.UseHttps, "useHttps", api.UseHttps, "Use HTTPS for api")
 	acfg.StringVar(&api.AuthSecret, "secret", api.AuthSecret, "Authentication secret for use in generating login tokens")
 	acfg.StringVar(&api.JWTSecret, "hmac", api.JWTSecret, "Authentication secret used for JWT tokens")
 	acfg.IntVar(&devPort, "ui-dev", devPort, "proxy /application/ to localhost:devport/")
@@ -75,18 +73,11 @@ func main() {
 	api.DB = DB
 
 	bot.AuthTokenGenerator = api.GenerateValidAuthTokens
-
-	api.InitURLScheme()
-
-	if api.URLHostName == "" {
-		if home := os.Getenv("SERVICE_DIR"); home == "" {
-			api.URLHostName = "dashboard.fofgaming.com"
-		} else {
-			api.URLHostName = "dev.dashboard.fofgaming.com"
-		}
+	if home := os.Getenv("SERVICE_DIR"); home == "" {
+		bot.LoginLink = fmt.Sprintf("http://dashboard.fofgaming.com/")
+	} else {
+		bot.LoginLink = fmt.Sprintf("http://fofgaming.com%s/", api.ListenOn)
 	}
-
-	bot.LoginLink = fmt.Sprintf("%s://%s%s/", api.URLScheme, api.URLHostName, api.ListenOn)
 
 	if slackMessagingKey != "" {
 		bot.MessagingKey = slackMessagingKey
