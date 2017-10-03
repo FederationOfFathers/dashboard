@@ -14,7 +14,7 @@ func OldEventToolAuthorization(username string) string {
 	mac := hmac.New(sha256.New, []byte(OldEventLinkHMAC))
 	t := time.Now()
 	fmt.Fprintln(mac, username, t.Unix())
-	return fmt.Sprintf("%s:%s", username, fmt.Sprintf("%x", mac.Sum(nil)))
+	return fmt.Sprintf("%s:%d:%s", username, t.Unix(), fmt.Sprintf("%x", mac.Sum(nil)))
 }
 
 func OldEventToolLink(username string) string {
