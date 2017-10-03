@@ -100,6 +100,7 @@ func main() {
 
 	bridge.SlackCoreDataUpdated = bot.SlackCoreDataUpdated
 	bridge.OldEventToolLink = events.OldEventToolLink
+	bridge.OldEventToolAuthorization = events.OldEventToolAuthorization
 
 	streams.Init(streamChannel)
 	if mindStreams {

@@ -29,6 +29,7 @@ var Data = &struct {
 	Slack  SlackData
 	Events EventData
 }{}
+var OldEventToolAuthorization func(string) string
 var OldEventToolLink func(string) string
 var SlackCoreDataUpdated *sync.Cond
 var SendMessage func(string, string)
