@@ -22,7 +22,7 @@ func OldEventToolLink(username string) string {
 	t := time.Now()
 	fmt.Fprintln(mac, username, t.Unix())
 	return fmt.Sprintf(
-		"https://team.fofgaming.com/rest/login?username=%s&t=%d&signature=%s",
+		"//team.fofgaming.com/rest/login?username=%s&t=%d&signature=%s",
 		url.QueryEscape(username),
 		t.Unix(),
 		fmt.Sprintf("%x", mac.Sum(nil)),
