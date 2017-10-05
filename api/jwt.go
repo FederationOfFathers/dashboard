@@ -45,7 +45,7 @@ var jMW = jwtmiddleware.New(jwtmiddleware.Options{
 
 func handlerFunc(fn func(w http.ResponseWriter, r *http.Request)) http.Handler {
 	c := cors.New(cors.Options{
-		AllowedOrigins:   []string{"http://localhost:*", "http://127.0.0.*", "http://*.fofgaming.com/"},
+		AllowedOrigins:   []string{"http://localhost:*", "http://127.0.0.*", "http://dev.fofgaming.com"},
 		AllowCredentials: true,
 		AllowedMethods:   []string{"GET", "POST", "PUT", "OPTIONS", "DELETE"},
 		AllowedHeaders:   []string{"*"},
@@ -66,7 +66,7 @@ func handlerFunc(fn func(w http.ResponseWriter, r *http.Request)) http.Handler {
 
 func jwtHandlerFunc(fn func(w http.ResponseWriter, r *http.Request)) http.Handler {
 	c := cors.New(cors.Options{
-		AllowedOrigins:   []string{"http://localhost:*", "http://127.0.0.*", "http://*.fofgaming.com/"},
+		AllowedOrigins:   []string{"http://localhost:*", "http://127.0.0.*", "http://dev.fofgaming.com"},
 		AllowCredentials: true,
 		AllowedMethods:   []string{"GET", "POST", "PUT", "OPTIONS", "DELETE"},
 		AllowedHeaders:   []string{"*"},
