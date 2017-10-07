@@ -5,6 +5,7 @@ import (
 	"crypto/sha256"
 	"fmt"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/FederationOfFathers/dashboard/bridge"
@@ -36,7 +37,12 @@ func init() {
 				HttpOnly: false,
 				Path:     "/",
 			})
-			http.Redirect(w, r, "/", http.StatusTemporaryRedirect)
+			switch strings.ToLower(r.URL.Host) {
+			case "dashboard.fofgaming.com":
+				http.Redirect(w, r, "https://ui.fofgaming.com/", http.StatusTemporaryRedirect)
+			default:
+				http.Redirect(w, r, "https://dev.fofgaming.com/", http.StatusTemporaryRedirect)
+			}
 			return
 		}
 		w.WriteHeader(http.StatusForbidden)
