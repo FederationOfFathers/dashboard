@@ -10,18 +10,57 @@ import (
 )
 
 func init() {
+
+	Router.Path("/api/v1/channels").Methods("GET").Handler(jwtHandlerFunc(
+		func(w http.ResponseWriter, r *http.Request) {
+
+			w.Header().Set("Content-Type", "application/json")
+
+			var response = struct {
+				Users    []string                          `json:"users"`
+				Channels map[string]map[string]interface{} `json:"channels"`
+			}{
+				[]string{},
+				map[string]map[string]interface{}{},
+			}
+
+			var lookup = map[string]int{}
+			for _, user := range bridge.Data.Slack.GetUsers() {
+				lookup[user.ID] = len(response.Users)
+				response.Users = append(response.Users, user.Name)
+			}
+
+			for _, channel := range bridge.Data.Slack.GetChannels() {
+				members := []int{}
+				for _, memberID := range channel.Members {
+					members = append(members, lookup[memberID])
+				}
+				response.Channels[channel.ID] = map[string]interface{}{
+					"id":      channel.ID,
+					"name":    channel.Name,
+					"topic":   channel.Topic.Value,
+					"purpose": channel.Purpose.Value,
+					"members": members,
+					"visible": "true",
+				}
+			}
+			json.NewEncoder(w).Encode(response)
+		},
+	))
+
 	Router.Path("/api/v0/channels").Methods("GET").Handler(jwtHandlerFunc(
 		func(w http.ResponseWriter, r *http.Request) {
+			var lookup = map[string]string{}
+			for _, user := range bridge.Data.Slack.GetUsers() {
+				lookup[user.ID] = user.Name
+			}
+
 			w.Header().Set("Content-Type", "application/json")
 			var channels = map[string]map[string]interface{}{}
 			for _, channel := range bridge.Data.Slack.GetChannels() {
 				members := []string{}
 				for _, memberID := range channel.Members {
-					user, err := bridge.Data.Slack.User(memberID)
-					if err != nil {
-						continue
-					}
-					members = append(members, user.Name)
+					members = append(members, lookup[memberID])
 				}
 				channels[channel.ID] = map[string]interface{}{
 					"id":      channel.ID,
