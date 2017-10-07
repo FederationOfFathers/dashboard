@@ -66,8 +66,8 @@ func (s *SlackData) User(id string) (*slack.User, error) {
 }
 
 func (s *SlackData) ChannelByName(channel string) (*slack.Channel, error) {
-	s.Lock()
-	defer s.Unlock()
+	s.RLock()
+	defer s.RUnlock()
 	for c := range s.Channels {
 		if s.Channels[c].Name == channel {
 			return &s.Channels[c], nil
