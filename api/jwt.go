@@ -3,12 +3,8 @@ package api
 import (
 	"net/http"
 
-	"github.com/NYTimes/gziphandler"
 	"github.com/auth0/go-jwt-middleware"
-	"github.com/codegangsta/negroni"
 	"github.com/dgrijalva/jwt-go"
-	"github.com/rabeesh/negroni-nocache"
-	"github.com/rs/cors"
 	"github.com/uber-go/zap"
 )
 
@@ -44,55 +40,9 @@ var jMW = jwtmiddleware.New(jwtmiddleware.Options{
 })
 
 func handlerFunc(fn func(w http.ResponseWriter, r *http.Request)) http.Handler {
-	c := cors.New(cors.Options{
-		AllowedOrigins: []string{
-			"http://localhost:*",
-			"http://127.0.0.*",
-			"http://*.fofgaming.com",
-			"https://*.fofgaming.com",
-		},
-		AllowCredentials: true,
-		AllowedMethods:   []string{"GET", "POST", "PUT", "OPTIONS", "DELETE"},
-		AllowedHeaders:   []string{"*"},
-	})
-	return gziphandler.GzipHandler(
-		c.Handler(
-			negroni.New(
-				&httpLogger{},
-				negroni.NewRecovery(),
-				nocache.New(true),
-				negroni.Wrap(
-					http.HandlerFunc(fn),
-				),
-			),
-		),
-	)
+	return http.HandlerFunc(fn)
 }
 
 func jwtHandlerFunc(fn func(w http.ResponseWriter, r *http.Request)) http.Handler {
-	c := cors.New(cors.Options{
-		AllowedOrigins: []string{
-			"http://localhost:*",
-			"http://127.0.0.*",
-			"http://*.fofgaming.com",
-			"https://*.fofgaming.com",
-		},
-		AllowCredentials: true,
-		AllowedMethods:   []string{"GET", "POST", "PUT", "OPTIONS", "DELETE"},
-		AllowedHeaders:   []string{"*"},
-	})
-	return gziphandler.GzipHandler(
-		c.Handler(
-			jMW.Handler(
-				negroni.New(
-					&httpLogger{},
-					negroni.NewRecovery(),
-					nocache.New(true),
-					negroni.Wrap(
-						http.HandlerFunc(fn),
-					),
-				),
-			),
-		),
-	)
+	return jMW.Handler(http.HandlerFunc(fn))
 }
