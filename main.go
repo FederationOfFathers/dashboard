@@ -3,9 +3,6 @@ package main
 
 import (
 	"fmt"
-	"net/http"
-	"net/http/httputil"
-	"net/url"
 	"os"
 
 	"github.com/FederationOfFathers/dashboard/api"
@@ -15,7 +12,6 @@ import (
 	"github.com/FederationOfFathers/dashboard/events"
 	"github.com/FederationOfFathers/dashboard/store"
 	"github.com/FederationOfFathers/dashboard/streams"
-	"github.com/FederationOfFathers/dashboard/ui"
 	"github.com/apokalyptik/cfg"
 	"github.com/uber-go/zap"
 )
@@ -25,7 +21,6 @@ var slackAPIKey = "xox...."
 var slackMessagingKey = ""
 var logger = zap.New(zap.NewJSONEncoder())
 var devPort = 0
-var noUI = false
 var DB *db.DB
 var mysqlURI string
 var streamChannel = "-fof-dashboard"
@@ -43,19 +38,13 @@ func init() {
 
 	acfg := cfg.New("cfg-api")
 	acfg.StringVar(&api.ListenOn, "listen", api.ListenOn, "API bind address (env: API_LISTEN)")
-	acfg.StringVar(&api.URLHostName, "urlHostname", api.URLHostName, "API Hostname")
-	acfg.BoolVar(&api.UseHttps, "useHttps", api.UseHttps, "Use HTTPS for api")
 	acfg.StringVar(&api.AuthSecret, "secret", api.AuthSecret, "Authentication secret for use in generating login tokens")
 	acfg.StringVar(&api.JWTSecret, "hmac", api.JWTSecret, "Authentication secret used for JWT tokens")
-	acfg.IntVar(&devPort, "ui-dev", devPort, "proxy /application/ to localhost:devport/")
 
 	ecfg := cfg.New("cfg-events")
 	ecfg.StringVar(&events.SaveFile, "savefile", events.SaveFile, "path to the file in which events should be persisted")
 	ecfg.DurationVar(&events.SaveInterval, "saveinterval", events.SaveInterval, "how often to check and see if we need to save data")
 	ecfg.StringVar(&events.OldEventLinkHMAC, "hmackey", events.OldEventLinkHMAC, "hmac key for generating team tool login links")
-
-	ucfg := cfg.New("cfg-ui")
-	ucfg.BoolVar(&noUI, "disable-serving", noUI, "Disable Serving of the UI")
 
 	dcfg := cfg.New("cfg-db")
 	dcfg.StringVar(&mysqlURI, "mysql", mysqlURI, "MySQL Connection URI")
@@ -75,18 +64,11 @@ func main() {
 	api.DB = DB
 
 	bot.AuthTokenGenerator = api.GenerateValidAuthTokens
-
-	api.InitURLScheme()
-
-	if api.URLHostName == "" {
-		if home := os.Getenv("SERVICE_DIR"); home == "" {
-			api.URLHostName = "dashboard.fofgaming.com"
-		} else {
-			api.URLHostName = "dev.dashboard.fofgaming.com"
-		}
+	if home := os.Getenv("SERVICE_DIR"); home == "" {
+		bot.LoginLink = fmt.Sprintf("http://dashboard.fofgaming.com/")
+	} else {
+		bot.LoginLink = fmt.Sprintf("http://fofgaming.com%s/", api.ListenOn)
 	}
-
-	bot.LoginLink = fmt.Sprintf("%s://%s%s/", api.URLScheme, api.URLHostName, api.ListenOn)
 
 	if slackMessagingKey != "" {
 		bot.MessagingKey = slackMessagingKey
@@ -113,17 +95,5 @@ func main() {
 	}
 
 	events.Start()
-	if !noUI {
-		if devPort == 0 {
-			api.Router.PathPrefix("/").Handler(http.FileServer(ui.HTTP))
-		} else {
-			rpURL, err := url.Parse(fmt.Sprintf("http://127.0.0.1:%d/", devPort))
-			if err != nil {
-				panic(err)
-			}
-			rp := httputil.NewSingleHostReverseProxy(rpURL)
-			api.Router.PathPrefix("/").Handler(rp)
-		}
-	}
 	api.Run()
 }

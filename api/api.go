@@ -15,24 +15,11 @@ var ListenOn = ":8866"
 var Router = mux.NewRouter()
 var logger = zap.New(zap.NewJSONEncoder(zap.RFC3339Formatter("time"))).With(zap.String("module", "api"))
 
-var URLHostName = ""
-var URLScheme = "https"
 var DB *db.DB
-var UseHttps = false
 
 var allowedOrigins = regexp.MustCompile(`^https?://((localhost|127\.0\.0\.1)(:[0-9]+)?|([^.]*\.)?fofgaming.com)$`)
 
-func InitURLScheme() {
-	if UseHttps {
-		URLScheme = "https"
-	} else {
-		URLScheme = "http"
-	}
-}
 func Run() {
-	if URLHostName == "" {
-		URLHostName, _ = os.Hostname()
-	}
 	logger.Fatal(
 		"error starting API http server",
 		zap.String("listenOn", ListenOn),

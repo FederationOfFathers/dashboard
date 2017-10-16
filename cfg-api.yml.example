@@ -1,4 +1,2 @@
 ---
-useHttps: false
-urlHostname: "localhost"
 listen: :8866
