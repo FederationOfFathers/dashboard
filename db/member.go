@@ -63,7 +63,9 @@ func (d *DB) MemberBySlackID(id string) (*Member, error) {
 func (d *DB) MembersActive(since time.Time) ([]*Member, error) {
 	m := []*Member{}
 	err := d.DB.Where("seen >= ?", since.Unix()).Find(&m).Error
-	i.db = d
+	for _, i := range m {
+		i.db = d
+	}
 	return m, err
 }
 
