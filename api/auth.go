@@ -10,7 +10,7 @@ import (
 	"github.com/FederationOfFathers/dashboard/bridge"
 	"github.com/dgrijalva/jwt-go"
 	"github.com/gorilla/context"
-	"github.com/uber-go/zap"
+	"go.uber.org/zap"
 )
 
 // AuthSecret is the secret used when generating mini auth tokens

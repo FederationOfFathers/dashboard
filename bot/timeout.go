@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/nlopes/slack"
-	"github.com/uber-go/zap"
+	"go.uber.org/zap"
 )
 
 type Timeouts struct {

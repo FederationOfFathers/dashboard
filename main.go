@@ -13,13 +13,13 @@ import (
 	"github.com/FederationOfFathers/dashboard/store"
 	"github.com/FederationOfFathers/dashboard/streams"
 	"github.com/apokalyptik/cfg"
-	"github.com/uber-go/zap"
+	"go.uber.org/zap"
 )
 
 var twitchClientID = ""
 var slackAPIKey = "xox...."
 var slackMessagingKey = ""
-var logger = zap.New(zap.NewJSONEncoder())
+var logger = zap.NewExample().Sugar()
 var devPort = 0
 var DB *db.DB
 var mysqlURI string

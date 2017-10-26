@@ -6,12 +6,12 @@ import (
 	"time"
 
 	"github.com/FederationOfFathers/dashboard/db"
-	"github.com/uber-go/zap"
+	"go.uber.org/zap"
 )
 
 var Streams = []*db.Stream{}
 var lock sync.Mutex
-var logger = zap.New(zap.NewJSONEncoder()).With(zap.String("module", "streams"))
+var logger = zap.NewExample().With(zap.String("module", "streams")).Sugar()
 var channel string
 
 var DB *db.DB

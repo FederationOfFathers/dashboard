@@ -8,7 +8,7 @@ import (
 
 	"github.com/FederationOfFathers/dashboard/bridge"
 	"github.com/nlopes/slack"
-	"github.com/uber-go/zap"
+	"go.uber.org/zap"
 )
 
 var api *slack.Client
@@ -16,7 +16,7 @@ var rtm *slack.RTM
 var connection *slack.Info
 var connected bool
 var token string
-var logger = zap.New(zap.NewJSONEncoder()).With(zap.String("module", "bot"))
+var logger = zap.NewExample().With(zap.String("module", "bot"))
 var StartupNotice = false
 
 // LogLevel sets the logging verbosity for the package

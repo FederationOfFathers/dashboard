@@ -9,7 +9,7 @@ import (
 	"github.com/FederationOfFathers/dashboard/db"
 	"github.com/gorilla/mux"
 	"github.com/jinzhu/gorm"
-	"github.com/uber-go/zap"
+	"go.uber.org/zap"
 )
 
 func init() {

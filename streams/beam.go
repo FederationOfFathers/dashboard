@@ -9,10 +9,10 @@ import (
 	"github.com/FederationOfFathers/dashboard/bridge"
 	"github.com/FederationOfFathers/dashboard/db"
 	"github.com/nlopes/slack"
-	"github.com/uber-go/zap"
+	"go.uber.org/zap"
 )
 
-var bplog = zap.New(zap.NewJSONEncoder()).With(zap.String("module", "streams"), zap.String("service", "beam"))
+var bplog = zap.NewExample().With(zap.String("module", "streams"), zap.String("service", "beam"))
 
 type beamChannelResponse struct {
 	Name  string `json:"name"`
