@@ -4,7 +4,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/uber-go/zap"
+	"go.uber.org/zap"
 )
 
 type responseWriter struct {

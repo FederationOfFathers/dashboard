@@ -8,10 +8,10 @@ import (
 	"time"
 
 	"github.com/FederationOfFathers/dashboard/bridge"
-	"github.com/uber-go/zap"
+	"go.uber.org/zap"
 )
 
-var logger = zap.New(zap.NewJSONEncoder()).With(zap.String("module", "event"))
+var logger = zap.NewExample().With(zap.String("module", "event"))
 var Data = &Events{}
 var SaveFile = "events.json"
 var SaveInterval = time.Minute

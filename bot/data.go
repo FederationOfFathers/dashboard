@@ -7,7 +7,7 @@ import (
 
 	"github.com/FederationOfFathers/dashboard/store"
 	"github.com/nlopes/slack"
-	"github.com/uber-go/zap"
+	"go.uber.org/zap"
 )
 
 var SlackCoreDataUpdated = sync.NewCond(new(sync.Mutex))

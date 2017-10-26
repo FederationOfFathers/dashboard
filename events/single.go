@@ -10,7 +10,7 @@ import (
 
 	"github.com/dineshappavoo/basex"
 	"github.com/nlopes/slack"
-	"github.com/uber-go/zap"
+	"go.uber.org/zap"
 )
 
 type Event struct {

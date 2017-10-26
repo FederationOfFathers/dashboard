@@ -8,12 +8,12 @@ import (
 	"github.com/FederationOfFathers/dashboard/db"
 	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
-	"github.com/uber-go/zap"
+	"go.uber.org/zap"
 )
 
 var ListenOn = ":8866"
 var Router = mux.NewRouter()
-var logger = zap.New(zap.NewJSONEncoder(zap.RFC3339Formatter("time"))).With(zap.String("module", "api"))
+var logger = zap.NewExample().With(zap.String("module", "api")).Sugar()
 
 var DB *db.DB
 

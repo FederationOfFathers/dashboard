@@ -11,7 +11,7 @@ import (
 	"time"
 
 	"github.com/nlopes/slack"
-	"github.com/uber-go/zap"
+	"go.uber.org/zap"
 )
 
 var isImage = regexp.MustCompile("\\.(jpe?g|gif|png)$")

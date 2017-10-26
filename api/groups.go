@@ -10,7 +10,7 @@ import (
 	"github.com/FederationOfFathers/dashboard/store"
 	"github.com/gorilla/mux"
 	"github.com/nlopes/slack"
-	"github.com/uber-go/zap"
+	"go.uber.org/zap"
 	stow "gopkg.in/djherbis/stow.v2"
 )
 

@@ -8,10 +8,10 @@ import (
 	"github.com/FederationOfFathers/dashboard/db"
 	twitch "github.com/knspriggs/go-twitch"
 	"github.com/nlopes/slack"
-	"github.com/uber-go/zap"
+	"go.uber.org/zap"
 )
 
-var twlog = zap.New(zap.NewJSONEncoder()).With(zap.String("module", "streams"), zap.String("service", "twitch"))
+var twlog = zap.NewExample().With(zap.String("module", "streams"), zap.String("service", "twitch"))
 var TwitchOAuthKey string
 
 var twitchClient *twitch.Session
@@ -65,7 +65,7 @@ func (t twitchStream) startMessage(memberID int) (string, slack.PostMessageParam
 		Title:      fmt.Sprintf("%s playing %s", t.Channel.DisplayName, t.Channel.Game),
 		TitleLink:  t.Channel.URL,
 		ThumbURL:   t.Channel.Logo,
-		Text:     t.Channel.Status,
+		Text:       t.Channel.Status,
 	})
 	message := fmt.Sprintf(
 		"*@%s* is streaming *%s* at %s",
@@ -131,7 +131,6 @@ func updateTwitch(s *db.Stream) {
 	}
 
 	stream := twitchStream(res.Streams[0])
-	twlog.Debug("", zap.Object("stream", stream))
 
 	if stream.ID == 0 {
 		twlog.Error("Invalid stream ID", zap.String("key", s.Twitch))
