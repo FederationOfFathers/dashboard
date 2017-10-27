@@ -35,6 +35,8 @@ func fileBytes(f *slack.File) ([]byte, error) {
 	buf, _ := httputil.DumpRequest(req, true)
 	logger.Info("Debugging File Request", zap.ByteString("request", buf))
 	rsp, err := http.DefaultClient.Do(req)
+	bufRsp, _ := httputil.DumpResponse(rsp, false)
+	logger.Info("Debugging File Response", zap.ByteString("response", bufRsp))
 	if err != nil {
 		return nil, err
 	}
