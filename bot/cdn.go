@@ -19,7 +19,64 @@ var isImage = regexp.MustCompile("\\.(jpe?g|gif|png)$")
 var CdnPath = ""
 var CdnPrefix = ""
 
-func fileBytes(f *slack.File) ([]byte, error) {
+func fileBytesQuietly(f *slack.File) ([]byte, error) {
+	req, _ := http.NewRequest(
+		"GET",
+		f.URLPrivate,
+		nil)
+	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", token))
+	rsp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer rsp.Body.Close()
+	if rsp.StatusCode != 200 {
+		buf, _ := httputil.DumpRequest(req, true)
+		bufRsp, _ := httputil.DumpResponse(rsp, false)
+		logger.Info("Debugging File Request",
+			zap.String("method", "old"),
+			zap.ByteString("request", buf),
+			zap.ByteString("response", bufRsp),
+		)
+		return nil, fmt.Errorf(rsp.Status)
+	}
+	if strings.Contains(rsp.Header.Get("Content-Type"), "text/html") {
+		buf, _ := httputil.DumpRequest(req, true)
+		bufRsp, _ := httputil.DumpResponse(rsp, false)
+		logger.Info("Debugging File Request",
+			zap.String("method", "old"),
+			zap.ByteString("request", buf),
+			zap.ByteString("response", bufRsp),
+		)
+		return nil, fmt.Errorf("Expected non html content type, got %s", rsp.Header.Get("Content-Type"))
+	}
+	return ioutil.ReadAll(rsp.Body)
+}
+
+func fileBytesNoisy(f *slack.File) ([]byte, error) {
+	for i := 0; i < 5; i++ {
+		if _, _, _, err := rtm.ShareFilePublicURL(f.ID); err == nil {
+			break
+		} else {
+			if i < 4 {
+				sleepfor := time.Millisecond * time.Duration(((i+1)*(i+1))*100)
+				logger.Error(
+					"Error making file public",
+					zap.Error(err),
+					zap.String("filename", f.Name),
+					zap.String("fileid", f.ID),
+					zap.Duration("sleepfor", sleepfor))
+			} else {
+				logger.Error(
+					"Error making file public: %s/%s: %s",
+					zap.Error(err),
+					zap.String("filename", f.Name),
+					zap.String("fileid", f.ID))
+				return nil, fmt.Errorf("Error making file public: %s/%s: %s", f.ID, f.Name, err.Error())
+			}
+		}
+
+	}
 	var pubSecret string
 	pubParts := strings.Split(f.PermalinkPublic, "-")
 	pubSecret = pubParts[len(pubParts)-1]
@@ -50,35 +107,26 @@ func fileBytes(f *slack.File) ([]byte, error) {
 	return ioutil.ReadAll(rsp.Body)
 }
 
+func fileBytes(f *slack.File) ([]byte, error) {
+	for i := 0; i < 5; i++ {
+		if buf, err := fileBytesQuietly(f); err == nil {
+			return buf, err
+		}
+		if i < 4 {
+			sleepfor := time.Millisecond * time.Duration(((i+1)*(i+1))*100)
+			time.Sleep(sleepfor)
+		}
+
+	}
+	return fileBytesNoisy(f)
+}
+
 func handleChannelUpload(m *slack.MessageEvent) bool {
 	if CdnPath == "" || CdnPrefix == "" {
 		return false
 	}
 	if !m.Msg.Upload {
 		return false
-	}
-	for i := 0; i < 5; i++ {
-		if _, _, _, err := rtm.ShareFilePublicURL(m.Msg.File.ID); err != nil {
-			break
-		} else {
-			if i < 4 {
-				sleepfor := time.Millisecond * time.Duration(((i+1)*(i+1))*100)
-				logger.Error(
-					"Error making file public",
-					zap.Error(err),
-					zap.String("filename", m.File.Name),
-					zap.String("fileid", m.File.ID),
-					zap.Duration("sleepfor", sleepfor))
-			} else {
-				logger.Error(
-					"Error making file public: %s/%s: %s",
-					zap.Error(err),
-					zap.String("filename", m.File.Name),
-					zap.String("fileid", m.File.ID))
-				return false
-			}
-		}
-
 	}
 	logger.Info("File upload detected", zap.String("username", m.Username), zap.String("filename", m.File.Name))
 	if buf, err := fileBytes(m.Msg.File); err != nil {
