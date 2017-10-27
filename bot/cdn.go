@@ -44,6 +44,9 @@ func fileBytes(f *slack.File) ([]byte, error) {
 	if rsp.StatusCode != 200 {
 		return nil, fmt.Errorf(rsp.Status)
 	}
+	if strings.Contains(rsp.Header.Get("Content-Type"), "text/html") {
+		return nil, fmt.Errorf("Expected non html content type, got %s", rsp.Header.Get("Content-Type"))
+	}
 	return ioutil.ReadAll(rsp.Body)
 }
 
