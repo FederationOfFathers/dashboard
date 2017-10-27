@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"net/http/httputil"
 	"net/url"
 	"os"
 	"regexp"
@@ -19,8 +20,20 @@ var CdnPath = ""
 var CdnPrefix = ""
 
 func fileBytes(f *slack.File) ([]byte, error) {
-	req, _ := http.NewRequest("GET", f.URLPrivate, nil)
+	var pubSecret string
+	pubParts := strings.Split(f.PermalinkPublic, "-")
+	pubSecret = pubParts[len(pubParts)-1]
+	req, _ := http.NewRequest(
+		"GET",
+		fmt.Sprintf(
+			"%s?pub_secret=%s",
+			f.URLPrivate,
+			pubSecret,
+		),
+		nil)
 	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", token))
+	buf, _ := httputil.DumpRequest(req, true)
+	logger.Info("Debugging File Request", zap.ByteString("request", buf))
 	rsp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return nil, err
@@ -38,6 +51,29 @@ func handleChannelUpload(m *slack.MessageEvent) bool {
 	}
 	if !m.Msg.Upload {
 		return false
+	}
+	for i := 0; i < 5; i++ {
+		if _, _, _, err := rtm.ShareFilePublicURL(m.Msg.File.ID); err != nil {
+			break
+		} else {
+			if i < 4 {
+				sleepfor := time.Millisecond * time.Duration(((i+1)*(i+1))*100)
+				logger.Error(
+					"Error making file public",
+					zap.Error(err),
+					zap.String("filename", m.File.Name),
+					zap.String("fileid", m.File.ID),
+					zap.Duration("sleepfor", sleepfor))
+			} else {
+				logger.Error(
+					"Error making file public: %s/%s: %s",
+					zap.Error(err),
+					zap.String("filename", m.File.Name),
+					zap.String("fileid", m.File.ID))
+				return false
+			}
+		}
+
 	}
 	logger.Info("File upload detected", zap.String("username", m.Username), zap.String("filename", m.File.Name))
 	if buf, err := fileBytes(m.Msg.File); err != nil {
