@@ -39,8 +39,8 @@ func init() {
 					Players int    `json:"players"`
 				}
 				err := rows.Scan(&row.Name, &row.Players)
-				logger.Error("Error scanning", zap.String("uri", r.URL.RawPath), zap.Error(err))
 				if err != nil {
+					logger.Error("Error scanning", zap.String("uri", r.URL.RawPath), zap.Error(err))
 					continue
 				}
 				rval = append(rval, row)
