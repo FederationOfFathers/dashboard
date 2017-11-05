@@ -47,7 +47,14 @@ func init() {
 					visible = "false"
 				}
 				if visible == "false" {
-					if !admin {
+					var isMember = false
+					for _, memberID := range group.Members {
+						if memberID == id {
+							isMember = true
+							break
+						}
+					}
+					if !admin && !isMember {
 						continue
 					}
 				}
