@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"net/http"
 	"strconv"
+	"strings"
+	"time"
 
 	"github.com/gorilla/mux"
 	"go.uber.org/zap"
@@ -62,6 +64,59 @@ func getPicforGameName(name string) string {
 func init() {
 	Router.Path("/api/v0/games/player/{id}/{days}.json").Methods("GET").Handler(jwtHandlerFunc(
 		func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Content-Type", "text/json")
+			days, _ := strconv.Atoi(mux.Vars(r)["days"])
+			user := mux.Vars(r)["id"]
+			rows, err := DB.Raw(
+				strings.Join([]string{
+					"SELECT g.id, g.platform, g.platform_id, g.name, g.image, mg.played",
+					"FROM membergames mg",
+					"JOIN games g ON (mg.game = g.id)",
+					"JOIN members m ON (mg.member = m.id)",
+					"WHERE m.slack = ?",
+					"AND mg.played >= DATE_SUB(NOW(), INTERVAL ? DAY)",
+				}, " "),
+				user,
+				days,
+			).Rows()
+			if err != nil {
+				logger.Error("querying player games", zap.Error(err))
+				w.WriteHeader(http.StatusInternalServerError)
+				return
+			}
+			defer rows.Close()
+			var rval = []struct {
+				ID         int       `json:"id"`
+				Platform   int       `json:"platform"`
+				PlatformID int       `json:"platform_id"`
+				Name       string    `json:"name"`
+				Image      string    `json:"image"`
+				Played     time.Time `json:"played"`
+			}{}
+			for rows.Next() {
+				var row = struct {
+					ID         int       `json:"id"`
+					Platform   int       `json:"platform"`
+					PlatformID int       `json:"platform_id"`
+					Name       string    `json:"name"`
+					Image      string    `json:"image"`
+					Played     time.Time `json:"played"`
+				}{}
+				err := rows.Scan(
+					&row.ID,
+					&row.Platform,
+					&row.PlatformID,
+					&row.Name,
+					&row.Image,
+					&row.Played,
+				)
+				if err != nil {
+					logger.Error("Error scanning", zap.Error(err))
+					continue
+				}
+				rval = append(rval, row)
+			}
+			json.NewEncoder(w).Encode(rval)
 		}))
 	Router.Path("/api/v0/games/played/{game}/{days}.json").Methods("GET").Handler(jwtHandlerFunc(
 		func(w http.ResponseWriter, r *http.Request) {
