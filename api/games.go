@@ -121,9 +121,28 @@ func init() {
 	Router.Path("/api/v0/games/played/{game}/{days}.json").Methods("GET").Handler(jwtHandlerFunc(
 		func(w http.ResponseWriter, r *http.Request) {
 			id, _ := strconv.Atoi(mux.Vars(r)["game"])
+			var game = struct {
+				ID         int    `json:"id"`
+				Name       string `json:"name"`
+				Image      string `json:"image"`
+				Platform   int    `json:"platform"`
+				PlatformID int    `json:"platform_id"`
+			}{}
+			err := DB.Raw("SELECT id,name,image,platform,platform_id FROM games WHERE id=? LIMIT 1", id).Row().Scan(
+				&game.ID,
+				&game.Name,
+				&game.Image,
+				&game.Platform,
+				&game.PlatformID,
+			)
+			if err != nil {
+				logger.Error("eror querying game", zap.Error(err))
+				w.WriteHeader(http.StatusInternalServerError)
+				return
+			}
 			d, _ := strconv.Atoi(mux.Vars(r)["days"])
 			rows, err := DB.Raw(strings.Join([]string{
-				"SELECT m.id,name,slack,played",
+				"SELECT slack,played",
 				"FROM members m",
 				"JOIN membergames mg ON (mg.member=m.id)",
 				"WHERE mg.game = ?",
@@ -140,26 +159,33 @@ func init() {
 				return
 			}
 			w.Header().Set("Content-Type", "application/json")
-			var rval = []struct {
-				ID     int       `json:"id"`
-				Name   string    `json:"name"`
-				Slack  string    `json:"slack_id"`
-				Played time.Time `json:"played"`
-			}{}
+			var rval = struct {
+				Game struct {
+					ID         int    `json:"id"`
+					Name       string `json:"name"`
+					Image      string `json:"image"`
+					Platform   int    `json:"platform"`
+					PlatformID int    `json:"platform_id"`
+				} `json:"game"`
+				Players []struct {
+					Slack  string    `json:"slack_id"`
+					Played time.Time `json:"played"`
+				} `json:"players"`
+			}{
+				Game: game,
+			}
 			defer rows.Close()
 			for rows.Next() {
 				var row struct {
-					ID     int       `json:"id"`
-					Name   string    `json:"name"`
 					Slack  string    `json:"slack_id"`
 					Played time.Time `json:"played"`
 				}
-				err := rows.Scan(&row.ID, &row.Name, &row.Slack, &row.Played)
+				err := rows.Scan(&row.Slack, &row.Played)
 				if err != nil {
 					logger.Error("Error scanning", zap.String("uri", r.URL.RawPath), zap.Error(err))
 					continue
 				}
-				rval = append(rval, row)
+				rval.Players = append(rval.Players, row)
 			}
 			json.NewEncoder(w).Encode(rval)
 		}))
