@@ -94,15 +94,15 @@ func init() {
 				}
 
 				for k, v := range form {
-					err := DB.Exec(
-						"INSERT INTO member_meta (`member_id`,`meta_key`,`meta_json`,`created_at`,`updated_at`) "+
-							"VALUES(?,?,?,NOW(),NOW()) "+
-							"ON DUPLICATE KEY UPDATE "+
-							"`meta_json` = ?, `updated_at` = NOW(), `deleted_at` = NULL",
+					err := DB.Exec(strings.Join([]string{
+						"INSERT INTO membermeta (`member_id`,`meta_key`,`meta_value`)",
+						"VALUES(?,?,?)",
+						"ON DUPLICATE KEY UPDATE",
+						"`meta_value` = ?",
+					}, " "),
 						member.ID,
 						k,
-						[]byte(v),
-						[]byte(v),
+						v,
 					).Error
 					if err != nil {
 						w.WriteHeader(http.StatusInternalServerError)
