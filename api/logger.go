@@ -28,7 +28,7 @@ func (h *httpLogger) ServeHTTP(w http.ResponseWriter, r *http.Request, next http
 	if addr := r.Header.Get("X-Real-IP"); addr != "" {
 		remoteAddress = addr
 	}
-	logger.Info(
+	Logger.Info(
 		"HTTP Request",
 		zap.String("uri", r.RequestURI),
 		zap.Int("http_status", nw.status),

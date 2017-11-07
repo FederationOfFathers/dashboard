@@ -2,13 +2,15 @@ package bridge
 
 import (
 	"encoding/json"
-	"log"
 	"net/http"
 	"sync"
 	"time"
 
 	"github.com/nlopes/slack"
+	"go.uber.org/zap"
 )
+
+var Logger *zap.Logger
 
 type SlackData interface {
 	IsUsernameAdmin(string) (bool, error)
@@ -48,19 +50,19 @@ func updateSeen() {
 	rsp, err := http.Get("http://fofgaming.com:8890/seen.json")
 	defer rsp.Body.Close()
 	if err != nil {
-		log.Printf("error updating seen in %s: %s", time.Now().Sub(begin).String(), err.Error())
+		Logger.Error("fetching", zap.Error(err))
 		return
 	}
 	err = json.NewDecoder(rsp.Body).Decode(&newSeen)
 	if err != nil {
-		log.Printf("error updating seen in %s: %s", time.Now().Sub(begin).String(), err.Error())
+		Logger.Error("decoding", zap.Error(err))
 		return
 	}
 	if len(newSeen) > 100 {
-		log.Printf("updated seen in %s", time.Now().Sub(begin).String())
+		Logger.Debug("updated seen", zap.Duration("took", time.Now().Sub(begin)))
 		Data.Seen = newSeen
 	} else {
-		log.Printf("error updating seen in %s: seen is strangely empty...", time.Now().Sub(begin).String())
+		Logger.Error("seen is empty!")
 	}
 }
 

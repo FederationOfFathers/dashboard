@@ -27,10 +27,10 @@ func init() {
 				Ref string `json:"ref"`
 			}
 			if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
-				logger.Warn(err.Error())
+				Logger.Warn(err.Error())
 			}
 			r.Body.Close()
-			logger.Warn(fmt.Sprintf("%#v", payload))
+			Logger.Warn(fmt.Sprintf("%#v", payload))
 			go func() {
 				if payload.Ref == "refs/heads/dev" {
 					bot.SendMessage("#-fof-dashboard", "rebuilding dev ui")
@@ -55,7 +55,7 @@ func init() {
 					}
 					err = exec.Command("/usr/bin/sv", "restart", fmt.Sprintf("%s/services/dashboard-dev/", os.Getenv("HOME"))).Run()
 					if err != nil {
-						logger.Warn(err.Error())
+						Logger.Warn(err.Error())
 					}
 				} else if payload.Ref == "refs/heads/master" {
 					bot.SendMessage("#-fof-dashboard", "rebuilding production ui")
@@ -79,7 +79,7 @@ func init() {
 					}
 					err = exec.Command("/usr/bin/sv", "restart", fmt.Sprintf("%s/services/dashboard/", os.Getenv("HOME"))).Run()
 					if err != nil {
-						logger.Warn(err.Error())
+						Logger.Warn(err.Error())
 					}
 				}
 			}()

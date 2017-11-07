@@ -11,7 +11,7 @@ import (
 	"go.uber.org/zap"
 )
 
-var logger = zap.NewExample().With(zap.String("module", "event"))
+var Logger *zap.Logger
 var Data = &Events{}
 var SaveFile = "events.json"
 var SaveInterval = time.Minute
@@ -53,13 +53,13 @@ func (e *Events) load() {
 		if os.IsNotExist(err) {
 			return
 		}
-		logger.Fatal("Unable to open savefile for reading", zap.String("filename", SaveFile), zap.Error(err))
+		Logger.Fatal("Unable to open savefile for reading", zap.String("filename", SaveFile), zap.Error(err))
 	}
 	defer fp.Close()
 	dec := json.NewDecoder(fp)
 	var version int
 	if err := dec.Decode(&version); err != nil {
-		logger.Fatal("error decoding version number", zap.Error(err))
+		Logger.Fatal("error decoding version number", zap.Error(err))
 	}
 	// if we change the datafile format here is where we would do conversion.
 	var i = 0
@@ -67,7 +67,7 @@ func (e *Events) load() {
 		i = i + 1
 		ev := new(Event)
 		if err := dec.Decode(ev); err != nil {
-			logger.Fatal("error decoding savefile", zap.String("filename", SaveFile), zap.Error(err), zap.Int("record", i))
+			Logger.Fatal("error decoding savefile", zap.String("filename", SaveFile), zap.Error(err), zap.Int("record", i))
 			break
 		}
 		e.list = append(e.list, ev)
@@ -79,27 +79,27 @@ func (e *Events) save() {
 	e.Lock()
 	defer e.Unlock()
 	if e.saved {
-		logger.Debug("no need to save events")
+		Logger.Debug("no need to save events")
 		return
 	}
 	fp, err := os.Create(tempfile)
 	if err != nil {
-		logger.Fatal("Unable to open savefile for writing", zap.String("filename", tempfile), zap.Error(err))
+		Logger.Fatal("Unable to open savefile for writing", zap.String("filename", tempfile), zap.Error(err))
 	}
 	defer fp.Close()
 	enc := json.NewEncoder(fp)
 	if err := enc.Encode(1); err != nil {
-		logger.Fatal("error encoding version number", zap.Error(err))
+		Logger.Fatal("error encoding version number", zap.Error(err))
 	}
 	for _, event := range e.list {
 		if err := enc.Encode(*event); err != nil {
-			logger.Fatal("error encoding event", zap.String("filename", tempfile), zap.Error(err))
+			Logger.Fatal("error encoding event", zap.String("filename", tempfile), zap.Error(err))
 		}
 	}
 	if err := os.Rename(tempfile, SaveFile); err != nil {
-		logger.Fatal("error renaming temporary save file", zap.String("from", tempfile), zap.String("to", SaveFile), zap.Error(err))
+		Logger.Fatal("error renaming temporary save file", zap.String("from", tempfile), zap.String("to", SaveFile), zap.Error(err))
 	}
-	logger.Info("data saved")
+	Logger.Info("data saved")
 	e.saved = true
 }
 
@@ -110,7 +110,7 @@ func (e *Events) childUpdate() {
 	e.Lock()
 	e.saved = false
 	e.Unlock()
-	logger.Debug("notified of save requirement")
+	Logger.Debug("notified of save requirement")
 }
 
 func (e *Events) AddEvent(ev *Event) {

@@ -26,7 +26,7 @@ var jMW = jwtmiddleware.New(jwtmiddleware.Options{
 	},
 	SigningMethod: jwt.SigningMethodHS256,
 	ErrorHandler: func(w http.ResponseWriter, r *http.Request, err string) {
-		logger.Info(
+		Logger.Info(
 			"HTTP Request",
 			zap.String("uri", r.RequestURI),
 			zap.Int("http_status", -1),

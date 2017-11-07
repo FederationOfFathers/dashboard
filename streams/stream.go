@@ -11,7 +11,7 @@ import (
 
 var Streams = []*db.Stream{}
 var lock sync.Mutex
-var logger = zap.NewExample().With(zap.String("module", "streams")).Sugar()
+var Logger *zap.Logger
 var channel string
 
 var DB *db.DB
@@ -24,7 +24,7 @@ func Init(notifySlackChannel string) error {
 
 func updated() {
 	if s, err := DB.Streams(); err != nil {
-		logger.Error("Error updating streams", zap.Error(err))
+		Logger.Error("Error updating streams", zap.Error(err))
 	} else {
 		Streams = s
 	}

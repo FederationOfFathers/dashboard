@@ -29,17 +29,17 @@ func handleTimeout(m *slack.MessageEvent) bool {
 	}
 	if parsed[1] == "timeout" {
 		if admin, _ := IsUserIDAdmin(m.User); !admin {
-			logger.Warn("user not admin... timeout")
+			Logger.Warn("user not admin... timeout")
 			return false
 		}
 		guess := strings.Trim(parsed[2], "<>@:#-=+!@#$%^&*(){}[]\\|<>?,./")
 		if d, err := time.ParseDuration(parsed[3]); err != nil {
-			logger.Error(
+			Logger.Error(
 				"error parsing duration",
 				zap.String("string", guess),
 				zap.Error(err))
 		} else {
-			logger.Warn("Adding timeout", zap.String("user", guess), zap.Duration("duration", d))
+			Logger.Warn("Adding timeout", zap.String("user", guess), zap.Duration("duration", d))
 			timeouts.Lock()
 			timeouts.data[guess] = time.Now().Add(d)
 			timeouts.Unlock()
@@ -54,7 +54,7 @@ func handleTimeoutMessages(m *slack.MessageEvent) bool {
 	}
 	_, _, err := rtm.DeleteMessage(m.Msg.Channel, m.Msg.Timestamp)
 	if err != nil {
-		logger.Error(
+		Logger.Error(
 			"Error deleting timeout message",
 			zap.String("username", m.Username),
 			zap.String("filename", m.Msg.Text),
@@ -73,7 +73,7 @@ func init() {
 				timeouts.Lock()
 				for k, v := range timeouts.data {
 					if now.After(v) {
-						logger.Info("expriring timeout", zap.String("user", k))
+						Logger.Info("expriring timeout", zap.String("user", k))
 						delete(timeouts.data, k)
 					}
 				}

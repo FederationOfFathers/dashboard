@@ -12,7 +12,7 @@ import (
 	"go.uber.org/zap"
 )
 
-var bplog = zap.NewExample().With(zap.String("module", "streams"), zap.String("service", "beam"))
+var bplog *zap.Logger
 
 type beamChannelResponse struct {
 	Name  string `json:"name"`
@@ -142,6 +142,7 @@ func (b *Beam) startMessage(memberID int) (string, slack.PostMessageParameters, 
 }
 
 func mindBeam() {
+	bplog = Logger.With(zap.String("service", "beam"))
 	bplog.Debug("begin minding")
 	for _, stream := range Streams {
 		if stream.Beam == "" {

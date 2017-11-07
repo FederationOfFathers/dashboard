@@ -13,14 +13,14 @@ import (
 
 var ListenOn = ":8866"
 var Router = mux.NewRouter()
-var logger = zap.NewExample().With(zap.String("module", "api")).Sugar()
+var Logger *zap.Logger
 
 var DB *db.DB
 
 var allowedOrigins = regexp.MustCompile(`^https?://((localhost|127\.0\.0\.1)(:[0-9]+)?|([^.]*\.)?fofgaming.com)$`)
 
 func Run() {
-	logger.Fatal(
+	Logger.Fatal(
 		"error starting API http server",
 		zap.String("listenOn", ListenOn),
 		zap.Error(http.ListenAndServe(ListenOn,

@@ -80,7 +80,7 @@ func init() {
 				days,
 			).Rows()
 			if err != nil {
-				logger.Error("querying player games", zap.Error(err))
+				Logger.Error("querying player games", zap.Error(err))
 				w.WriteHeader(http.StatusInternalServerError)
 				return
 			}
@@ -111,7 +111,7 @@ func init() {
 					&row.Played,
 				)
 				if err != nil {
-					logger.Error("Error scanning", zap.Error(err))
+					Logger.Error("Error scanning", zap.Error(err))
 					continue
 				}
 				rval = append(rval, row)
@@ -136,7 +136,7 @@ func init() {
 				&game.PlatformID,
 			)
 			if err != nil {
-				logger.Error("eror querying game", zap.Error(err))
+				Logger.Error("eror querying game", zap.Error(err))
 				w.WriteHeader(http.StatusInternalServerError)
 				return
 			}
@@ -154,7 +154,7 @@ func init() {
 				d,
 			).Rows()
 			if err != nil {
-				logger.Error("Error querying", zap.String("uri", r.URL.RawPath), zap.Error(err))
+				Logger.Error("Error querying", zap.String("uri", r.URL.RawPath), zap.Error(err))
 				w.WriteHeader(http.StatusInternalServerError)
 				return
 			}
@@ -182,7 +182,7 @@ func init() {
 				}
 				err := rows.Scan(&row.Slack, &row.Played)
 				if err != nil {
-					logger.Error("Error scanning", zap.String("uri", r.URL.RawPath), zap.Error(err))
+					Logger.Error("Error scanning", zap.String("uri", r.URL.RawPath), zap.Error(err))
 					continue
 				}
 				rval.Players = append(rval.Players, row)
@@ -203,7 +203,7 @@ func init() {
 				n,
 			).Rows()
 			if err != nil {
-				logger.Error("Error querying", zap.String("uri", r.URL.RawPath), zap.Error(err))
+				Logger.Error("Error querying", zap.String("uri", r.URL.RawPath), zap.Error(err))
 				w.WriteHeader(http.StatusInternalServerError)
 				return
 			}
@@ -224,7 +224,7 @@ func init() {
 				}
 				err := rows.Scan(&row.ID, &row.Name, &row.Players)
 				if err != nil {
-					logger.Error("Error scanning", zap.String("uri", r.URL.RawPath), zap.Error(err))
+					Logger.Error("Error scanning", zap.String("uri", r.URL.RawPath), zap.Error(err))
 					continue
 				}
 				if image := getPicforGameName(row.Name); image != "" {

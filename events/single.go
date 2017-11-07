@@ -59,10 +59,10 @@ func (e *Event) Log(str string, args ...interface{}) {
 
 func (e *Event) newID() {
 	if idBig, err := rand.Int(rand.Reader, big.NewInt(9223372036854775807)); err != nil {
-		logger.Fatal("error generating new id", zap.Error(err))
+		Logger.Fatal("error generating new id", zap.Error(err))
 	} else {
 		if idenc, err := basex.Encode(fmt.Sprintf("%d", idBig)); err != nil {
-			logger.Fatal("error encoding neq event id", zap.Error(err))
+			Logger.Fatal("error encoding neq event id", zap.Error(err))
 		} else {
 			e.Lock()
 			e.NumID = int(idBig.Int64())

@@ -41,7 +41,7 @@ func init() {
 				return
 			}
 			if err := streams.Remove(stream.ID, mux.Vars(r)["type"]); err != nil {
-				logger.Error("Error removing stream", zap.String("uri", r.URL.RawPath), zap.Error(err))
+				Logger.Error("Error removing stream", zap.String("uri", r.URL.RawPath), zap.Error(err))
 				w.WriteHeader(http.StatusInternalServerError)
 			}
 		},
@@ -86,7 +86,7 @@ func init() {
 				}{}
 				err := json.NewDecoder(r.Body).Decode(&form)
 				if err != nil {
-					logger.Error("Error decoding JSON", zap.String("uri", r.URL.RawPath), zap.Error(err))
+					Logger.Error("Error decoding JSON", zap.String("uri", r.URL.RawPath), zap.Error(err))
 				}
 				kind = form.Kind
 				id = form.ID
@@ -112,7 +112,7 @@ func init() {
 
 			err := streams.Add(kind, id, userID)
 			if err != nil {
-				logger.Error(
+				Logger.Error(
 					"Error adding stream",
 					zap.String("uri", r.URL.RawPath),
 					zap.String("kind", kind),

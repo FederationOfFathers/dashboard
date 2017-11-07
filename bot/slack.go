@@ -16,7 +16,7 @@ var rtm *slack.RTM
 var connection *slack.Info
 var connected bool
 var token string
-var logger = zap.NewExample().With(zap.String("module", "bot"))
+var Logger *zap.Logger
 var StartupNotice = false
 
 // LogLevel sets the logging verbosity for the package
@@ -40,17 +40,17 @@ func SlackConnect(slackToken string) error {
 	go func() {
 		for {
 			if err := mindSlack(); err != nil {
-				logger.Error("error Minding slack", zap.Error(err))
+				Logger.Error("error Minding slack", zap.Error(err))
 				time.Sleep(30 * time.Second)
 			}
 		}
 	}()
 	messagingClient = &rtm.Client
 	if MessagingKey != "" {
-		logger.Warn("Using special key for fofbot messaging", zap.String("key", MessagingKey))
+		Logger.Warn("Using special key for fofbot messaging", zap.String("key", MessagingKey))
 		messagingClient = slack.New(MessagingKey)
 	} else {
-		logger.Warn("Using default client for fofbot messaging")
+		Logger.Warn("Using default client for fofbot messaging")
 	}
 	if StartupNotice {
 		if home := os.Getenv("SERVICE_DIR"); home != "" {
@@ -72,7 +72,7 @@ func mindSlack() error {
 				UnfurlMedia: true,
 			})
 			if err != nil {
-				logger.Error("client.PostMessage failed", zap.Error(err))
+				Logger.Error("client.PostMessage failed", zap.Error(err))
 			}
 		case msg := <-postMessage:
 			_, _, err := rtm.PostMessage(msg.to, msg.text, slack.PostMessageParameters{
@@ -81,72 +81,72 @@ func mindSlack() error {
 				UnfurlMedia: true,
 			})
 			if err != nil {
-				logger.Error("rtm.PostMessage failed", zap.Error(err))
+				Logger.Error("rtm.PostMessage failed", zap.Error(err))
 			}
 		case msg := <-rtm.IncomingEvents:
 			switch ev := msg.Data.(type) {
 			// Connecting and Disconnecting
 			case *slack.ConnectedEvent:
-				logger.Debug("slack.ConnectedEvent", zap.Int("count", ev.ConnectionCount))
+				Logger.Debug("slack.ConnectedEvent", zap.Int("count", ev.ConnectionCount))
 				connection = ev.Info
 				connected = true
 			case *slack.DisconnectedEvent:
 				connected = false
-				logger.Debug("slack.DisconnectedEvent", zap.Bool("intentional", ev.Intentional))
+				Logger.Debug("slack.DisconnectedEvent", zap.Bool("intentional", ev.Intentional))
 
 			// Groups
 			case *slack.GroupCloseEvent:
 				UpdateRequest <- struct{}{}
-				logger.Debug("slack.GroupCloseEvent", zap.Bool("handled", true))
+				Logger.Debug("slack.GroupCloseEvent", zap.Bool("handled", true))
 			case *slack.GroupJoinedEvent:
 				UpdateRequest <- struct{}{}
-				logger.Debug("slack.GroupJoinedEvent", zap.Bool("handled", true))
+				Logger.Debug("slack.GroupJoinedEvent", zap.Bool("handled", true))
 			case *slack.GroupLeftEvent:
 				UpdateRequest <- struct{}{}
-				logger.Debug("slack.GroupLeftEvent", zap.Bool("handled", true))
+				Logger.Debug("slack.GroupLeftEvent", zap.Bool("handled", true))
 			case *slack.GroupRenameEvent:
 				UpdateRequest <- struct{}{}
-				logger.Debug("slack.GroupRenameEvent", zap.Bool("handled", true))
+				Logger.Debug("slack.GroupRenameEvent", zap.Bool("handled", true))
 
 			// Instant Messages
 			case *slack.IMCloseEvent:
-				logger.Debug("slack.IMCloseEvent", zap.Bool("handled", false))
+				Logger.Debug("slack.IMCloseEvent", zap.Bool("handled", false))
 			case *slack.IMCreatedEvent:
-				logger.Debug("slack.IMCreatedEvent", zap.Bool("handled", false))
+				Logger.Debug("slack.IMCreatedEvent", zap.Bool("handled", false))
 			case *slack.IMHistoryChangedEvent:
-				logger.Debug("slack.IMHistoryChangedEvent", zap.Bool("handled", false))
+				Logger.Debug("slack.IMHistoryChangedEvent", zap.Bool("handled", false))
 			case *slack.IMMarkedEvent:
-				logger.Debug("slack.IMMarkedEvent", zap.Bool("handled", false))
+				Logger.Debug("slack.IMMarkedEvent", zap.Bool("handled", false))
 			case *slack.IMOpenEvent:
-				logger.Debug("slack.IMOpenEvent", zap.Bool("handled", false))
+				Logger.Debug("slack.IMOpenEvent", zap.Bool("handled", false))
 
 			// Channels
 			case *slack.ChannelHistoryChangedEvent:
-				logger.Debug("slack.ChannelHistoryChangedEvent", zap.Bool("handled", false))
+				Logger.Debug("slack.ChannelHistoryChangedEvent", zap.Bool("handled", false))
 			case *slack.ChannelArchiveEvent:
 				UpdateRequest <- struct{}{}
-				logger.Debug("slack.ChannelArchiveEvent", zap.Bool("handled", true))
+				Logger.Debug("slack.ChannelArchiveEvent", zap.Bool("handled", true))
 			case *slack.ChannelCreatedEvent:
 				UpdateRequest <- struct{}{}
-				logger.Debug("slack.ChannelCreatedEvent", zap.Bool("handled", true))
+				Logger.Debug("slack.ChannelCreatedEvent", zap.Bool("handled", true))
 			case *slack.ChannelDeletedEvent:
 				UpdateRequest <- struct{}{}
-				logger.Debug("slack.ChannelDeletedEvent", zap.Bool("handled", true))
+				Logger.Debug("slack.ChannelDeletedEvent", zap.Bool("handled", true))
 			case *slack.ChannelInfoEvent:
 				UpdateRequest <- struct{}{}
-				logger.Debug("slack.ChannelInfoEvent", zap.Bool("handled", true))
+				Logger.Debug("slack.ChannelInfoEvent", zap.Bool("handled", true))
 			case *slack.ChannelJoinedEvent:
 				UpdateRequest <- struct{}{}
-				logger.Debug("slack.ChannelJoinedEvent", zap.Bool("handled", true))
+				Logger.Debug("slack.ChannelJoinedEvent", zap.Bool("handled", true))
 			case *slack.ChannelLeftEvent:
 				UpdateRequest <- struct{}{}
-				logger.Debug("slack.ChannelLeftEvent", zap.Bool("handled", true))
+				Logger.Debug("slack.ChannelLeftEvent", zap.Bool("handled", true))
 			case *slack.ChannelRenameEvent:
 				UpdateRequest <- struct{}{}
-				logger.Debug("slack.ChannelRenameEvent", zap.Bool("handled", true))
+				Logger.Debug("slack.ChannelRenameEvent", zap.Bool("handled", true))
 			case *slack.ChannelUnarchiveEvent:
 				UpdateRequest <- struct{}{}
-				logger.Debug("slack.ChannelUnarchiveEvent", zap.Bool("handled", true))
+				Logger.Debug("slack.ChannelUnarchiveEvent", zap.Bool("handled", true))
 
 			// Users
 			case *slack.MessageEvent:
@@ -154,7 +154,7 @@ func mindSlack() error {
 					switch strings.ToLower(ev.Channel[:1]) {
 					case "d":
 						if !handleDirectMessage(ev) {
-							logger.Info("slack.MessageEvent",
+							Logger.Info("slack.MessageEvent",
 								zap.Bool("handled", false),
 								zap.String("type", "direct_message"),
 								zap.String("user", ev.Msg.User),
@@ -164,7 +164,7 @@ func mindSlack() error {
 						}
 					case "g":
 						if !handleGroupMessage(ev) {
-							logger.Debug("slack.MessageEvent",
+							Logger.Debug("slack.MessageEvent",
 								zap.Bool("handled", false),
 								zap.String("type", "group_message"),
 								zap.String("user", ev.Msg.User),
@@ -173,7 +173,7 @@ func mindSlack() error {
 						}
 					case "c":
 						if !handleChannelMessage(ev) {
-							logger.Debug("slack.MessageEvent",
+							Logger.Debug("slack.MessageEvent",
 								zap.Bool("handled", false),
 								zap.String("type", "channel_message"),
 								zap.String("user", ev.Msg.User),
@@ -181,7 +181,7 @@ func mindSlack() error {
 								zap.String("message", ev.Msg.Text))
 						}
 					default:
-						logger.Debug("slack.MessageEvent",
+						Logger.Debug("slack.MessageEvent",
 							zap.Bool("handled", false),
 							zap.String("type", "unknown"),
 							zap.String("raw", fmt.Sprintf("%#v", *ev)),
@@ -191,35 +191,36 @@ func mindSlack() error {
 					}
 				}(ev)
 			case *slack.PresenceChangeEvent:
-				logger.Debug("slack.PresenceChangeEvent",
+				Logger.Debug("slack.PresenceChangeEvent",
 					zap.Bool("handled", false),
 					zap.String("user", ev.User),
 					zap.String("type", ev.Type),
 					zap.String("presence", ev.Presence))
 			case *slack.UserChangeEvent:
-				logger.Debug("slack.UserChangeEvent", zap.Bool("handled", false))
+				Logger.Debug("slack.UserChangeEvent", zap.Bool("handled", false))
 			case *slack.UserTypingEvent:
-				logger.Debug("slack.UserTypingEvent", zap.Bool("handled", false))
+				// Not necessary to let us know. thanks :)
+				// Logger.Debug("slack.UserTypingEvent", zap.Bool("handled", false))
 			case *slack.DNDUpdatedEvent:
-				logger.Debug("slack.DNDUpdatedEvent", zap.Bool("handled", false))
+				Logger.Debug("slack.DNDUpdatedEvent", zap.Bool("handled", false))
 			case *slack.PrefChangeEvent:
-				logger.Debug("slack.PrefChangeEvent", zap.Bool("handled", false))
+				Logger.Debug("slack.PrefChangeEvent", zap.Bool("handled", false))
 			case *slack.TeamJoinEvent:
-				logger.Debug("slack.TeamJoinEvent", zap.Bool("handled", false))
+				Logger.Debug("slack.TeamJoinEvent", zap.Bool("handled", false))
 
 			// Files
 			case *slack.FileCreatedEvent:
-				logger.Debug("slack.FileCreatedEvent", zap.Bool("handled", false))
+				Logger.Debug("slack.FileCreatedEvent", zap.Bool("handled", false))
 			case *slack.FileDeletedEvent:
-				logger.Debug("slack.FileDeletedEvent", zap.Bool("handled", false))
+				Logger.Debug("slack.FileDeletedEvent", zap.Bool("handled", false))
 			case *slack.FilePrivateEvent:
-				logger.Debug("slack.FilePrivateEvent", zap.Bool("handled", false))
+				Logger.Debug("slack.FilePrivateEvent", zap.Bool("handled", false))
 			case *slack.FilePublicEvent:
-				logger.Debug("slack.FilePublicEvent", zap.Bool("handled", false))
+				Logger.Debug("slack.FilePublicEvent", zap.Bool("handled", false))
 			case *slack.FileSharedEvent:
-				logger.Debug("slack.FileSharedEvent", zap.Bool("handled", false))
+				Logger.Debug("slack.FileSharedEvent", zap.Bool("handled", false))
 			case *slack.FileUnsharedEvent:
-				logger.Debug("slack.FileUnsharedEvent", zap.Bool("handled", false))
+				Logger.Debug("slack.FileUnsharedEvent", zap.Bool("handled", false))
 
 			// Errors
 			case *slack.UnmarshallingErrorEvent:
@@ -232,7 +233,7 @@ func mindSlack() error {
 			case *slack.RTMError:
 				return ev
 			case *slack.InvalidAuthEvent:
-				logger.Fatal("Slack got InvalidAuthEvent")
+				Logger.Fatal("Slack got InvalidAuthEvent")
 			}
 		}
 	}

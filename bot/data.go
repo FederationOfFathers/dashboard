@@ -190,20 +190,20 @@ func mindLists() {
 func updateSlackUserList() error {
 	u, e := api.GetUsers()
 	if e != nil {
-		logger.Error("Failed to fetch user list from slack", zap.Error(e))
+		Logger.Error("Failed to fetch user list from slack", zap.Error(e))
 		return e
 	}
 	data.Lock()
 	data.Users = u
 	data.Unlock()
-	logger.Info("Updated user list from slack", zap.Int("count", len(u)))
+	Logger.Info("Updated user list from slack", zap.Int("count", len(u)))
 	return nil
 }
 
 func updateSlackGroupsList() error {
 	g, e := api.GetGroups(false)
 	if e != nil {
-		logger.Error("Failed to fetch group list from slack", zap.Error(e))
+		Logger.Error("Failed to fetch group list from slack", zap.Error(e))
 		return e
 	}
 	data.Lock()
@@ -227,14 +227,14 @@ func updateSlackGroupsList() error {
 		groups = append(groups, gr)
 	}
 	data.Groups = groups
-	logger.Info("Updated Group list from slack", zap.Int("count", len(g)))
+	Logger.Info("Updated Group list from slack", zap.Int("count", len(g)))
 	return nil
 }
 
 func updateSlackChannelsList() error {
 	c, e := api.GetChannels(false)
 	if e != nil {
-		logger.Error("Failed to fetch channel list from slack", zap.Error(e))
+		Logger.Error("Failed to fetch channel list from slack", zap.Error(e))
 		return e
 	}
 	data.Lock()
@@ -247,19 +247,19 @@ func updateSlackChannelsList() error {
 	}
 	data.Channels = chans
 	data.Unlock()
-	logger.Info("Updated Channel list from slack", zap.Int("count", len(c)))
+	Logger.Info("Updated Channel list from slack", zap.Int("count", len(c)))
 	if connected {
 		for _, channel := range chans {
 			if channel.IsMember {
 				continue
 			}
 			if _, err := rtm.JoinChannel(channel.ID); err != nil {
-				logger.Error("failed to join channel",
+				Logger.Error("failed to join channel",
 					zap.String("channel_id", channel.ID),
 					zap.String("channel_name", channel.Name),
 					zap.Error(err))
 			} else {
-				logger.Info(
+				Logger.Info(
 					"joined channel",
 					zap.String("channel_id", channel.ID),
 					zap.String("channel_name", channel.Name))

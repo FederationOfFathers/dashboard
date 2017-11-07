@@ -19,7 +19,7 @@ import (
 var twitchClientID = ""
 var slackAPIKey = "xox...."
 var slackMessagingKey = ""
-var logger = zap.NewExample().Sugar()
+var logger *zap.Logger
 var devPort = 0
 var DB *db.DB
 var mysqlURI string
@@ -27,6 +27,19 @@ var streamChannel = "-fof-dashboard"
 var mindStreams bool
 
 func init() {
+
+	if os.Getenv("DEV_LOGGING") == "" {
+		logger, _ = zap.NewProduction()
+	} else {
+		logger, _ = zap.NewDevelopment()
+	}
+	bot.Logger = logger.With(zap.String("module", "bot"))
+	api.Logger = logger.With(zap.String("module", "api"))
+	events.Logger = logger.With(zap.String("module", "events"))
+	streams.Logger = logger.With(zap.String("module", "streams"))
+	db.Logger = logger.With(zap.String("module", "db"))
+	bridge.Logger = logger.With(zap.String("module", "bridge"))
+
 	scfg := cfg.New("cfg-slack")
 	scfg.StringVar(&slackAPIKey, "apiKey", slackAPIKey, "Slack API Key (env: SLACK_APIKEY)")
 	scfg.StringVar(&slackMessagingKey, "messagingKey", slackMessagingKey, "Slack Messaging API Key (env: SLACK_MESSAGINGAPIKEY)")

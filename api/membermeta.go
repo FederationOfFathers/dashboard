@@ -101,7 +101,7 @@ func init() {
 
 				err = json.NewDecoder(r.Body).Decode(&form)
 				if err != nil {
-					logger.Error("Error decoding JSON", zap.String("uri", r.URL.RawPath), zap.Error(err))
+					Logger.Error("Error decoding JSON", zap.String("uri", r.URL.RawPath), zap.Error(err))
 				}
 
 				sid := getSlackUserID(r)
