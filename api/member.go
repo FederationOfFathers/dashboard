@@ -94,7 +94,7 @@ func init() {
 						return
 					}
 					if changedXBL {
-						err := DB.Raw(
+						err := DB.Exec(
 							strings.Join([]string{
 								"INSERT INTO membermeta",
 								"(member_id,meta_key,meta_value)",
@@ -107,11 +107,11 @@ func init() {
 							Logger.Error("error setting _xbl_corrected", zap.Int("member", member.ID), zap.Error(err))
 						}
 
-						err = DB.Raw("DELETE FROM membergames WHERE member = ?", member.ID).Error
+						err = DB.Exec("DELETE FROM membergames WHERE member = ?", member.ID).Error
 						if err != nil {
 							Logger.Error("error deleting membergames", zap.Int("member", member.ID), zap.Error(err))
 						}
-						err = DB.Raw(
+						err = DB.Exec(
 							strings.Join([]string{
 								"DELETE FROM membermeta",
 								"WHERE member_id = ?",
