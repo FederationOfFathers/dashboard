@@ -103,6 +103,7 @@ func init() {
 						member.ID,
 						k,
 						v,
+						v,
 					).Error
 					if err != nil {
 						w.WriteHeader(http.StatusInternalServerError)
