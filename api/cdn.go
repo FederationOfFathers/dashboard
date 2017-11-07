@@ -78,7 +78,7 @@ func init() {
 		path, file := cdnFilePathFor(basePath, mux.Vars(r)["key"])
 		res, err := http.Get(string(body))
 		if err != nil {
-			logger.Error("cdn prime fetch", zap.Error(err))
+			Logger.Error("cdn prime fetch", zap.Error(err))
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
@@ -88,7 +88,7 @@ func init() {
 		}
 		fileData.Body, err = ioutil.ReadAll(res.Body)
 		if err != nil {
-			logger.Error("cdn prime fetch readall", zap.Error(err))
+			Logger.Error("cdn prime fetch readall", zap.Error(err))
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
@@ -98,13 +98,13 @@ func init() {
 		}
 		fp, err := os.Create(file)
 		if err != nil {
-			logger.Error("cdn prime fetch create", zap.Error(err))
+			Logger.Error("cdn prime fetch create", zap.Error(err))
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
 		defer fp.Close()
 		if err := gob.NewEncoder(fp).Encode(fileData); err != nil {
-			logger.Error("cdn prime fetch encode and write", zap.Error(err))
+			Logger.Error("cdn prime fetch encode and write", zap.Error(err))
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}

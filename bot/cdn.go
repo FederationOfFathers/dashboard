@@ -33,7 +33,7 @@ func fileBytesQuietly(f *slack.File) ([]byte, error) {
 	if rsp.StatusCode != 200 {
 		buf, _ := httputil.DumpRequest(req, true)
 		bufRsp, _ := httputil.DumpResponse(rsp, false)
-		logger.Info("Debugging File Request",
+		Logger.Info("Debugging File Request",
 			zap.String("method", "old"),
 			zap.ByteString("request", buf),
 			zap.ByteString("response", bufRsp),
@@ -43,7 +43,7 @@ func fileBytesQuietly(f *slack.File) ([]byte, error) {
 	if strings.Contains(rsp.Header.Get("Content-Type"), "text/html") {
 		buf, _ := httputil.DumpRequest(req, true)
 		bufRsp, _ := httputil.DumpResponse(rsp, false)
-		logger.Info("Debugging File Request",
+		Logger.Info("Debugging File Request",
 			zap.String("method", "old"),
 			zap.ByteString("request", buf),
 			zap.ByteString("response", bufRsp),
@@ -60,14 +60,14 @@ func fileBytesNoisy(f *slack.File) ([]byte, error) {
 		} else {
 			if i < 4 {
 				sleepfor := time.Millisecond * time.Duration(((i+1)*(i+1))*100)
-				logger.Error(
+				Logger.Error(
 					"Error making file public",
 					zap.Error(err),
 					zap.String("filename", f.Name),
 					zap.String("fileid", f.ID),
 					zap.Duration("sleepfor", sleepfor))
 			} else {
-				logger.Error(
+				Logger.Error(
 					"Error making file public: %s/%s: %s",
 					zap.Error(err),
 					zap.String("filename", f.Name),
@@ -90,10 +90,10 @@ func fileBytesNoisy(f *slack.File) ([]byte, error) {
 		nil)
 	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", token))
 	buf, _ := httputil.DumpRequest(req, true)
-	logger.Info("Debugging File Request", zap.ByteString("request", buf))
+	Logger.Info("Debugging File Request", zap.ByteString("request", buf))
 	rsp, err := http.DefaultClient.Do(req)
 	bufRsp, _ := httputil.DumpResponse(rsp, false)
-	logger.Info("Debugging File Response", zap.ByteString("response", bufRsp))
+	Logger.Info("Debugging File Response", zap.ByteString("response", bufRsp))
 	if err != nil {
 		return nil, err
 	}
@@ -128,9 +128,9 @@ func handleChannelUpload(m *slack.MessageEvent) bool {
 	if !m.Msg.Upload {
 		return false
 	}
-	logger.Info("File upload detected", zap.String("username", m.Username), zap.String("filename", m.File.Name))
+	Logger.Info("File upload detected", zap.String("username", m.Username), zap.String("filename", m.File.Name))
 	if buf, err := fileBytes(m.Msg.File); err != nil {
-		logger.Error(
+		Logger.Error(
 			"error downloading file",
 			zap.Error(err),
 			zap.String("username", m.Username),
@@ -138,7 +138,7 @@ func handleChannelUpload(m *slack.MessageEvent) bool {
 	} else {
 		path := fmt.Sprintf("%s/%s", CdnPath, time.Now().Format("2006/01/02/15"))
 		if err := os.MkdirAll(path, 0755); err != nil {
-			logger.Error(
+			Logger.Error(
 				"error making cdn path",
 				zap.String("path", path),
 				zap.String("username", m.Username),
@@ -149,7 +149,7 @@ func handleChannelUpload(m *slack.MessageEvent) bool {
 		urlPath := fmt.Sprintf("%s/%s-%s", path, m.Msg.File.ID, part.String())
 		path = fmt.Sprintf("%s/%s-%s", path, m.Msg.File.ID, m.Msg.File.Name)
 		if fp, err := os.Create(path); err != nil {
-			logger.Error(
+			Logger.Error(
 				"error creating cdn file",
 				zap.String("path", path),
 				zap.String("username", m.Username),
@@ -158,7 +158,7 @@ func handleChannelUpload(m *slack.MessageEvent) bool {
 		} else {
 			if _, err := fp.Write(buf); err != nil {
 				fp.Close()
-				logger.Error(
+				Logger.Error(
 					"error writing to cdn file",
 					zap.String("path", path),
 					zap.String("username", m.Username),
@@ -188,7 +188,7 @@ func handleChannelUpload(m *slack.MessageEvent) bool {
 							},
 						})
 					if err != nil {
-						logger.Error(
+						Logger.Error(
 							"Failed postting cdn link back to slack",
 							zap.String("username", m.Username),
 							zap.String("filename", m.File.Name),
@@ -206,7 +206,7 @@ func handleChannelUpload(m *slack.MessageEvent) bool {
 					Type:    "message",
 				})
 			}
-			logger.Info("saved CDN file", zap.String("url", fileURL), zap.Int("size", len(buf)))
+			Logger.Info("saved CDN file", zap.String("url", fileURL), zap.Int("size", len(buf)))
 			return true
 		}
 
@@ -222,23 +222,23 @@ func handleDMUpload(m *slack.MessageEvent) bool {
 		return false
 	}
 	if buf, err := fileBytes(m.Msg.File); err != nil {
-		logger.Info("error downloading file", zap.Error(err))
+		Logger.Info("error downloading file", zap.Error(err))
 	} else {
 		path := fmt.Sprintf("%s/%s", CdnPath, time.Now().Format("2006/01/02/15"))
 		if err := os.MkdirAll(path, 0755); err != nil {
-			logger.Error("error making cdn path", zap.String("path", path))
+			Logger.Error("error making cdn path", zap.String("path", path))
 			return false
 		}
 		part := &url.URL{Path: m.Msg.File.Name}
 		urlPath := fmt.Sprintf("%s/%s-%s", path, m.Msg.File.ID, part.String())
 		path = fmt.Sprintf("%s/%s-%s", path, m.Msg.File.ID, m.Msg.File.Name)
 		if fp, err := os.Create(path); err != nil {
-			logger.Error("error creating cdn file", zap.String("path", path))
+			Logger.Error("error creating cdn file", zap.String("path", path))
 			return false
 		} else {
 			if _, err := fp.Write(buf); err != nil {
 				fp.Close()
-				logger.Error("error writing to cdn file", zap.String("path", path))
+				Logger.Error("error writing to cdn file", zap.String("path", path))
 				return false
 			}
 			fp.Close()
@@ -250,7 +250,7 @@ func handleDMUpload(m *slack.MessageEvent) bool {
 				Text:    fmt.Sprintf("Thanks for sending me the file instead of uploading it to a channel or group. You can paste the following link anywhere you want to show the file to others! ```%s```", fileURL),
 				Type:    "message",
 			})
-			logger.Info("saved CDN file", zap.String("url", fileURL), zap.Int("size", len(buf)))
+			Logger.Info("saved CDN file", zap.String("url", fileURL), zap.Int("size", len(buf)))
 		}
 
 	}

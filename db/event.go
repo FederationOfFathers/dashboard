@@ -1,15 +1,17 @@
 package db
 
 import (
-	"log"
+	"fmt"
 	"sync"
 	"time"
 
 	"github.com/pborman/uuid"
+	"go.uber.org/zap"
 
 	"github.com/jinzhu/gorm"
 )
 
+var Logger *zap.Logger
 var wait = sync.NewCond(&sync.Mutex{})
 
 func (d *DB) EventsUpdated() ([]*Event, error) {
@@ -64,7 +66,7 @@ func (d *DB) Events() ([]*Event, error) {
 	var e []*Event
 	err := d.Find(&e).Error
 	for _, event := range e {
-		log.Printf("%#v", event)
+		Logger.Debug(fmt.Sprintf("%#v", event))
 		event.db = d
 		event.db.Model(event).Related(&event.Members, "EventMembers")
 	}
@@ -88,7 +90,7 @@ func (e *Event) Save() error {
 		if events, err := e.db.Events(); err == nil {
 			e.db.eventCache = events
 		} else {
-			log.Printf("Error updating event cache after save: %s", err.Error())
+			Logger.Error("Error updating event cache after save", zap.Error(err))
 			e.db.eventCache = nil
 		}
 		e.db.eventCacheLock.Unlock()

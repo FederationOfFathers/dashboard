@@ -175,13 +175,13 @@ func init() {
 			}{}
 
 			if err := json.NewDecoder(r.Body).Decode(&doc); err != nil {
-				logger.Error("Failed decoding json for group visibility change", zap.Error(err))
+				Logger.Error("Failed decoding json for group visibility change", zap.Error(err))
 				w.WriteHeader(http.StatusBadRequest)
 				return
 			}
 
 			if err = visDB().Put(mux.Vars(r)["groupID"], doc.Visibility); err != nil {
-				logger.Error("error putting a value to visDB", zap.Error(err))
+				Logger.Error("error putting a value to visDB", zap.Error(err))
 				w.WriteHeader(http.StatusInternalServerError)
 			}
 		},

@@ -2,10 +2,11 @@ package streams
 
 import "go.uber.org/zap"
 
-var ytlog = zap.NewExample().With(zap.String("module", "streams"), zap.String("service", "youtube"))
+var ytlog *zap.Logger
 var YoutubeAPIKey string
 
 func mindYoutube() {
+	ytlog = Logger.With(zap.String("service", "youtube"))
 	ytlog.Debug("begin minding")
 	for _, stream := range Streams {
 		if stream.Youtube == "" {

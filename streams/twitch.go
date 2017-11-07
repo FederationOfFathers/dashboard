@@ -11,7 +11,7 @@ import (
 	"go.uber.org/zap"
 )
 
-var twlog = zap.NewExample().With(zap.String("module", "streams"), zap.String("service", "twitch"))
+var twlog *zap.Logger
 var TwitchOAuthKey string
 
 var twitchClient *twitch.Session
@@ -77,6 +77,7 @@ func (t twitchStream) startMessage(memberID int) (string, slack.PostMessageParam
 }
 
 func mindTwitch() {
+	twlog = Logger.With(zap.String("service", "twitch"))
 	twlog.Debug("begin minding")
 	for _, stream := range Streams {
 		if stream.Twitch == "" {

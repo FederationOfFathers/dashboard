@@ -168,7 +168,7 @@ func handleFortune(m *slack.MessageEvent) bool {
 		parsed := strings.SplitN(m.Msg.Text, " ", 3)
 		if parsed[1] == "fortune" {
 			if out, err := exec.Command("fortune").Output(); err != nil {
-				logger.Error("error running the fortune command", zap.Error(err))
+				Logger.Error("error running the fortune command", zap.Error(err))
 			} else {
 				rtm.SendMessage(&slack.OutgoingMessage{
 					ID:      int(time.Now().UnixNano()),

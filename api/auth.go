@@ -56,7 +56,7 @@ func init() {
 func requireAdmin(w http.ResponseWriter, r *http.Request) error {
 	id := getSlackUserID(r)
 	if admin, err := bridge.Data.Slack.IsUserIDAdmin(id); err != nil {
-		logger.Error("error determining admin status", zap.Error(err))
+		Logger.Error("error determining admin status", zap.Error(err))
 		w.WriteHeader(http.StatusInternalServerError)
 		return err
 	} else if !admin {
