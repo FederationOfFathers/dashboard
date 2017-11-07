@@ -127,7 +127,9 @@ func init() {
 				"FROM members m",
 				"JOIN membergames mg ON (mg.member=m.id)",
 				"WHERE mg.game = ?",
+				"AND m.seen > (UNIX_TIMESTAMP(DATE_SUB(NOW(), INTERVAL 30 DAY)))",
 				"AND mg.played > DATE_SUB(NOW(), INTERVAL ? DAY)",
+				"ORDER BY played DESC",
 			}, " "),
 				id,
 				d,
@@ -167,8 +169,9 @@ func init() {
 			d, _ := strconv.Atoi(mux.Vars(r)["days"])
 			rows, err := DB.Raw(
 				"SELECT g.id, g.name, COUNT(mg.member) as players "+
-					"FROM membergames mg JOIN games g ON( mg.game = g.id ) "+
+					"FROM membergames mg JOIN games g ON( mg.game = g.id ) JOIN members m ON( mg.member = m.id) "+
 					"WHERE mg.played > DATE_SUB(NOW(), INTERVAL ? DAY) "+
+					"AND m.seen > (UNIX_TIMESTAMP(DATE_SUB(NOW(), INTERVAL 30 DAY))) "+
 					"GROUP BY g.id ORDER BY players DESC LIMIT ?",
 				d,
 				n,
