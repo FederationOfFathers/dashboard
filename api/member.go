@@ -94,12 +94,11 @@ func init() {
 						return
 					}
 					if changedXBL {
-						/* not yet
 						err := DB.Raw(
 							strings.Join([]string{
 								"INSERT INTO membermeta",
-								"(member_id,meta_name,meta_value)",
-								"(?,'_xbl_corrected',NOW())",
+								"(member_id,meta_key,meta_value)",
+								"VALUES (?,'_xbl_corrected',NOW())",
 								"ON DUPLICATE KEY UPDATE meta_value=NOW()",
 							}, " "),
 							member.ID,
@@ -116,7 +115,7 @@ func init() {
 							strings.Join([]string{
 								"DELETE FROM membermeta",
 								"WHERE member_id = ?",
-								"AND meta_name IN(?,?,?)",
+								"AND meta_key IN(?,?,?)",
 								"LIMIT 3",
 							}, " "),
 							member.ID,
@@ -127,7 +126,6 @@ func init() {
 						if err != nil {
 							Logger.Error("error deleting membermeta", zap.Int("member", member.ID), zap.Error(err))
 						}
-						*/
 					}
 				}
 			},
