@@ -120,16 +120,56 @@ func init() {
 		}))
 	Router.Path("/api/v0/games/played/{game}/{days}.json").Methods("GET").Handler(jwtHandlerFunc(
 		func(w http.ResponseWriter, r *http.Request) {
+			id, _ := strconv.Atoi(mux.Vars(r)["game"])
+			d, _ := strconv.Atoi(mux.Vars(r)["days"])
+			rows, err := DB.Raw(strings.Join([]string{
+				"SELECT m.id,name,slack,played",
+				"FROM members m",
+				"JOIN membergames mg ON (mg.member=m.id)",
+				"WHERE mg.game = ?",
+				"AND mg.played > DATE_SUB(NOW(), INTERVAL ? DAY)",
+			}, " "),
+				id,
+				d,
+			).Rows()
+			if err != nil {
+				logger.Error("Error querying", zap.String("uri", r.URL.RawPath), zap.Error(err))
+				w.WriteHeader(http.StatusInternalServerError)
+				return
+			}
+			w.Header().Set("Content-Type", "application/json")
+			var rval = []struct {
+				ID     int       `json:"id"`
+				Name   string    `json:"name"`
+				Slack  string    `json:"slack_id"`
+				Played time.Time `json:"played"`
+			}{}
+			defer rows.Close()
+			for rows.Next() {
+				var row struct {
+					ID     int       `json:"id"`
+					Name   string    `json:"name"`
+					Slack  string    `json:"slack_id"`
+					Played time.Time `json:"played"`
+				}
+				err := rows.Scan(&row.ID, &row.Name, &row.Slack, &row.Played)
+				if err != nil {
+					logger.Error("Error scanning", zap.String("uri", r.URL.RawPath), zap.Error(err))
+					continue
+				}
+				rval = append(rval, row)
+			}
+			json.NewEncoder(w).Encode(rval)
 		}))
 	Router.Path("/api/v0/games/played/top/{days}/{number}.json").Methods("GET").Handler(jwtHandlerFunc(
 		func(w http.ResponseWriter, r *http.Request) {
 			n, _ := strconv.Atoi(mux.Vars(r)["number"])
 			d, _ := strconv.Atoi(mux.Vars(r)["days"])
 			rows, err := DB.Raw(
-				"SELECT g.Name as game, COUNT(mg.member) as players "+
+				"SELECT g.id, g.name, COUNT(mg.member) as players "+
 					"FROM membergames mg JOIN games g ON( mg.game = g.id ) "+
 					"WHERE mg.played > DATE_SUB(NOW(), INTERVAL ? DAY) "+
-					"GROUP BY g.Name ORDER BY players DESC LIMIT ?",
+					"GROUP BY g.id ORDER BY players DESC LIMIT ?",
 				d,
 				n,
 			).Rows()
@@ -140,6 +180,7 @@ func init() {
 			}
 			w.Header().Set("Content-Type", "application/json")
 			var rval = []struct {
+				ID      int    `json:"id"`
 				Name    string `json:"name"`
 				Image   string `json:"image"`
 				Players int    `json:"players"`
@@ -147,11 +188,12 @@ func init() {
 			defer rows.Close()
 			for rows.Next() {
 				var row struct {
+					ID      int    `json:"id"`
 					Name    string `json:"name"`
 					Image   string `json:"image"`
 					Players int    `json:"players"`
 				}
-				err := rows.Scan(&row.Name, &row.Players)
+				err := rows.Scan(&row.ID, &row.Name, &row.Players)
 				if err != nil {
 					logger.Error("Error scanning", zap.String("uri", r.URL.RawPath), zap.Error(err))
 					continue
