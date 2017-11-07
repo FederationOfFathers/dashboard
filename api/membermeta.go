@@ -35,49 +35,31 @@ func init() {
 		func(w http.ResponseWriter, r *http.Request) {
 			w.Header().Set("Content-Type", "application/json")
 			member, err := DB.MemberByAny(mux.Vars(r)["memberID"])
-			if err != nil {
-				w.WriteHeader(http.StatusInternalServerError)
-				return
-			}
 			if err == gorm.ErrRecordNotFound || member == nil {
 				http.NotFound(w, r)
 				return
 			}
 			if err != nil {
+				Logger.Error("querying user", zap.Error(err))
 				w.WriteHeader(http.StatusInternalServerError)
 				return
 			}
 			var out = map[string]string{}
-			var entries []*db.MemberMeta
-			DB.Where("member_ID = ?", member.ID).Find(&entries)
-			for _, entry := range entries {
-				out[entry.MetaKey] = string(entry.MetaJSON)
-			}
-			json.NewEncoder(w).Encode(out)
-		},
-	))
-
-	Router.Path("/api/v0/meta/member/{memberID}/{key}").Methods("GET").Handler(jwtHandlerFunc(
-		func(w http.ResponseWriter, r *http.Request) {
-			w.Header().Set("Content-Type", "application/json")
-			member, err := DB.MemberByAny(mux.Vars(r)["memberID"])
+			rows, err := DB.Raw("SELECT meta_key,meta_value FROM membermeta WHERE member_id = ?", member.ID).Rows()
+			defer rows.Close()
 			if err != nil {
+				Logger.Error("querying", zap.Error(err))
 				w.WriteHeader(http.StatusInternalServerError)
 				return
 			}
-			if err == gorm.ErrRecordNotFound || member == nil {
-				http.NotFound(w, r)
-				return
-			}
-			if err != nil {
-				w.WriteHeader(http.StatusInternalServerError)
-				return
-			}
-			var out = map[string]string{}
-			var entries []*db.MemberMeta
-			DB.Where("member_ID = ? AND meta_key = ?", member.ID, mux.Vars(r)["key"]).Find(&entries)
-			for _, entry := range entries {
-				out[entry.MetaKey] = string(entry.MetaJSON)
+			for rows.Next() {
+				var k string
+				var v string
+				if err := rows.Scan(&k, &v); err != nil {
+					Logger.Error("scanning", zap.Error(err))
+					continue
+				}
+				out[k] = v
 			}
 			json.NewEncoder(w).Encode(out)
 		},
