@@ -67,13 +67,13 @@ func init() {
 		if bot.CdnPath != "" {
 			basePath = bot.CdnPath
 		} else {
-			logger.Info("bot.CdnPath not configures")
+			Logger.Info("bot.CdnPath not configures")
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
 		body, err := ioutil.ReadAll(r.Body)
 		if err != nil {
-			logger.Error("ioutil.ReadAll", zap.Error(err))
+			Logger.Error("ioutil.ReadAll", zap.Error(err))
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
@@ -96,7 +96,7 @@ func init() {
 		}
 		if err := os.MkdirAll(path, 0755); err != nil {
 			if !os.IsExist(err) {
-				logger.Error("os.MkdirAll", zap.String("path", path), zap.Error(err))
+				Logger.Error("os.MkdirAll", zap.String("path", path), zap.Error(err))
 				w.WriteHeader(http.StatusInternalServerError)
 				return
 			}
