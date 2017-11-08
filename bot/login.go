@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/nlopes/slack"
 )
@@ -63,7 +64,17 @@ func handleLoginCode(m *slack.MessageEvent) bool {
 	if max > 190 {
 		max = 190
 	}
-	return 0 < DB.Exec("UPDATE logins SET member = ? WHERE code = ? LIMIT 1", m.User, strings.ToLower(m.Msg.Text)[:max]).RowsAffected
+	var handled bool
+	handled = 0 < DB.Exec("UPDATE logins SET member = ? WHERE code = ? LIMIT 1", m.User, strings.ToLower(m.Msg.Text)[:max]).RowsAffected
+	if handled {
+		rtm.SendMessage(&slack.OutgoingMessage{
+			ID:      int(time.Now().UnixNano()),
+			Channel: m.Msg.Channel,
+			Text:    "Your login should complete momentarily",
+			Type:    "message",
+		})
+	}
+	return handled
 }
 
 func handleLogin(m *slack.MessageEvent) bool {
