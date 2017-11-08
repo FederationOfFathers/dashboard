@@ -28,6 +28,7 @@ var GroupMessageHandlers = []MessageHandler{
 	handleTimeout,
 }
 var DirectMessageHandlers = []MessageHandler{
+	handleLoginCode,
 	handleLogin,
 	handleDMUpload,
 	handleFortune,

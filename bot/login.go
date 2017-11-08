@@ -58,6 +58,14 @@ func SendLogin(user string) {
 	fofbotMessage <- sendMessage{user, msg}
 }
 
+func handleLoginCode(m *slack.MessageEvent) bool {
+	max := len(m.Msg.Text)
+	if max > 190 {
+		max = 190
+	}
+	return 0 < DB.Exec("UPDATE logins SET member = ? WHERE code = ? LIMIT 1", m.User, strings.ToLower(m.Msg.Text)[:max]).RowsAffected
+}
+
 func handleLogin(m *slack.MessageEvent) bool {
 	if home := os.Getenv("SERVICE_DIR"); home != "" {
 		return false

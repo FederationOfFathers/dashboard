@@ -75,7 +75,7 @@ func main() {
 	DB = db.New("mysql", mysqlURI)
 	streams.DB = DB
 	api.DB = DB
-
+	bot.DB = DB
 	bot.AuthTokenGenerator = api.GenerateValidAuthTokens
 	if home := os.Getenv("SERVICE_DIR"); home == "" {
 		bot.LoginLink = fmt.Sprintf("http://dashboard.fofgaming.com/")

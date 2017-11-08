@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/FederationOfFathers/dashboard/bridge"
+	"github.com/FederationOfFathers/dashboard/db"
 	"github.com/nlopes/slack"
 	"go.uber.org/zap"
 )
@@ -18,6 +19,7 @@ var connected bool
 var token string
 var Logger *zap.Logger
 var StartupNotice = false
+var DB *db.DB
 
 // LogLevel sets the logging verbosity for the package
 var LogLevel = zap.InfoLevel
