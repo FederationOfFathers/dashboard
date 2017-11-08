@@ -3,6 +3,7 @@ package api
 import (
 	"crypto/hmac"
 	"crypto/sha256"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"time"
@@ -36,6 +37,11 @@ func init() {
 				HttpOnly: false,
 				Path:     "/",
 			})
+			if args.Get("r") == "0" {
+				w.Header().Set("Content-Type", "text/json")
+				json.NewEncoder(w).Encode("ok")
+				return
+			}
 			http.Redirect(w, r, "https://ui.fofgaming.com/", http.StatusTemporaryRedirect)
 			return
 		}

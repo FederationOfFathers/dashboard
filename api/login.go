@@ -3,12 +3,11 @@ package api
 import (
 	"database/sql"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"strings"
 	"sync"
-	"time"
 
-	jwt "github.com/dgrijalva/jwt-go"
 	"github.com/gorilla/mux"
 	"github.com/labstack/gommon/log"
 	uuid "github.com/nu7hatch/gouuid"
@@ -71,19 +70,9 @@ func init() {
 			return
 		}
 		if who != "" {
+			var link = fmt.Sprintf("/api/v0/login?w=%s&t=%s&r=0", who, GenerateValidAuthTokens(who)[0])
 			DB.Exec("DELETE FROM logins WHERE code = ? LIMIT 1", mux.Vars(r)["code"])
-			token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
-				"userid": who,
-			})
-			tokenString, _ := token.SignedString(jwtSecretBytes)
-			http.SetCookie(w, &http.Cookie{
-				Name:     "Authorization",
-				Value:    tokenString,
-				Expires:  time.Now().Add(365 * 24 * time.Hour),
-				HttpOnly: false,
-				Path:     "/",
-			})
-			json.NewEncoder(w).Encode("ok")
+			http.Redirect(w, r, link, http.StatusTemporaryRedirect)
 			return
 		}
 		json.NewEncoder(w).Encode("wait")

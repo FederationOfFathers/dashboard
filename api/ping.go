@@ -12,6 +12,7 @@ func init() {
 		func(w http.ResponseWriter, r *http.Request) {
 			w.Header().Set("Content-Type", "application/json")
 			id := getSlackUserID(r)
+			w.Header().Set("X-UID", id)
 			user, _ := bridge.Data.Slack.User(id)
 			admin, _ := bridge.Data.Slack.IsUserIDAdmin(id)
 			userGroups := bridge.Data.Slack.UserGroups(id)
