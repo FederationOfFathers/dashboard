@@ -36,6 +36,9 @@ var jMW = jwtmiddleware.New(jwtmiddleware.Options{
 			zap.Int64("content_length", r.ContentLength),
 			zap.String("error", err),
 		)
+		w.WriteHeader(http.StatusForbidden)
+		w.Header().Set("Content-Type", "text/json")
+		w.Write([]byte("{}"))
 	},
 })
 
