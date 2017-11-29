@@ -33,7 +33,7 @@ func handleTimeout(m *slack.MessageEvent) bool {
 			rtm.SendMessage(&slack.OutgoingMessage{
 				ID:      int(time.Now().UnixNano()),
 				Channel: m.Channel,
-				Text:    fmt.Sprintf("Snitches get stitches... 5 minute timeout for @%s", m.Username),
+				Text:    fmt.Sprintf("Snitches get stitches... 5 minute timeout for you..."),
 				Type:    "message",
 			})
 			Logger.Warn("user not admin... timeout")
