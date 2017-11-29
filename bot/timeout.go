@@ -1,6 +1,7 @@
 package bot
 
 import (
+	"fmt"
 	"strings"
 	"sync"
 	"time"
@@ -29,7 +30,16 @@ func handleTimeout(m *slack.MessageEvent) bool {
 	}
 	if parsed[1] == "timeout" {
 		if admin, _ := IsUserIDAdmin(m.User); !admin {
+			rtm.SendMessage(&slack.OutgoingMessage{
+				ID:      int(time.Now().UnixNano()),
+				Channel: m.Channel,
+				Text:    fmt.Sprintf("Snitches get stitches... 5 minute timeout for @%s", m.Username),
+				Type:    "message",
+			})
 			Logger.Warn("user not admin... timeout")
+			timeouts.Lock()
+			timeouts.data[m.User] = time.Now().Add(5 * time.Minute)
+			timeouts.Unlock()
 			return false
 		}
 		guess := strings.Trim(parsed[2], "<>@:#-=+!@#$%^&*(){}[]\\|<>?,./")
