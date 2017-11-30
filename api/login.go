@@ -35,7 +35,7 @@ func init() {
 	hd.Salt = u4.String()
 	hd.MinLength = 4
 	hashids.NewWithData(hd)
-	hashID, _ = hashids.NewWithData(hd)
+	hashID = hashids.NewWithData(hd)
 
 	Router.Path("/api/v0/login/get").Methods("GET").HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if err := DB.Exec("DELETE FROM logins WHERE `expiry` < NOW()").Error; err != nil {
