@@ -8,7 +8,7 @@ import (
 )
 
 func init() {
-	Router.Path("/api/v0/ping").Methods("GET").Handler(jwtHandlerFunc(
+	Router.Path("/api/v0/ping").Methods("GET").Handler(authenticated(
 		func(w http.ResponseWriter, r *http.Request) {
 			w.Header().Set("Content-Type", "application/json")
 			id := getSlackUserID(r)

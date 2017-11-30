@@ -167,7 +167,7 @@ func (s *SlackData) GetUsers() []slack.User {
 
 func mindLists() {
 	passiveUpdate := time.Tick(UpdateTimer)
-	tick := time.Tick(10 * time.Millisecond)
+	tick := time.Tick(1 * time.Second)
 	last := time.Now().Add(0 - (5 * time.Second))
 	want := false
 	for {

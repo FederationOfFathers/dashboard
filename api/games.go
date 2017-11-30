@@ -62,7 +62,7 @@ func getPicforGameName(name string) string {
 }
 
 func init() {
-	Router.Path("/api/v0/games/player/{id}/{days}.json").Methods("GET").Handler(jwtHandlerFunc(
+	Router.Path("/api/v0/games/player/{id}/{days}.json").Methods("GET").Handler(authenticated(
 		func(w http.ResponseWriter, r *http.Request) {
 			w.Header().Set("Content-Type", "text/json")
 			days, _ := strconv.Atoi(mux.Vars(r)["days"])
@@ -118,7 +118,7 @@ func init() {
 			}
 			json.NewEncoder(w).Encode(rval)
 		}))
-	Router.Path("/api/v0/games/played/{game}/{days}.json").Methods("GET").Handler(jwtHandlerFunc(
+	Router.Path("/api/v0/games/played/{game}/{days}.json").Methods("GET").Handler(authenticated(
 		func(w http.ResponseWriter, r *http.Request) {
 			id, _ := strconv.Atoi(mux.Vars(r)["game"])
 			var game = struct {
@@ -189,7 +189,7 @@ func init() {
 			}
 			json.NewEncoder(w).Encode(rval)
 		}))
-	Router.Path("/api/v0/games/played/top/{days}/{number}.json").Methods("GET").Handler(jwtHandlerFunc(
+	Router.Path("/api/v0/games/played/top/{days}/{number}.json").Methods("GET").Handler(authenticated(
 		func(w http.ResponseWriter, r *http.Request) {
 			n, _ := strconv.Atoi(mux.Vars(r)["number"])
 			d, _ := strconv.Atoi(mux.Vars(r)["days"])

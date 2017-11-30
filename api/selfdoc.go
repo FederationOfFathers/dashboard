@@ -131,7 +131,7 @@ func init() {
 	})
 
 	docs := docBuild()
-	Router.Path("/api/v0/documentation").Methods("GET").Handler(jwtHandlerFunc(
+	Router.Path("/api/v0/documentation").Methods("GET").Handler(authenticated(
 		func(w http.ResponseWriter, r *http.Request) {
 			w.Header().Set("Content-Type", "text/plain")
 			w.Write(docs)

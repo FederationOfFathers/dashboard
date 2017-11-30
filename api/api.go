@@ -1,13 +1,15 @@
 package api
 
 import (
+	"crypto/md5"
+	"crypto/sha1"
 	"net/http"
 	"os"
-	"regexp"
 
 	"github.com/FederationOfFathers/dashboard/db"
 	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
+	"github.com/gorilla/securecookie"
 	"go.uber.org/zap"
 )
 
@@ -17,9 +19,13 @@ var Logger *zap.Logger
 
 var DB *db.DB
 
-var allowedOrigins = regexp.MustCompile(`^https?://((localhost|127\.0\.0\.1)(:[0-9]+)?|([^.]*\.)?fofgaming.com)$`)
-
 func Run() {
+	jwtSecretBytes = []byte(JWTSecret)
+	s := sha1.New()
+	m := md5.New()
+	s.Write(jwtSecretBytes)
+	m.Write(jwtSecretBytes)
+	cookie = securecookie.New(s.Sum(nil), m.Sum(nil))
 	Logger.Fatal(
 		"error starting API http server",
 		zap.String("listenOn", ListenOn),
@@ -41,7 +47,14 @@ func Run() {
 								"POST",
 								"DELETE",
 							}),
-							handlers.AllowedOriginValidator(allowedOrigins.MatchString),
+							handlers.AllowedOrigins([]string{
+								"http://ui.fofgaming.com",
+								"https://ui.fofgaming.com",
+								"http://dev.fofgaming.com",
+								"https://dev.fofgaming.com",
+								"http://127.0.0.1",
+								"http://localhost",
+							}),
 						)(Router),
 					),
 				),

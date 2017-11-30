@@ -9,8 +9,6 @@ import (
 	"time"
 
 	"github.com/FederationOfFathers/dashboard/bridge"
-	"github.com/dgrijalva/jwt-go"
-	"github.com/gorilla/context"
 	"go.uber.org/zap"
 )
 
@@ -19,24 +17,11 @@ var AuthSecret = ""
 
 func init() {
 	Router.Path("/api/v0/login").Methods("GET").HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if jwtSecretBytes == nil {
-			jwtSecretBytes = []byte(JWTSecret)
-		}
 		args := r.URL.Query()
 		who := args.Get("w")
 		minitoken := args.Get("t")
 		if validateMiniAuthToken(who, minitoken) {
-			token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
-				"userid": who,
-			})
-			tokenString, _ := token.SignedString(jwtSecretBytes)
-			http.SetCookie(w, &http.Cookie{
-				Name:     "Authorization",
-				Value:    tokenString,
-				Expires:  time.Now().Add(365 * 24 * time.Hour),
-				HttpOnly: false,
-				Path:     "/",
-			})
+			authorize(who, w, r)
 			if args.Get("r") == "0" {
 				w.Header().Set("Content-Type", "text/json")
 				json.NewEncoder(w).Encode("ok")
@@ -50,7 +35,7 @@ func init() {
 	})
 	Router.Path("/api/v0/logout").Methods("GET").HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		http.SetCookie(w, &http.Cookie{
-			Name:     "Authorization",
+			Name:     cookieName,
 			Value:    "",
 			Expires:  time.Now().Add(0 - (365 * 24 * time.Hour)),
 			HttpOnly: false,
@@ -109,14 +94,9 @@ func validateMiniAuthToken(forWhat, token string) bool {
 }
 
 func getSlackUserID(r *http.Request) string {
-	// github.com/auth0/go-jwt-middleware/blob/b4ec5e466f0aaaa4daaefdb277e7d0d5040c96c0/jwtmiddleware.go#L232
-	jwtoken := context.Get(r, "user")
-	if user, ok := jwtoken.(*jwt.Token); ok {
-		if userid, ok := user.Claims.(jwt.MapClaims)["userid"]; ok {
-			return userid.(string)
-		}
-	}
-	return ""
+	auth := requestAuth(r)
+	id, _ := auth["userid"]
+	return id
 }
 
 func getSlackUserName(r *http.Request) string {

@@ -10,7 +10,7 @@ import (
 )
 
 func init() {
-	Router.Path("/api/v0/events").Methods("GET").Handler(jwtHandlerFunc(
+	Router.Path("/api/v0/events").Methods("GET").Handler(authenticated(
 		func(w http.ResponseWriter, r *http.Request) {
 			w.Header().Set("Content-Type", "application/json")
 			events, err := DB.Events()
@@ -22,7 +22,7 @@ func init() {
 		},
 	))
 
-	Router.Path("/api/v0/events").Methods("POST").Handler(jwtHandlerFunc(
+	Router.Path("/api/v0/events").Methods("POST").Handler(authenticated(
 		func(w http.ResponseWriter, r *http.Request) {
 			w.Header().Set("Content-Type", "application/json")
 			timestamp, err := strconv.Atoi(r.FormValue("when"))

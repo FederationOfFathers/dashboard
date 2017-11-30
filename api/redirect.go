@@ -7,7 +7,7 @@ import (
 )
 
 func init() {
-	Router.Path("/api/v0/redirect/team-tool").Methods("GET").Handler(jwtHandlerFunc(
+	Router.Path("/api/v0/redirect/team-tool").Methods("GET").Handler(authenticated(
 		func(w http.ResponseWriter, r *http.Request) {
 			w.Header().Set("Content-Type", "text/plain")
 			id := getSlackUserID(r)

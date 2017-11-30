@@ -12,7 +12,7 @@ import (
 
 func init() {
 
-	Router.Path("/api/v1/channels").Methods("GET").Handler(jwtHandlerFunc(
+	Router.Path("/api/v1/channels").Methods("GET").Handler(authenticated(
 		func(w http.ResponseWriter, r *http.Request) {
 
 			w.Header().Set("Content-Type", "application/json")
@@ -58,7 +58,7 @@ func init() {
 		},
 	))
 
-	Router.Path("/api/v0/channels").Methods("GET").Handler(jwtHandlerFunc(
+	Router.Path("/api/v0/channels").Methods("GET").Handler(authenticated(
 		func(w http.ResponseWriter, r *http.Request) {
 			var lookup = map[string]string{}
 			var maxAge = time.Hour * 24 * 31
@@ -94,7 +94,7 @@ func init() {
 		},
 	))
 
-	Router.Path("/api/v0/channels/{channelID}/leave").Methods("GET").Handler(jwtHandlerFunc(
+	Router.Path("/api/v0/channels/{channelID}/leave").Methods("GET").Handler(authenticated(
 		func(w http.ResponseWriter, r *http.Request) {
 			w.Header().Set("Content-Type", "application/json")
 			id := getSlackUserID(r)
@@ -111,7 +111,7 @@ func init() {
 		},
 	))
 
-	Router.Path("/api/v0/channels/{channelID}/join").Methods("GET").Handler(jwtHandlerFunc(
+	Router.Path("/api/v0/channels/{channelID}/join").Methods("GET").Handler(authenticated(
 		func(w http.ResponseWriter, r *http.Request) {
 			w.Header().Set("Content-Type", "application/json")
 			id := getSlackUserID(r)
@@ -128,7 +128,7 @@ func init() {
 		},
 	))
 
-	Router.Path("/api/v0/channels/{channelID}/join").Methods("GET").Handler(jwtHandlerFunc(
+	Router.Path("/api/v0/channels/{channelID}/join").Methods("GET").Handler(authenticated(
 		func(w http.ResponseWriter, r *http.Request) {
 			w.Header().Set("Content-Type", "application/json")
 			id := getSlackUserID(r)

@@ -13,7 +13,7 @@ import (
 )
 
 func init() {
-	Router.Path("/api/v0/streams").Methods("GET").Handler(jwtHandlerFunc(
+	Router.Path("/api/v0/streams").Methods("GET").Handler(authenticated(
 		func(w http.ResponseWriter, r *http.Request) {
 			w.Header().Set("Content-Type", "application/json")
 			enc := json.NewEncoder(w)
@@ -21,7 +21,7 @@ func init() {
 		},
 	))
 
-	Router.Path("/api/v0/streams/{memberID}/{type}").Methods("DELETE").Handler(jwtHandlerFunc(
+	Router.Path("/api/v0/streams/{memberID}/{type}").Methods("DELETE").Handler(authenticated(
 		func(w http.ResponseWriter, r *http.Request) {
 			w.Header().Set("Content-Type", "application/json")
 			id := getSlackUserID(r)
@@ -47,7 +47,7 @@ func init() {
 		},
 	))
 
-	Router.Path("/api/v0/streams/{memberID}").Methods("GET").Handler(jwtHandlerFunc(
+	Router.Path("/api/v0/streams/{memberID}").Methods("GET").Handler(authenticated(
 		func(w http.ResponseWriter, r *http.Request) {
 			w.Header().Set("Content-Type", "application/json")
 			member, err := DB.MemberByAny(mux.Vars(r)["memberID"])
@@ -72,7 +72,7 @@ func init() {
 		},
 	))
 
-	streamSetHandler := jwtHandlerFunc(
+	streamSetHandler := authenticated(
 		func(w http.ResponseWriter, r *http.Request) {
 			defer r.Body.Close()
 			var kind string

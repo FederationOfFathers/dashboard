@@ -34,7 +34,7 @@ func isSlackUserInGroup(slackID, groupID string) bool {
 }
 
 func init() {
-	Router.Path("/api/v0/groups").Methods("GET").Handler(jwtHandlerFunc(
+	Router.Path("/api/v0/groups").Methods("GET").Handler(authenticated(
 		func(w http.ResponseWriter, r *http.Request) {
 			w.Header().Set("Content-Type", "application/json")
 			id := getSlackUserID(r)
@@ -80,7 +80,7 @@ func init() {
 		},
 	))
 
-	Router.Path("/api/v0/groups/{groupID}/join").Methods("GET").Handler(jwtHandlerFunc(
+	Router.Path("/api/v0/groups/{groupID}/join").Methods("GET").Handler(authenticated(
 		func(w http.ResponseWriter, r *http.Request) {
 			w.Header().Set("Content-Type", "application/json")
 			id := getSlackUserID(r)
@@ -102,7 +102,7 @@ func init() {
 		},
 	))
 
-	Router.Path("/api/v0/groups/{groupID}/leave").Methods("GET").Handler(jwtHandlerFunc(
+	Router.Path("/api/v0/groups/{groupID}/leave").Methods("GET").Handler(authenticated(
 		func(w http.ResponseWriter, r *http.Request) {
 			w.Header().Set("Content-Type", "application/json")
 			id := getSlackUserID(r)
@@ -124,7 +124,7 @@ func init() {
 		},
 	))
 
-	Router.Path("/api/v0/groups/{groupID}/visibility").Methods("PUT", "POST", "OPTIONS").Handler(jwtHandlerFunc(
+	Router.Path("/api/v0/groups/{groupID}/visibility").Methods("PUT", "POST", "OPTIONS").Handler(authenticated(
 		func(w http.ResponseWriter, r *http.Request) {
 			defer r.Body.Close()
 			if r.Method == "OPTIONS" {

@@ -13,7 +13,7 @@ import (
 )
 
 func init() {
-	Router.Path("/api/v0/meta/member/{memberID}/{key}").Methods("DELETE").Handler(jwtHandlerFunc(
+	Router.Path("/api/v0/meta/member/{memberID}/{key}").Methods("DELETE").Handler(authenticated(
 		func(w http.ResponseWriter, r *http.Request) {
 			w.Header().Set("Content-Type", "application/json")
 			id := getSlackUserID(r)
@@ -31,7 +31,7 @@ func init() {
 		},
 	))
 
-	Router.Path("/api/v0/meta/member/{memberID}").Methods("GET").Handler(jwtHandlerFunc(
+	Router.Path("/api/v0/meta/member/{memberID}").Methods("GET").Handler(authenticated(
 		func(w http.ResponseWriter, r *http.Request) {
 			w.Header().Set("Content-Type", "application/json")
 			member, err := DB.MemberByAny(mux.Vars(r)["memberID"])
@@ -66,7 +66,7 @@ func init() {
 	))
 
 	Router.Path("/api/v0/meta/member/{memberID}").Methods("PUT", "POST").Handler(
-		jwtHandlerFunc(
+		authenticated(
 			func(w http.ResponseWriter, r *http.Request) {
 				w.Header().Set("Content-Type", "application/json")
 				defer r.Body.Close()

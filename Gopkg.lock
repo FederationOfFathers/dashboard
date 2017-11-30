@@ -8,22 +8,10 @@
   revision = "703f8911690139c3e1062143aaa00fb913c8dbe5"
 
 [[projects]]
-  branch = "master"
-  name = "github.com/auth0/go-jwt-middleware"
-  packages = ["."]
-  revision = "5493cabe49f7bfa6e2ec444a09d334d90cd4e2bd"
-
-[[projects]]
   name = "github.com/boltdb/bolt"
   packages = ["."]
   revision = "2f1ce7a837dcb8da3ec595b1dac9d0632f0f99e8"
   version = "v1.3.1"
-
-[[projects]]
-  name = "github.com/dgrijalva/jwt-go"
-  packages = ["."]
-  revision = "dbeaa9332f19a944acb5736b4456cfcc02140e29"
-  version = "v3.1.0"
 
 [[projects]]
   name = "github.com/dineshappavoo/basex"
@@ -60,6 +48,12 @@
   packages = ["."]
   revision = "7f08801859139f86dfafd1c296e2cba9a80d292e"
   version = "v1.6.0"
+
+[[projects]]
+  name = "github.com/gorilla/securecookie"
+  packages = ["."]
+  revision = "667fe4e3466a040b780561fe9b51a83a3753eefc"
+  version = "v1.1"
 
 [[projects]]
   name = "github.com/jinzhu/gorm"
@@ -184,6 +178,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "7507ec31d770f870d6ad552766d71e2ccaa28db4fcfbdc60f4a9177b659f1d44"
+  inputs-digest = "02791b4c3911e08516cb789d6eebbd0cf9f9d9e767b5b503a3c3603930a726e8"
   solver-name = "gps-cdcl"
   solver-version = 1

@@ -12,7 +12,7 @@ import (
 )
 
 func init() {
-	Router.Path("/api/v0/member/{memberID}").Methods("GET").Handler(jwtHandlerFunc(
+	Router.Path("/api/v0/member/{memberID}").Methods("GET").Handler(authenticated(
 		func(w http.ResponseWriter, r *http.Request) {
 			w.Header().Set("Content-Type", "application/json")
 			member, err := DB.MemberBySlackID(mux.Vars(r)["memberID"])
@@ -33,7 +33,7 @@ func init() {
 	))
 
 	Router.Path("/api/v0/member/{memberID}").Methods("PUT", "POST").Handler(
-		jwtHandlerFunc(
+		authenticated(
 			func(w http.ResponseWriter, r *http.Request) {
 				w.Header().Set("Content-Type", "application/json")
 				defer r.Body.Close()

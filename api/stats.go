@@ -20,12 +20,12 @@ func statsPassthrough(uri string, w http.ResponseWriter, r *http.Request) {
 }
 
 func init() {
-	Router.PathPrefix("/api/v0/xhr/stats/").Methods("GET").Handler(jwtHandlerFunc(
+	Router.PathPrefix("/api/v0/xhr/stats/").Methods("GET").Handler(authenticated(
 		func(w http.ResponseWriter, r *http.Request) {
 			statsPassthrough(fmt.Sprintf("%s?%s", r.URL.Path[17:], r.URL.Query().Encode()), w, r)
 		},
 	))
-	Router.PathPrefix("/xhr/stats/").Methods("GET").Handler(jwtHandlerFunc(
+	Router.PathPrefix("/xhr/stats/").Methods("GET").Handler(authenticated(
 		func(w http.ResponseWriter, r *http.Request) {
 			statsPassthrough(fmt.Sprintf("%s?%s", r.URL.Path[10:], r.URL.Query().Encode()), w, r)
 		},
