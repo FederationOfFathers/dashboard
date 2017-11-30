@@ -30,7 +30,7 @@ func New(dialect string, args ...interface{}) *DB {
 		DB: d,
 	}
 	rval.eventCache = []*Event{}
-	rval.LogMode(true)
+	rval.LogMode(false)
 	rval.migrate()
 	return rval
 }
