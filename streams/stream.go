@@ -49,7 +49,7 @@ func MindList() {
 func mind() {
 	mindYoutube()
 	mindTwitch()
-	mindBeam()
+	mindMixer()
 	uptimer := time.Tick(1 * time.Minute)
 	twtimer := time.Tick(1 * time.Minute)
 	yttimer := time.Tick(1 * time.Minute)
@@ -63,7 +63,7 @@ func mind() {
 		case <-yttimer:
 			mindYoutube()
 		case <-bptimer:
-			mindBeam()
+			mindMixer()
 		}
 	}
 }

@@ -14,26 +14,24 @@ import (
 
 var bplog *zap.Logger
 
-type beamChannelResponse struct {
-	Name  string `json:"name"`
-	Token string `json:"token"`
-	User  struct {
+type mixerChannelResponse struct {
+	Name          string `json:"name"`
+	Token         string `json:"token"`
+	ChannelOnline bool   `json:"online"`
+	ChannelID     int64
+	User          struct {
 		AvatarUrl string `json:"avatarUrl"`
-		Channel   struct {
-			ID     int64 `json:"id"`
-			Online bool  `json:"online"`
-		} `json:"channel"`
 	} `json:"user"`
 	Type struct {
 		Name string `json:"name"`
 	} `json:"type"`
 }
 
-type beamManifestResponse struct {
+type mixerManifestResponse struct {
 	StartedAt string `json:"startedAt"`
 }
 
-type Beam struct {
+type Mixer struct {
 	BeamUsername string
 	ChannelID    int64
 	Online       bool
@@ -44,11 +42,11 @@ type Beam struct {
 	AvatarUrl    string
 }
 
-func (b *Beam) Update() error {
+func (b *Mixer) Update() error {
 	b.Online = false
 	b.Game = ""
 	b.StartedAt = ""
-	var c = new(beamChannelResponse)
+	var c = new(mixerChannelResponse)
 	var cURL = fmt.Sprintf("https://mixer.com/api/v1/channels/%s", b.BeamUsername)
 	bplog.Info("fetching channel", zap.String("url", cURL))
 	chResponse, err := http.Get(cURL)
@@ -62,16 +60,16 @@ func (b *Beam) Update() error {
 	if err := json.NewDecoder(chResponse.Body).Decode(&c); err != nil {
 		return err
 	}
-	if !c.User.Channel.Online {
+	if !c.ChannelOnline {
 		return nil
 	}
-	b.Online = c.User.Channel.Online
-	b.ChannelID = c.User.Channel.ID
+	b.Online = c.ChannelOnline
+	b.ChannelID = c.ChannelID
 	b.Game = c.Type.Name
 	b.Title = c.Name
 	b.BeamUsername = c.Token
 	b.AvatarUrl = c.User.AvatarUrl
-	var m = new(beamManifestResponse)
+	var m = new(mixerManifestResponse)
 	var mURL = fmt.Sprintf("https://mixer.com/api/v1/channels/%d/manifest.light2", b.ChannelID)
 	bplog.Info("fetching manifest", zap.String("url", mURL))
 	rsp, err := http.Get(mURL)
@@ -97,7 +95,7 @@ func (b *Beam) Update() error {
 	return nil
 }
 
-func (b *Beam) startMessage(memberID int) (string, slack.PostMessageParameters, error) {
+func (b *Mixer) startMessage(memberID int) (string, slack.PostMessageParameters, error) {
 	var messageParams = slack.NewPostMessageParameters()
 
 	member, err := DB.MemberByID(memberID)
@@ -141,31 +139,31 @@ func (b *Beam) startMessage(memberID int) (string, slack.PostMessageParameters, 
 	return message, messageParams, err
 }
 
-func mindBeam() {
-	bplog = Logger.With(zap.String("service", "beam"))
+func mindMixer() {
+	bplog = Logger.With(zap.String("service", "mixer"))
 	bplog.Debug("begin minding")
 	for _, stream := range Streams {
 		if stream.Beam == "" {
 			bplog.Debug("not a mixer.com stream", zap.Int("id", stream.ID), zap.Int("member_id", stream.MemberID))
 			continue
 		}
-		bplog.Debug("minding mixer.com stream", zap.String("beam id", stream.Beam))
-		updateBeam(stream)
+		bplog.Debug("minding mixer.com stream", zap.String("mixer id", stream.Beam))
+		updateMixer(stream)
 	}
 	bplog.Debug("end minding")
 }
 
-func updateBeam(s *db.Stream) {
-	beam := &Beam{
+func updateMixer(s *db.Stream) {
+	mixer := &Mixer{
 		BeamUsername: s.Beam,
 	}
-	err := beam.Update()
+	err := mixer.Update()
 	if err != nil {
-		bplog.Error("Error updating beam stream details", zap.Error(err))
+		bplog.Error("Error updating mixer stream details", zap.Error(err))
 		return
 	}
 
-	if !beam.Online {
+	if !mixer.Online {
 		var save bool
 		if s.BeamStop < s.BeamStart {
 			s.BeamStop = time.Now().Unix()
@@ -184,14 +182,14 @@ func updateBeam(s *db.Stream) {
 		return
 	}
 
-	var startedAt = beam.StartedTime.Unix()
-	if startedAt <= s.BeamStart && s.BeamGame == beam.Game {
+	var startedAt = mixer.StartedTime.Unix()
+	if startedAt <= s.BeamStart && s.BeamGame == mixer.Game {
 		// Continuation of known stream
 		return
 	}
 
 	s.BeamStart = startedAt
-	s.BeamGame = beam.Game
+	s.BeamGame = mixer.Game
 	if s.BeamStop > s.BeamStart {
 		s.BeamStop = s.BeamStart - 1
 	}
@@ -201,7 +199,7 @@ func updateBeam(s *db.Stream) {
 		return
 	}
 
-	if msg, params, err := beam.startMessage(s.MemberID); err == nil {
+	if msg, params, err := mixer.startMessage(s.MemberID); err == nil {
 		if err := bridge.PostMessage(channel, msg, params); err != nil {
 			bplog.Error("error posting start message to slack", zap.String("key", s.Beam), zap.Error(err))
 		}
