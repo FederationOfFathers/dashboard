@@ -2,13 +2,19 @@ package bot
 
 import (
 	"fmt"
+	"math/rand"
+	"os"
 	"os/exec"
+	"regexp"
+	"strconv"
 	"strings"
 	"time"
 
 	"github.com/nlopes/slack"
 	"go.uber.org/zap"
 )
+
+var isDev = os.Getenv("DEV_LOGGING") != ""
 
 type MessageHandler func(*slack.MessageEvent) bool
 
@@ -18,6 +24,7 @@ var ChannelMessageHandlers = []MessageHandler{
 	handleChannelUpload,
 	handleFortune,
 	handleSaySomething,
+	handleDice,
 	handleTimeout,
 }
 var GroupMessageHandlers = []MessageHandler{
@@ -25,6 +32,7 @@ var GroupMessageHandlers = []MessageHandler{
 	handleChannelUpload,
 	handleFortune,
 	handleSaySomething,
+	handleDice,
 	handleTimeout,
 }
 var DirectMessageHandlers = []MessageHandler{
@@ -34,6 +42,7 @@ var DirectMessageHandlers = []MessageHandler{
 	handleFortune,
 	handleSaySomething,
 	handleDevLogin,
+	handleDice,
 	handleTimeout,
 }
 
@@ -180,6 +189,71 @@ func handleFortune(m *slack.MessageEvent) bool {
 			}
 			return true
 		}
+	}
+	return false
+}
+
+var diceRx = regexp.MustCompile("^roll ([0-9]+)?(d)([0-9]+)(?:([+-])([0-9]+))?\\s*$")
+
+func handleDice(m *slack.MessageEvent) bool {
+	if isDev {
+		return false
+	}
+	if roll := diceRx.FindAllStringSubmatch(m.Msg.Text, -1); roll != nil {
+		var err error
+		var mult = 1
+		var max = 1
+		var plus = 0
+		var minus = 0
+		var total = 0
+		var dice []int
+
+		if roll[0][1] != "" {
+			mult, err = strconv.Atoi(roll[0][1])
+			if err != nil {
+				return false
+			}
+		}
+		max, err = strconv.Atoi(roll[0][3])
+		if err != nil {
+			return false
+		}
+		if roll[0][4] != "" && roll[0][5] != "" {
+			if roll[0][4] == "+" {
+				plus, err = strconv.Atoi(roll[0][5])
+				if err != nil {
+					return false
+				}
+			} else {
+				minus, err = strconv.Atoi(roll[0][5])
+				if err != nil {
+					return false
+				}
+			}
+		}
+		var out string
+		var strdice = []string{}
+		for i := 0; i < mult; i++ {
+			die := rand.Intn(max-1) + 1
+			dice = append(dice, die)
+			strdice = append(strdice, fmt.Sprintf("%d", die))
+			total = total + die
+		}
+		if plus > 0 {
+			total = total + plus
+			out = fmt.Sprintf("+%d", plus)
+		}
+		if minus > 0 {
+			total = total - minus
+			out = fmt.Sprintf("-%d", minus)
+		}
+		out = fmt.Sprintf("*%d* (%s%s)", total, strings.Join(strdice, ","), out)
+		rtm.SendMessage(&slack.OutgoingMessage{
+			ID:      int(time.Now().UnixNano()),
+			Channel: m.Channel,
+			Text:    fmt.Sprintf("rolled %s", out),
+			Type:    "message",
+		})
 	}
 	return false
 }
