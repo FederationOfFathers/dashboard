@@ -155,13 +155,13 @@
   branch = "master"
   name = "golang.org/x/net"
   packages = ["context","webdav","webdav/internal/xml","websocket"]
-  revision = "a8b9294777976932365dabb6640cf1468d95c70f"
+  revision = "ab555f366c4508dbe0802550b1b20c46c5c18aa0"
 
 [[projects]]
   branch = "master"
   name = "golang.org/x/sys"
   packages = ["unix"]
-  revision = "13fcbd661c8ececa8807a29b48407d674b1d8ed8"
+  revision = "810d7000345868fc619eb81f46307107118f4ae1"
 
 [[projects]]
   name = "gopkg.in/djherbis/stow.v2"
@@ -173,7 +173,7 @@
   branch = "v2"
   name = "gopkg.in/yaml.v2"
   packages = ["."]
-  revision = "287cf08546ab5e7e37d55a84f7ed3fd1db036de5"
+  revision = "d670f9405373e636a5a2765eea47fac0c9bc91a4"
 
 [solve-meta]
   analyzer-name = "dep"
