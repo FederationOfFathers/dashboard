@@ -193,7 +193,7 @@ func handleFortune(m *slack.MessageEvent) bool {
 	return false
 }
 
-var diceRx = regexp.MustCompile("^roll ([0-9]+)?(d)([0-9]+)(?:([+-])([0-9]+))?\\s*$")
+var diceRx = regexp.MustCompile("^(?i)roll ([0-9]+)?(d)([0-9]+)(?:([+-])([0-9]+))?\\s*$")
 
 func handleDice(m *slack.MessageEvent) bool {
 	if isDev {
@@ -234,7 +234,12 @@ func handleDice(m *slack.MessageEvent) bool {
 		var out string
 		var strdice = []string{}
 		for i := 0; i < mult; i++ {
-			die := rand.Intn(max-1) + 1
+			var die int
+			if max < 2 {
+				die = max
+			} else {
+				die = rand.Intn(max-1) + 1
+			}
 			dice = append(dice, die)
 			strdice = append(strdice, fmt.Sprintf("%d", die))
 			total = total + die
