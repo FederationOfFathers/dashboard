@@ -238,7 +238,7 @@ func handleDice(m *slack.MessageEvent) bool {
 			if max < 2 {
 				die = max
 			} else {
-				die = rand.Intn(max-1) + 1
+				die = rand.Intn(max) + 1
 			}
 			dice = append(dice, die)
 			strdice = append(strdice, fmt.Sprintf("%d", die))
