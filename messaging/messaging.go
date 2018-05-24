@@ -1,0 +1,74 @@
+package messaging
+
+import (
+	"github.com/FederationOfFathers/dashboard/clients/mixer"
+	"github.com/knspriggs/go-twitch"
+	"go.uber.org/zap"
+)
+
+var msgApis []MsgAPI
+var Logger *zap.Logger
+
+type StreamMessage struct {
+	Platform         string
+	PlatformLogo     string
+	PlatformColor    string
+	PlatformColorInt int
+	Username         string
+	UserLogo         string
+	URL              string
+	Game             string
+	Description      string
+}
+
+// Add Messaging APIs that will be used to send messages
+func AddMsgAPI(msgApi MsgAPI) {
+	msgApis = append(msgApis, msgApi)
+}
+
+type MsgAPI interface {
+	PostStreamMessage(sm StreamMessage) error
+	//PostMessageToChannel(channel string, message string)
+}
+
+func SendTwitchStreamMessage(t twitch.StreamType) {
+	var playing = t.Channel.Game
+	if playing == "" {
+		playing = "something"
+	}
+	sm := StreamMessage{
+		Platform:         "Twitch",
+		PlatformLogo:     "https://slack-imgs.com/?c=1&o1=wi16.he16.si.ip&url=https%3A%2F%2Fwww.twitch.tv%2Ffavicon.ico",
+		PlatformColor:    "#6441A4",
+		PlatformColorInt: 6570404,
+		Username:         t.Channel.DisplayName,
+		UserLogo:         t.Channel.Logo,
+		URL:              t.Channel.URL,
+		Game:             playing,
+		Description:      t.Channel.Status,
+	}
+	postStreamMessageToAllApis(sm)
+}
+func SendMixerStreamMessage(m mixer.Mixer) {
+	sm := StreamMessage{
+		Platform:         "Mixer",
+		PlatformLogo:     "https://mixer.com/_latest/assets/favicons/favicon-16x16.png",
+		PlatformColor:    "#1FBAED",
+		PlatformColorInt: 2079469,
+		Username:         m.BeamUsername,
+		UserLogo:         m.AvatarUrl,
+		URL:              m.GetChannelUrl(),
+		Game:             m.Game,
+		Description:      m.Title,
+	}
+	postStreamMessageToAllApis(sm)
+}
+
+func postStreamMessageToAllApis(sm StreamMessage) {
+	for _, msgApi := range msgApis {
+		err := msgApi.PostStreamMessage(sm)
+		if err != nil {
+			Logger.Error("unable to send stream update", zap.Error(err))
+		}
+	}
+}
