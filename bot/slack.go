@@ -10,6 +10,7 @@ import (
 	"github.com/FederationOfFathers/dashboard/db"
 	"github.com/nlopes/slack"
 	"go.uber.org/zap"
+	"github.com/FederationOfFathers/dashboard/messaging"
 )
 
 var api *slack.Client
@@ -23,6 +24,29 @@ var DB *db.DB
 
 // LogLevel sets the logging verbosity for the package
 var LogLevel = zap.InfoLevel
+
+type SlackAPI struct {
+	Token string
+	Slack *slack.Client
+	streamNoticeChannelId string
+}
+
+func NewSlackAPI(token string, streamChannelId string) SlackAPI {
+	return SlackAPI{
+		Token: token,
+		streamNoticeChannelId: streamChannelId,
+	}
+}
+
+func (s *SlackAPI) Connect() {
+	if messagingClient != nil {
+		s.Slack = messagingClient
+	}
+}
+
+func (s SlackAPI) Shutdown() {
+	// nothing to do here, but maybe one day
+}
 
 // SlackConnect gets the whole party stated
 func SlackConnect(slackToken string) error {
@@ -258,4 +282,32 @@ func GroupKick(groupID, userID string) error {
 
 func ChannelKick(channelID, userID string) error {
 	return api.KickUserFromChannel(channelID, userID)
+}
+
+func (s SlackAPI) PostStreamMessage(sm messaging.StreamMessage) error {
+	if s.Slack == nil {
+		return fmt.Errorf("slack API not connected")
+	}
+	messageParams := slack.NewPostMessageParameters()
+	message := fmt.Sprintf("*%s is live!* - %s", sm.Username, sm.URL)
+	messageParams.AsUser = true
+	messageParams.Parse = "full"
+	messageParams.LinkNames = 1
+	messageParams.UnfurlMedia = true
+	messageParams.UnfurlLinks = false
+	messageParams.EscapeText = false
+	messageParams.Attachments = append(messageParams.Attachments, slack.Attachment{
+		Fallback:   message,
+		Color:      sm.PlatformColor,
+		AuthorName: fmt.Sprintf("%s is live with %s", sm.Username, sm.Game),
+		Title:      "Join the stream",
+		TitleLink:  sm.URL,
+		ThumbURL:   sm.UserLogo,
+		Text:       sm.Description,
+		Footer:     sm.Platform,
+		FooterIcon: sm.PlatformLogo,
+	})
+
+	_, _, err := s.Slack.PostMessage(s.streamNoticeChannelId, message, messageParams)
+	return err
 }
