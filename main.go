@@ -53,12 +53,14 @@ func init() {
 	scfg.StringVar(&streamChannel, "streamChannel", streamChannel, "where to send streaming notices")
 	scfg.BoolVar(&mindStreams, "mindStreams", mindStreams, "should we mind streaming?")
 
+	discfg := cfg.New("cfg-discord")
+	discfg.StringVar(&discordBotToken, "discordBotToken", discordBotToken, "Discord Bot Token")
+	discfg.StringVar(&discordStreamChannelId, "discordStreamChannelId", discordStreamChannelId, "Discord Stream Channel ID")
+
 	acfg := cfg.New("cfg-api")
 	acfg.StringVar(&api.ListenOn, "listen", api.ListenOn, "API bind address (env: API_LISTEN)")
 	acfg.StringVar(&api.AuthSecret, "secret", api.AuthSecret, "Authentication secret for use in generating login tokens")
 	acfg.StringVar(&api.JWTSecret, "hmac", api.JWTSecret, "Authentication secret used for JWT tokens")
-	acfg.StringVar(&discordBotToken, "discordBotToken", discordBotToken, "Discord Bot Token")
-	acfg.StringVar(&discordStreamChannelId, "discordStreamChannelId", discordStreamChannelId, "Discord Stream Channel ID")
 
 	ecfg := cfg.New("cfg-events")
 	ecfg.StringVar(&events.SaveFile, "savefile", events.SaveFile, "path to the file in which events should be persisted")
@@ -118,7 +120,7 @@ func main() {
 
 	streams.Init(streamChannel)
 	if mindStreams {
-		logger.Info("Minding streams", zap.String("channel", streamChannel), zap.String("twitch_client_id", twitchClientID))
+		logger.Info("Minding streams", zap.String("channel", streamChannel))
 		streams.MustTwitch(twitchClientID)
 		streams.Mind()
 	} else {

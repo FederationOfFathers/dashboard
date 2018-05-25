@@ -74,7 +74,7 @@ func SlackConnect(slackToken string) error {
 	}()
 	messagingClient = &rtm.Client
 	if MessagingKey != "" {
-		Logger.Warn("Using special key for fofbot messaging", zap.String("key", MessagingKey))
+		Logger.Warn("Using special key for fofbot messaging")
 		messagingClient = slack.New(MessagingKey)
 	} else {
 		Logger.Warn("Using default client for fofbot messaging")
