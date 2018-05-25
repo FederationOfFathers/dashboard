@@ -50,16 +50,23 @@ func (d DiscordAPI) PostStreamMessage(sm messaging.StreamMessage) error {
 		URL: sm.UserLogo,
 	}
 	footer := discordgo.MessageEmbedFooter{
-		Text: sm.Platform,
+		Text: fmt.Sprintf("%s | %s", sm.Platform, sm.Timestamp),
 		IconURL: sm.PlatformLogo,
 	}
 	messageEmbed := discordgo.MessageEmbed{
-		Description: fmt.Sprintf("**Game:** %s\n%s\n%s", sm.Game, sm.Description, sm.URL),
+		Description: sm.URL,
 		Color: sm.PlatformColorInt,
 		URL: sm.URL,
 		Author: &author,
 		Thumbnail: &thumbnail,
 		Footer: &footer,
+		Fields: []*discordgo.MessageEmbedField{
+			{
+				Name: "Game",
+				Value: fmt.Sprintf("%s - %s", sm.Game, sm.Description),
+				Inline: false,
+			},
+		},
 	}
 	_, err := d.discord.ChannelMessageSendEmbed(d.streamNoticeChannelId, &messageEmbed)
 	return err

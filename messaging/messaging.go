@@ -4,6 +4,7 @@ import (
 	"github.com/FederationOfFathers/dashboard/clients/mixer"
 	"github.com/knspriggs/go-twitch"
 	"go.uber.org/zap"
+	"time"
 )
 
 var msgApis []MsgAPI
@@ -19,6 +20,7 @@ type StreamMessage struct {
 	URL              string
 	Game             string
 	Description      string
+	Timestamp        string
 }
 
 // Add Messaging APIs that will be used to send messages
@@ -46,6 +48,7 @@ func SendTwitchStreamMessage(t twitch.StreamType) {
 		URL:              t.Channel.URL,
 		Game:             playing,
 		Description:      t.Channel.Status,
+		Timestamp:        time.Now().Format("01/02/2006 15:04 MST"),
 	}
 	postStreamMessageToAllApis(sm)
 }
@@ -60,6 +63,7 @@ func SendMixerStreamMessage(m mixer.Mixer) {
 		URL:              m.GetChannelUrl(),
 		Game:             m.Game,
 		Description:      m.Title,
+		Timestamp:        time.Now().Format("01/02/2006 15:04 MST"),
 	}
 	postStreamMessageToAllApis(sm)
 }

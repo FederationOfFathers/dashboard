@@ -8,9 +8,9 @@ import (
 
 	"github.com/FederationOfFathers/dashboard/bridge"
 	"github.com/FederationOfFathers/dashboard/db"
+	"github.com/FederationOfFathers/dashboard/messaging"
 	"github.com/nlopes/slack"
 	"go.uber.org/zap"
-	"github.com/FederationOfFathers/dashboard/messaging"
 )
 
 var api *slack.Client
@@ -26,8 +26,8 @@ var DB *db.DB
 var LogLevel = zap.InfoLevel
 
 type SlackAPI struct {
-	Token string
-	Slack *slack.Client
+	Token                 string
+	Slack                 *slack.Client
 	streamNoticeChannelId string
 }
 
@@ -288,6 +288,7 @@ func (s SlackAPI) PostStreamMessage(sm messaging.StreamMessage) error {
 	if s.Slack == nil {
 		return fmt.Errorf("slack API not connected")
 	}
+
 	messageParams := slack.NewPostMessageParameters()
 	message := fmt.Sprintf("*%s is live!* - %s", sm.Username, sm.URL)
 	messageParams.AsUser = true
@@ -299,15 +300,20 @@ func (s SlackAPI) PostStreamMessage(sm messaging.StreamMessage) error {
 	messageParams.Attachments = append(messageParams.Attachments, slack.Attachment{
 		Fallback:   message,
 		Color:      sm.PlatformColor,
-		AuthorName: fmt.Sprintf("%s is live with %s", sm.Username, sm.Game),
-		Title:      "Join the stream",
+		Title:      fmt.Sprintf("%s is live!", sm.Username),
 		TitleLink:  sm.URL,
 		ThumbURL:   sm.UserLogo,
-		Text:       sm.Description,
-		Footer:     sm.Platform,
+		Footer:     fmt.Sprintf("%s | %s", sm.Platform, sm.Timestamp),
 		FooterIcon: sm.PlatformLogo,
+		Fields: []slack.AttachmentField{
+			{
+				Title: "Game",
+				Value: fmt.Sprintf("%s - %s", sm.Game, sm.Description),
+				Short: false,
+			},
+		},
 	})
 
-	_, _, err := s.Slack.PostMessage(s.streamNoticeChannelId, message, messageParams)
+	_, _, err := s.Slack.PostMessage(s.streamNoticeChannelId, "", messageParams)
 	return err
 }
