@@ -5,6 +5,7 @@ import (
 	"github.com/knspriggs/go-twitch"
 	"go.uber.org/zap"
 	"time"
+	"reflect"
 )
 
 var msgApis []MsgAPI
@@ -25,6 +26,7 @@ type StreamMessage struct {
 
 // Add Messaging APIs that will be used to send messages
 func AddMsgAPI(msgApi MsgAPI) {
+	Logger.Info("Adding new message API",zap.String("type", reflect.TypeOf(msgApi).String()))
 	msgApis = append(msgApis, msgApi)
 }
 
