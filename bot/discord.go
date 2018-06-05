@@ -43,6 +43,9 @@ func (d DiscordAPI) PostStreamMessage(sm messaging.StreamMessage) error {
 	if d.discord == nil {
 		return fmt.Errorf("discord API not connected")
 	}
+	if d.streamNoticeChannelId == "" {
+		return fmt.Errorf("stream channel id not configured")
+	}
 	author := discordgo.MessageEmbedAuthor{
 		Name: fmt.Sprintf("%s is live!", sm.Username),
 	}

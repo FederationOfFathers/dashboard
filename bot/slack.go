@@ -288,6 +288,9 @@ func (s SlackAPI) PostStreamMessage(sm messaging.StreamMessage) error {
 	if s.Slack == nil {
 		return fmt.Errorf("slack API not connected")
 	}
+	if s.streamNoticeChannelId == "" {
+		return fmt.Errorf("stream channel id not configured")
+	}
 
 	messageParams := slack.NewPostMessageParameters()
 	message := fmt.Sprintf("*%s is live!* - %s", sm.Username, sm.URL)
