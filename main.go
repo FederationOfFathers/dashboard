@@ -10,6 +10,7 @@ import (
 	"github.com/FederationOfFathers/dashboard/bridge"
 	"github.com/FederationOfFathers/dashboard/db"
 	"github.com/FederationOfFathers/dashboard/events"
+	"github.com/FederationOfFathers/dashboard/messaging"
 	"github.com/FederationOfFathers/dashboard/store"
 	"github.com/FederationOfFathers/dashboard/streams"
 	"github.com/apokalyptik/cfg"
@@ -19,6 +20,8 @@ import (
 var twitchClientID = ""
 var slackAPIKey = "xox...."
 var slackMessagingKey = ""
+var discordBotToken = ""
+var discordStreamChannelId = ""
 var logger *zap.Logger
 var devPort = 0
 var DB *db.DB
@@ -39,6 +42,7 @@ func init() {
 	streams.Logger = logger.With(zap.String("module", "streams"))
 	db.Logger = logger.With(zap.String("module", "db"))
 	bridge.Logger = logger.With(zap.String("module", "bridge"))
+	messaging.Logger = logger.With(zap.String("module", "messaging"))
 
 	scfg := cfg.New("cfg-slack")
 	scfg.StringVar(&slackAPIKey, "apiKey", slackAPIKey, "Slack API Key (env: SLACK_APIKEY)")
@@ -48,6 +52,10 @@ func init() {
 	scfg.BoolVar(&bot.StartupNotice, "startupNotice", bot.StartupNotice, "send a start-up notice to slack")
 	scfg.StringVar(&streamChannel, "streamChannel", streamChannel, "where to send streaming notices")
 	scfg.BoolVar(&mindStreams, "mindStreams", mindStreams, "should we mind streaming?")
+
+	discfg := cfg.New("cfg-discord")
+	discfg.StringVar(&discordBotToken, "discordBotToken", discordBotToken, "Discord Bot Token")
+	discfg.StringVar(&discordStreamChannelId, "discordStreamChannelId", discordStreamChannelId, "Discord Stream Channel ID")
 
 	acfg := cfg.New("cfg-api")
 	acfg.StringVar(&api.ListenOn, "listen", api.ListenOn, "API bind address (env: API_LISTEN)")
@@ -83,6 +91,7 @@ func main() {
 		bot.LoginLink = fmt.Sprintf("http://fofgaming.com%s/", api.ListenOn)
 	}
 
+	// start a separate message Slack connection if there is a separate messaging key
 	if slackMessagingKey != "" {
 		bot.MessagingKey = slackMessagingKey
 	} else {
@@ -92,14 +101,26 @@ func main() {
 	if err != nil {
 		logger.Fatal("Unable to contact the slack API", zap.Error(err))
 	}
+	slackApi := bot.NewSlackAPI(bot.MessagingKey, streamChannel)
+	slackApi.Connect()
+	defer slackApi.Shutdown()
+	messaging.AddMsgAPI(slackApi)
 
 	bridge.SlackCoreDataUpdated = bot.SlackCoreDataUpdated
 	bridge.OldEventToolLink = events.OldEventToolLink
 	bridge.OldEventToolAuthorization = events.OldEventToolAuthorization
 
+	// start discord bot
+	if discordBotToken != "" {
+		discordApi := bot.NewDiscordAPI(discordBotToken, discordStreamChannelId)
+		discordApi.Connect()
+		defer discordApi.Shutdown()
+		messaging.AddMsgAPI(discordApi)
+	}
+
 	streams.Init(streamChannel)
 	if mindStreams {
-		logger.Info("Minding streams", zap.String("channel", streamChannel), zap.String("twitch_client_id", twitchClientID))
+		logger.Info("Minding streams", zap.String("channel", streamChannel))
 		streams.MustTwitch(twitchClientID)
 		streams.Mind()
 	} else {

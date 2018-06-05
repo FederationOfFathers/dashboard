@@ -8,6 +8,7 @@ import (
 
 	"github.com/FederationOfFathers/dashboard/bridge"
 	"github.com/FederationOfFathers/dashboard/db"
+	"github.com/FederationOfFathers/dashboard/messaging"
 	"github.com/nlopes/slack"
 	"go.uber.org/zap"
 )
@@ -23,6 +24,29 @@ var DB *db.DB
 
 // LogLevel sets the logging verbosity for the package
 var LogLevel = zap.InfoLevel
+
+type SlackAPI struct {
+	Token                 string
+	Slack                 *slack.Client
+	streamNoticeChannelId string
+}
+
+func NewSlackAPI(token string, streamChannelId string) SlackAPI {
+	return SlackAPI{
+		Token: token,
+		streamNoticeChannelId: streamChannelId,
+	}
+}
+
+func (s *SlackAPI) Connect() {
+	if messagingClient != nil {
+		s.Slack = messagingClient
+	}
+}
+
+func (s SlackAPI) Shutdown() {
+	// nothing to do here, but maybe one day
+}
 
 // SlackConnect gets the whole party stated
 func SlackConnect(slackToken string) error {
@@ -50,7 +74,7 @@ func SlackConnect(slackToken string) error {
 	}()
 	messagingClient = &rtm.Client
 	if MessagingKey != "" {
-		Logger.Warn("Using special key for fofbot messaging", zap.String("key", MessagingKey))
+		Logger.Warn("Using special key for fofbot messaging")
 		messagingClient = slack.New(MessagingKey)
 	} else {
 		Logger.Warn("Using default client for fofbot messaging")
@@ -258,4 +282,41 @@ func GroupKick(groupID, userID string) error {
 
 func ChannelKick(channelID, userID string) error {
 	return api.KickUserFromChannel(channelID, userID)
+}
+
+func (s SlackAPI) PostStreamMessage(sm messaging.StreamMessage) error {
+	if s.Slack == nil {
+		return fmt.Errorf("slack API not connected")
+	}
+	if s.streamNoticeChannelId == "" {
+		return fmt.Errorf("stream channel id not configured")
+	}
+
+	messageParams := slack.NewPostMessageParameters()
+	message := fmt.Sprintf("*%s is live!* - %s", sm.Username, sm.URL)
+	messageParams.AsUser = true
+	messageParams.Parse = "full"
+	messageParams.LinkNames = 1
+	messageParams.UnfurlMedia = true
+	messageParams.UnfurlLinks = false
+	messageParams.EscapeText = false
+	messageParams.Attachments = append(messageParams.Attachments, slack.Attachment{
+		Fallback:   message,
+		Color:      sm.PlatformColor,
+		Title:      fmt.Sprintf("%s is live!", sm.Username),
+		TitleLink:  sm.URL,
+		ThumbURL:   sm.UserLogo,
+		Footer:     fmt.Sprintf("%s | %s", sm.Platform, sm.Timestamp),
+		FooterIcon: sm.PlatformLogo,
+		Fields: []slack.AttachmentField{
+			{
+				Title: "Game",
+				Value: fmt.Sprintf("%s - %s", sm.Game, sm.Description),
+				Short: false,
+			},
+		},
+	})
+
+	_, _, err := s.Slack.PostMessage(s.streamNoticeChannelId, "", messageParams)
+	return err
 }

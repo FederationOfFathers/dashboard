@@ -1,6 +1,7 @@
 dashboard
 ui/ab0x.go
 cfg-slack.yml
+cfg-discord.yml
 cfg-api.yml
 cfg-db.yml
 cfg-events.yml
@@ -30,3 +31,4 @@ _testmain.go
 *.exe
 *.test
 *.prof
+.idea

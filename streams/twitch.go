@@ -4,10 +4,9 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/FederationOfFathers/dashboard/bridge"
 	"github.com/FederationOfFathers/dashboard/db"
-	twitch "github.com/knspriggs/go-twitch"
-	"github.com/nlopes/slack"
+	"github.com/FederationOfFathers/dashboard/messaging"
+	"github.com/knspriggs/go-twitch"
 	"go.uber.org/zap"
 )
 
@@ -32,49 +31,6 @@ func MustTwitch(oauth string) {
 }
 
 type twitchStream twitch.StreamType
-
-func (t twitchStream) startMessage(memberID int) (string, slack.PostMessageParameters, error) {
-	var messageParams = slack.NewPostMessageParameters()
-
-	member, err := DB.MemberByID(memberID)
-	if err != nil {
-		return "", messageParams, err
-	}
-
-	user, err := bridge.Data.Slack.User(member.Slack)
-	if err != nil {
-		return "", messageParams, err
-	}
-
-	var playing = t.Channel.Game
-	if playing == "" {
-		playing = "something"
-	}
-
-	messageParams.AsUser = true
-	messageParams.Parse = "full"
-	messageParams.LinkNames = 1
-	messageParams.UnfurlMedia = true
-	messageParams.UnfurlLinks = false
-	messageParams.EscapeText = false
-	messageParams.Attachments = append(messageParams.Attachments, slack.Attachment{
-		Fallback:   fmt.Sprintf("Watch %s play %s at %s", user.Profile.RealNameNormalized, playing, t.Channel.URL),
-		Color:      "#6441A4",
-		AuthorIcon: "https://slack-imgs.com/?c=1&o1=wi16.he16.si.ip&url=https%3A%2F%2Fwww.twitch.tv%2Ffavicon.ico",
-		AuthorName: "Twitch",
-		Title:      fmt.Sprintf("%s playing %s", t.Channel.DisplayName, t.Channel.Game),
-		TitleLink:  t.Channel.URL,
-		ThumbURL:   t.Channel.Logo,
-		Text:       t.Channel.Status,
-	})
-	message := fmt.Sprintf(
-		"*@%s* is streaming *%s* at %s",
-		user.Name,
-		playing,
-		t.Channel.URL,
-	)
-	return message, messageParams, err
-}
 
 func mindTwitch() {
 	twlog = Logger.With(zap.String("service", "twitch"))
@@ -156,14 +112,8 @@ func updateTwitch(s *db.Stream) {
 	}
 	s.TwitchGame = stream.Channel.Game
 	s.Save()
-	if !postStreamMessage {
-		return
-	}
-	if msg, params, err := stream.startMessage(s.MemberID); err == nil {
-		if err := bridge.PostMessage(channel, msg, params); err != nil {
-			twlog.Error("error posting start message to slack", zap.String("key", s.Twitch), zap.Error(err))
-		}
-	} else {
-		twlog.Error("error building start message", zap.String("key", s.Twitch), zap.Error(err), zap.Int("member_id", s.MemberID))
+
+	if postStreamMessage {
+		messaging.SendTwitchStreamMessage(twitch.StreamType(stream))
 	}
 }
