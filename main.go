@@ -15,13 +15,14 @@ import (
 	"github.com/FederationOfFathers/dashboard/streams"
 	"github.com/apokalyptik/cfg"
 	"go.uber.org/zap"
+	"io/ioutil"
+	"gopkg.in/yaml.v2"
 )
 
 var twitchClientID = ""
 var slackAPIKey = "xox...."
 var slackMessagingKey = ""
-var discordBotToken = ""
-var discordStreamChannelId = ""
+var discordCfg = bot.DiscordCfg{}
 var logger *zap.Logger
 var devPort = 0
 var DB *db.DB
@@ -53,9 +54,10 @@ func init() {
 	scfg.StringVar(&streamChannel, "streamChannel", streamChannel, "where to send streaming notices")
 	scfg.BoolVar(&mindStreams, "mindStreams", mindStreams, "should we mind streaming?")
 
-	discfg := cfg.New("cfg-discord")
-	discfg.StringVar(&discordBotToken, "discordBotToken", discordBotToken, "Discord Bot Token")
-	discfg.StringVar(&discordStreamChannelId, "discordStreamChannelId", discordStreamChannelId, "Discord Stream Channel ID")
+	err := unmarshalConfig("cfg-discord.yml", &discordCfg)
+	if err != nil {
+		logger.Error("Unable to load discord config", zap.Error(err))
+	}
 
 	acfg := cfg.New("cfg-api")
 	acfg.StringVar(&api.ListenOn, "listen", api.ListenOn, "API bind address (env: API_LISTEN)")
@@ -111,9 +113,13 @@ func main() {
 	bridge.OldEventToolAuthorization = events.OldEventToolAuthorization
 
 	// start discord bot
-	if discordBotToken != "" {
-		discordApi := bot.NewDiscordAPI(discordBotToken, discordStreamChannelId)
+	if discordCfg.Token != "" {
+		logger.Info("Starting discord")
+		discordApi := bot.NewDiscordAPI(discordCfg)
 		discordApi.Connect()
+		if discordCfg.RoleCfg.ChannelId != "" {
+			discordApi.StartRoleHandlers()
+		}
 		defer discordApi.Shutdown()
 		messaging.AddMsgAPI(discordApi)
 	}
@@ -130,4 +136,27 @@ func main() {
 
 	events.Start()
 	api.Run()
+}
+
+// unmarshal a config YML file into an interface
+func unmarshalConfig(fileName string, cfgObject interface{}) error {
+	// exit quietly if no file. assume we are not configuring that portion
+	if _, err := os.Stat(fileName); err != nil {
+		logger.Info("File does not exist", zap.String("file", fileName))
+		return nil
+	}
+
+	// read file data
+	fileData, err := ioutil.ReadFile(fileName)
+	if err != nil {
+		return err
+	}
+
+	// unmarshal into interface object
+	err2 := yaml.Unmarshal(fileData, cfgObject)
+	if err2 != nil {
+		return err2
+	}
+
+	return nil
 }

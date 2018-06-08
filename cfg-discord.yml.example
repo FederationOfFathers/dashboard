@@ -1,2 +1,28 @@
-discordBotToken: ""
-discordStreamChannelId: ""
+# You must enable Developer Mode in discord to get the IDs for channels, emojis, etc.
+# see https://support.discordapp.com/hc/en-us/articles/206346498-Where-can-I-find-my-User-Server-Message-ID-
+#
+# -- Channels --
+# For channel IDs, right click the channel and select Copy ID
+#
+# -- Emojis --
+# for emoji ID, type \ followed by the emoji name, such as`\:poop:`
+# Unicode emojis will have the unicode character as the ID (such as 💩)
+# Other custom emojis will display as <:emoji:12345>. the ID is the portion between the angled brackets.
+#
+# -- Roles --
+# for role IDs type `\@role`, and the role ID will be displayed as <@&12345>. The numeric portion is the ID
+#
+appClientId: ""
+botToken: ""
+streamChannelId: ""
+guildId: ""
+roleConfig:
+  channelId: ""
+  emojiRoles:
+    - messageTitle: ""
+      messageBody: ""
+      roles:
+        - emojiId: ""
+          roleId: ""
+        - emojiId: ""
+          roleId: ""
