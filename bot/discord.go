@@ -95,7 +95,8 @@ func (d DiscordAPI) roleAssignmentHandler(s *discordgo.Session, event *discordgo
 		if err != nil {
 		Logger.Error("could not remove reaction from message",
 			zap.String("user", event.UserID),
-			zap.String("emoji", emojiId))
+			zap.String("emoji", emojiId),
+			zap.Error(err))
 		}
 	}
 
