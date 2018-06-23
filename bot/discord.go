@@ -66,6 +66,7 @@ func (d DiscordAPI) roleAssignmentHandler(s *discordgo.Session, event *discordgo
 			member, err := d.discord.GuildMember(d.Config.GuildId, event.UserID)
 			if err != nil {
 				Logger.Error("Unable to get member", zap.Error(err))
+				return
 			}
 
 			userHadRole := false
@@ -217,7 +218,10 @@ func (d *DiscordAPI) createRoleMessages() {
 func (d DiscordAPI) addRoleToUser(userId string, roleId string) {
 	err := d.discord.GuildMemberRoleAdd(d.Config.GuildId, userId, roleId)
 	if err != nil {
-		Logger.Error("could not add role", zap.Error(err))
+		Logger.Error("could not add role",
+			zap.String("userId", userId),
+			zap.String("roleId", roleId),
+			zap.Error(err))
 	} else {
 		Logger.Info("added role to user",
 			zap.String("userId", userId),
