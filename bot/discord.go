@@ -81,9 +81,6 @@ func (d DiscordAPI) roleAssignmentHandler(s *discordgo.Session, event *discordgo
 			// if the member does not have the mapped role, add it
 			if !userHadRole {
 				d.addRoleToUser(event.UserID, roleId)
-				d.discord.GuildMemberRoleAdd(d.Config.GuildId, event.UserID, roleId)
-				Logger.Info("added role to user", zap.String("userId", event.UserID), zap.String("roleId", roleId))
-
 			}
 		}
 
