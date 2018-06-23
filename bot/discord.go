@@ -85,12 +85,18 @@ func (d DiscordAPI) roleAssignmentHandler(s *discordgo.Session, event *discordgo
 		}
 
 		// remove the users reaction. If the add/remove failed, they can click it again to re-trigger
-		d.discord.MessageReactionRemove(
+		err := d.discord.MessageReactionRemove(
 			event.ChannelID,
 			event.MessageID,
 			emojiId,
 			event.UserID,
 		)
+
+		if err != nil {
+		Logger.Error("could not remove reaction from message",
+			zap.String("user", event.UserID),
+			zap.String("emoji", emojiId))
+		}
 	}
 
 }
