@@ -111,6 +111,7 @@ func (d *DiscordAPI) Connect() {
 }
 
 func (d *DiscordAPI) StartRoleHandlers(){
+	d.listRoles()
 	d.clearRoleChannel()
 	d.createRoleMessages()
 	d.discord.AddHandler(d.roleAssignmentHandler)
@@ -239,5 +240,17 @@ func (d DiscordAPI) removeRoleFromUser(userId string, roleId string) {
 			zap.String("userId", userId),
 			zap.String("roleId", roleId),
 		)
+	}
+}
+func (d *DiscordAPI) listRoles() {
+	roles, err := d.discord.GuildRoles(d.Config.GuildId)
+
+	if err != nil {
+		Logger.Error("Could not get roles", zap.Error(err))
+		return
+	}
+
+	for i, role := range roles {
+		Logger.Info(fmt.Sprintf("Role %d", i), zap.Any("role",role))
 	}
 }
