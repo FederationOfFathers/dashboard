@@ -29,7 +29,13 @@ func init() {
 			}
 			r.Body.Close()
 			Logger.Warn(fmt.Sprintf("%#v", payload))
-			fp, _ := os.OpenFile("queue-rebuild", os.O_RDONLY|os.O_CREATE, 0666)
+			touchFile := ""
+			if payload.Ref == "refs/heads/dev" {
+				touchFile = "queue-rebuild-dev"
+			} else if payload.Ref == "refs/heads/master" {
+				touchFile = "queue-rebuild-prod"
+			}
+			fp, _ := os.OpenFile(touchFile, os.O_RDONLY|os.O_CREATE, 0666)
 			if fp != nil {
 				fp.Close()
 			}
