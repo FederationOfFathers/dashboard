@@ -129,14 +129,14 @@ func handleChannelUpload(m *slack.MessageEvent) bool {
 		return false
 	}
 	fmt.Fprintf(os.Stderr, "DEBUG: m: %#v\n", m)
-	fmt.Fprintf(os.Stderr, "DEBUG: m.File: %#v\n", m.File)
-	Logger.Info("File upload detected", zap.String("username", m.Username), zap.String("filename", m.File.Name))
+	fmt.Fprintf(os.Stderr, "DEBUG: m.Files[0]: %#v\n", m.Files[0])
+	Logger.Info("File upload detected", zap.String("username", m.Username), zap.String("filename", m.Files[0].Name))
 	if buf, err := fileBytes(m.Msg.File); err != nil {
 		Logger.Error(
 			"error downloading file",
 			zap.Error(err),
 			zap.String("username", m.Username),
-			zap.String("filename", m.File.Name))
+			zap.String("filename", m.Files[0].Name))
 	} else {
 		path := fmt.Sprintf("%s/%s", CdnPath, time.Now().Format("2006/01/02/15"))
 		if err := os.MkdirAll(path, 0755); err != nil {
@@ -144,7 +144,7 @@ func handleChannelUpload(m *slack.MessageEvent) bool {
 				"error making cdn path",
 				zap.String("path", path),
 				zap.String("username", m.Username),
-				zap.String("filename", m.File.Name))
+				zap.String("filename", m.Files[0].Name))
 			return false
 		}
 		part := &url.URL{Path: m.Msg.File.Name}
@@ -155,7 +155,7 @@ func handleChannelUpload(m *slack.MessageEvent) bool {
 				"error creating cdn file",
 				zap.String("path", path),
 				zap.String("username", m.Username),
-				zap.String("filename", m.File.Name))
+				zap.String("filename", m.Files[0].Name))
 			return false
 		} else {
 			if _, err := fp.Write(buf); err != nil {
@@ -164,7 +164,7 @@ func handleChannelUpload(m *slack.MessageEvent) bool {
 					"error writing to cdn file",
 					zap.String("path", path),
 					zap.String("username", m.Username),
-					zap.String("filename", m.File.Name))
+					zap.String("filename", m.Files[0].Name))
 				return false
 			}
 			fp.Close()
@@ -193,7 +193,7 @@ func handleChannelUpload(m *slack.MessageEvent) bool {
 						Logger.Error(
 							"Failed postting cdn link back to slack",
 							zap.String("username", m.Username),
-							zap.String("filename", m.File.Name),
+							zap.String("filename", m.Files[0].Name),
 							zap.String("url", fileURL))
 					} else {
 						break
