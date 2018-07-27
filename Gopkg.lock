@@ -104,11 +104,11 @@
   version = "v0.0.3"
 
 [[projects]]
+  branch = "master"
   name = "github.com/nlopes/slack"
   packages = ["."]
-  revision = "c86337c0ef2486a15edd804355d9c73d2f2caed1"
-  source = "https://github.com/FederationOfFathers/slack.git"
-  version = "v0.1.0"
+  revision = "f52dcef7dd55fda09d0dff8531d1c2abd0bdb440"
+  source = "github.com/FederationOfFathers/slack"
 
 [[projects]]
   branch = "master"
@@ -173,7 +173,7 @@
 [[projects]]
   branch = "master"
   name = "golang.org/x/net"
-  packages = ["context","webdav","webdav/internal/xml","websocket"]
+  packages = ["context","webdav","webdav/internal/xml"]
   revision = "ab555f366c4508dbe0802550b1b20c46c5c18aa0"
 
 [[projects]]
@@ -197,6 +197,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "7220016c12f2c86c9e79fe774a311df9471a27c141b2cb8653b4eecd95dd43fd"
+  inputs-digest = "4926336e8761fb8ffdb1821aae161ea8017e139a2dfdfce48642b7a24695d64c"
   solver-name = "gps-cdcl"
   solver-version = 1
