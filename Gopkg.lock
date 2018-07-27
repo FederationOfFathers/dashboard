@@ -107,7 +107,7 @@
   branch = "master"
   name = "github.com/nlopes/slack"
   packages = ["."]
-  revision = "f52dcef7dd55fda09d0dff8531d1c2abd0bdb440"
+  revision = "8bb13da558bf0e0bf5243daf2d5a2b3be1195add"
   source = "github.com/FederationOfFathers/slack"
 
 [[projects]]

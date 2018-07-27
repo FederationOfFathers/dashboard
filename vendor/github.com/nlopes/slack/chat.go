@@ -55,6 +55,7 @@ type PostMessageParameters struct {
 	IconEmoji       string       `json:"icon_emoji"`
 	Markdown        bool         `json:"mrkdwn,omitempty"`
 	EscapeText      bool         `json:"escape_text"`
+	Text            string       `json:"text"`
 
 	// chat.postEphemeral support
 	Channel string `json:"channel"`
