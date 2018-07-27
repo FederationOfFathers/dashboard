@@ -128,8 +128,8 @@ func handleChannelUpload(m *slack.MessageEvent) bool {
 	if !m.Msg.Upload {
 		return false
 	}
-	fmt.Fprintf(os.Stderr, "m: %#v", m)
-	fmt.Fprintf(os.Stderr, "m.File: %#v", m.File)
+	fmt.Fprintf(os.Stderr, "DEBUG: m: %#v\n", m)
+	fmt.Fprintf(os.Stderr, "DEBUG: m.File: %#v\n", m.File)
 	Logger.Info("File upload detected", zap.String("username", m.Username), zap.String("filename", m.File.Name))
 	if buf, err := fileBytes(m.Msg.File); err != nil {
 		Logger.Error(

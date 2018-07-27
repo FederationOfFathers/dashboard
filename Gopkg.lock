@@ -69,10 +69,7 @@
 
 [[projects]]
   name = "github.com/jinzhu/gorm"
-  packages = [
-    ".",
-    "dialects/mysql"
-  ]
+  packages = [".","dialects/mysql"]
   revision = "5174cc5c242a728b435ea2be8a2f7f998e15429b"
   version = "v1.0"
 
@@ -90,10 +87,7 @@
 
 [[projects]]
   name = "github.com/labstack/gommon"
-  packages = [
-    "color",
-    "log"
-  ]
+  packages = ["color","log"]
   revision = "57409ada9da0f2afad6664c49502f8c50fbd8476"
   version = "0.2.3"
 
@@ -113,6 +107,7 @@
   name = "github.com/nlopes/slack"
   packages = ["."]
   revision = "c86337c0ef2486a15edd804355d9c73d2f2caed1"
+  source = "https://github.com/FederationOfFathers/slack.git"
   version = "v0.1.0"
 
 [[projects]]
@@ -165,36 +160,20 @@
 
 [[projects]]
   name = "go.uber.org/zap"
-  packages = [
-    ".",
-    "buffer",
-    "internal/bufferpool",
-    "internal/color",
-    "internal/exit",
-    "zapcore"
-  ]
+  packages = [".","buffer","internal/bufferpool","internal/color","internal/exit","zapcore"]
   revision = "35aad584952c3e7020db7b839f6b102de6271f89"
   version = "v1.7.1"
 
 [[projects]]
   branch = "master"
   name = "golang.org/x/crypto"
-  packages = [
-    "nacl/secretbox",
-    "poly1305",
-    "salsa20/salsa"
-  ]
+  packages = ["nacl/secretbox","poly1305","salsa20/salsa"]
   revision = "1a580b3eff7814fc9b40602fd35256c63b50f491"
 
 [[projects]]
   branch = "master"
   name = "golang.org/x/net"
-  packages = [
-    "context",
-    "webdav",
-    "webdav/internal/xml",
-    "websocket"
-  ]
+  packages = ["context","webdav","webdav/internal/xml","websocket"]
   revision = "ab555f366c4508dbe0802550b1b20c46c5c18aa0"
 
 [[projects]]
@@ -218,6 +197,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "6aa2e2b1dc441cc6c61cd1734fe2f6c200ea75a9246ceb59a4db37d8e6a1c9c7"
+  inputs-digest = "7220016c12f2c86c9e79fe774a311df9471a27c141b2cb8653b4eecd95dd43fd"
   solver-name = "gps-cdcl"
   solver-version = 1

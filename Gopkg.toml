@@ -67,6 +67,7 @@
 
 [[constraint]]
   name = "github.com/nlopes/slack"
+  source = "https://github.com/FederationOfFathers/slack.git"
   version = "0.1.0"
 
 [[constraint]]
