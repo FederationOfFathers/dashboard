@@ -61,7 +61,7 @@ func SlackConnect(slackToken string) error {
 	}
 	token = slackToken
 	rtm = api.NewRTM()
-	rtm.SetDebug(true)
+	// rtm.SetDebug(true)
 	go mindLists()
 	go rtm.ManageConnection()
 	go func() {
@@ -199,7 +199,6 @@ func mindSlack() error {
 								zap.String("message", ev.Msg.Text))
 						}
 					case "c":
-						fmt.Fprintf(os.Stderr, "DEBUG: %#v\n", ev)
 						if !handleChannelMessage(ev) {
 							Logger.Debug("slack.MessageEvent",
 								zap.Bool("handled", false),
