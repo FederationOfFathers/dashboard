@@ -61,7 +61,7 @@ func SlackConnect(slackToken string) error {
 	}
 	token = slackToken
 	rtm = api.NewRTM()
-	// rtm.SetDebug(true)
+	rtm.SetDebug(true)
 	go mindLists()
 	go rtm.ManageConnection()
 	go func() {
