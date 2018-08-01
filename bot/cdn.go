@@ -128,32 +128,46 @@ func handleChannelUpload(m *slack.MessageEvent) bool {
 	if !m.Msg.Upload {
 		return false
 	}
-	Logger.Info("File upload detected", zap.String("username", m.Username), zap.String("filename", m.Files[0].Name))
-	if buf, err := fileBytes(m.Files[0]); err != nil {
+	file := m.Files[0]
+
+	// get the username by the ID from the DB
+	profile, err := data.User(m.User)
+	var user string
+	if err != nil {
+		Logger.Error("Could not get name for user",
+			zap.String("userID", m.User),
+			zap.String("filename", file.Name),
+			zap.Error(err))
+	} else {
+		user = profile.Name
+	}
+
+	Logger.Info("File upload detected", zap.String("username", user), zap.String("filename", file.Name))
+	if buf, err := fileBytes(file); err != nil {
 		Logger.Error(
 			"error downloading file",
 			zap.Error(err),
-			zap.String("username", m.Username),
-			zap.String("filename", m.Files[0].Name))
+			zap.String("username", user),
+			zap.String("filename", file.Name))
 	} else {
 		path := fmt.Sprintf("%s/%s", CdnPath, time.Now().Format("2006/01/02/15"))
 		if err := os.MkdirAll(path, 0755); err != nil {
 			Logger.Error(
 				"error making cdn path",
 				zap.String("path", path),
-				zap.String("username", m.Username),
-				zap.String("filename", m.Files[0].Name))
+				zap.String("username", user),
+				zap.String("filename", file.Name))
 			return false
 		}
-		part := &url.URL{Path: m.Files[0].Name}
-		urlPath := fmt.Sprintf("%s/%s-%s", path, m.Files[0].ID, part.String())
-		path = fmt.Sprintf("%s/%s-%s", path, m.Files[0].ID, m.Files[0].Name)
+		part := &url.URL{Path: file.Name}
+		urlPath := fmt.Sprintf("%s/%s-%s", path, file.ID, part.String())
+		path = fmt.Sprintf("%s/%s-%s", path, file.ID, file.Name)
 		if fp, err := os.Create(path); err != nil {
 			Logger.Error(
 				"error creating cdn file",
 				zap.String("path", path),
-				zap.String("username", m.Username),
-				zap.String("filename", m.Files[0].Name))
+				zap.String("username", user),
+				zap.String("filename", file.Name))
 			return false
 		} else {
 			if _, err := fp.Write(buf); err != nil {
@@ -161,14 +175,14 @@ func handleChannelUpload(m *slack.MessageEvent) bool {
 				Logger.Error(
 					"error writing to cdn file",
 					zap.String("path", path),
-					zap.String("username", m.Username),
-					zap.String("filename", m.Files[0].Name))
+					zap.String("username", user),
+					zap.String("filename", file.Name))
 				return false
 			}
 			fp.Close()
 			fileURL := CdnPrefix + urlPath[len(CdnPath):]
-			rtm.DeleteFile(m.Files[0].ID)
-			if isImage.MatchString(strings.ToLower(m.Files[0].Name)) {
+			rtm.DeleteFile(file.ID)
+			if isImage.MatchString(strings.ToLower(file.Name)) {
 				for i := 0; i < 5; i++ {
 					_, _, err := rtm.PostMessage(
 						m.Channel,
@@ -181,7 +195,7 @@ func handleChannelUpload(m *slack.MessageEvent) bool {
 							IconEmoji:   ":paperclip:",
 							Attachments: []slack.Attachment{
 								slack.Attachment{
-									Title:     fmt.Sprintf("%s uploaded %s", m.Msg.Username, m.Files[0].Title),
+									Title:     fmt.Sprintf("%s uploaded %s", user, file.Title),
 									TitleLink: fileURL,
 									ImageURL:  fileURL,
 								},
@@ -190,8 +204,8 @@ func handleChannelUpload(m *slack.MessageEvent) bool {
 					if err != nil {
 						Logger.Error(
 							"Failed postting cdn link back to slack",
-							zap.String("username", m.Username),
-							zap.String("filename", m.Files[0].Name),
+							zap.String("username", user),
+							zap.String("filename", file.Name),
 							zap.String("url", fileURL))
 					} else {
 						break
@@ -202,7 +216,7 @@ func handleChannelUpload(m *slack.MessageEvent) bool {
 				rtm.SendMessage(&slack.OutgoingMessage{
 					ID:      int(time.Now().UnixNano()),
 					Channel: m.Channel,
-					Text:    fmt.Sprintf("%s uploaded the file *%s*\n%s", m.Msg.Username, m.Files[0].Title, fileURL),
+					Text:    fmt.Sprintf("%s uploaded the file *%s*\n%s", user, file.Title, fileURL),
 					Type:    "message",
 				})
 			}
