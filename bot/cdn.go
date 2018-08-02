@@ -181,7 +181,16 @@ func handleChannelUpload(m *slack.MessageEvent) bool {
 			}
 			fp.Close()
 			fileURL := CdnPrefix + urlPath[len(CdnPath):]
+
+			//delete file and message
 			rtm.DeleteFile(file.ID)
+			if _, _, err := rtm.DeleteMessage(m.Channel, m.Timestamp); err != nil {
+				Logger.Error("Unable to delete message",
+					zap.String("username", user),
+					zap.String("filename", file.Name),
+					zap.Error(err))
+			}
+
 			if isImage.MatchString(strings.ToLower(file.Name)) {
 				for i := 0; i < 5; i++ {
 					_, _, err := rtm.PostMessage(
@@ -195,9 +204,9 @@ func handleChannelUpload(m *slack.MessageEvent) bool {
 							IconEmoji:   ":paperclip:",
 							Attachments: []slack.Attachment{
 								slack.Attachment{
-									Title:     fmt.Sprintf("%s uploaded %s", user, file.Title),
-									TitleLink: fileURL,
-									ImageURL:  fileURL,
+									AuthorName: fmt.Sprintf("%s uploaded %s", user, file.Name),
+									Pretext:    m.Text,
+									ImageURL:   fileURL,
 								},
 							},
 						})
