@@ -4,7 +4,8 @@ import (
 	"context"
 	"encoding/json"
 	"net/url"
-	"strings"
+
+	"github.com/nlopes/slack/slackutilsx"
 )
 
 const (
@@ -55,7 +56,6 @@ type PostMessageParameters struct {
 	IconEmoji       string       `json:"icon_emoji"`
 	Markdown        bool         `json:"mrkdwn,omitempty"`
 	EscapeText      bool         `json:"escape_text"`
-	Text            string       `json:"text"`
 
 	// chat.postEphemeral support
 	Channel string `json:"channel"`
@@ -165,7 +165,7 @@ func (api *Client) SendMessageContext(ctx context.Context, channelID string, opt
 		return "", "", "", err
 	}
 
-	if err = postPath(ctx, api.httpclient, string(config.mode), config.values, &response, api.debug); err != nil {
+	if err = postSlackMethod(ctx, api.httpclient, string(config.mode), config.values, &response, api.debug); err != nil {
 		return "", "", "", err
 	}
 
@@ -194,11 +194,6 @@ func applyMsgOptions(token, channel string, options ...MsgOption) (sendConfig, e
 	}
 
 	return config, nil
-}
-
-func escapeMessage(message string) string {
-	replacer := strings.NewReplacer("&", "&amp;", "<", "&lt;", ">", "&gt;")
-	return replacer.Replace(message)
 }
 
 type sendMode string
@@ -298,7 +293,7 @@ func MsgOptionUser(userID string) MsgOption {
 func MsgOptionText(text string, escape bool) MsgOption {
 	return func(config *sendConfig) error {
 		if escape {
-			text = escapeMessage(text)
+			text = slackutilsx.EscapeMessage(text)
 		}
 		config.values.Add("text", text)
 		return nil

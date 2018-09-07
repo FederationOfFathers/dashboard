@@ -2,6 +2,7 @@ package slack
 
 import (
 	"encoding/json"
+	"fmt"
 	"testing"
 
 	"net/http"
@@ -51,13 +52,13 @@ func unmarshalDialog() (*Dialog, error) {
 	}
 
 	// Unmarshall and append the text element
-	textElement := &DialogTextElement{}
+	textElement := &TextInputElement{}
 	if err := json.Unmarshal([]byte(simpleTextElement), &textElement); err != nil {
 		return nil, err
 	}
 
 	// Unmarshall and append the select element
-	selectElement := &DialogSelectElement{}
+	selectElement := &DialogInputSelect{}
 	if err := json.Unmarshal([]byte(simpleSelectElement), &selectElement); err != nil {
 		return nil, err
 	}
@@ -78,12 +79,12 @@ func TestSimpleDialog(t *testing.T) {
 
 func TestCreateSimpleDialog(t *testing.T) {
 	dialog := &Dialog{}
-	dialog.CallbackId = "ryde-46e2b0"
+	dialog.CallbackID = "ryde-46e2b0"
 	dialog.Title = "Request a Ride"
 	dialog.SubmitLabel = "Request"
 	dialog.NotifyOnCancel = true
 
-	textElement := &DialogTextElement{}
+	textElement := &TextInputElement{}
 	textElement.Label = "testing label"
 	textElement.Name = "testing name"
 	textElement.Type = "text"
@@ -95,7 +96,7 @@ func TestCreateSimpleDialog(t *testing.T) {
 	textElement.Hint = "testing hint"
 	textElement.Subtype = "email"
 
-	selectElement := &DialogSelectElement{}
+	selectElement := &DialogInputSelect{}
 	selectElement.Label = "testing label"
 	selectElement.Name = "testing name"
 	selectElement.Type = "select"
@@ -104,10 +105,10 @@ func TestCreateSimpleDialog(t *testing.T) {
 	selectElement.Value = "testing value"
 	selectElement.DataSource = "users"
 	selectElement.SelectedOptions = ""
-	selectElement.Options = []DialogElementOption{
+	selectElement.Options = []DialogSelectOption{
 		{Label: "option 1", Value: "1"},
 	}
-	selectElement.OptionGroups = []DialogElementOption{}
+	selectElement.OptionGroups = []DialogOptionGroup{}
 
 	dialog.Elements = []DialogElement{
 		textElement,
@@ -121,33 +122,33 @@ func assertSimpleDialog(t *testing.T, dialog *Dialog) {
 	assert.NotNil(t, dialog)
 
 	// Test the main dialog fields
-	assert.Equal(t, "ryde-46e2b0", dialog.CallbackId)
+	assert.Equal(t, "ryde-46e2b0", dialog.CallbackID)
 	assert.Equal(t, "Request a Ride", dialog.Title)
 	assert.Equal(t, "Request", dialog.SubmitLabel)
 	assert.Equal(t, true, dialog.NotifyOnCancel)
 
 	// Test the text element is correctly parsed
-	textElement := dialog.Elements[0].(*DialogTextElement)
+	textElement := dialog.Elements[0].(*TextInputElement)
 	assert.Equal(t, "testing label", textElement.Label)
 	assert.Equal(t, "testing name", textElement.Name)
-	assert.Equal(t, "text", textElement.Type)
+	assert.Equal(t, InputTypeText, textElement.Type)
 	assert.Equal(t, "testing placeholder", textElement.Placeholder)
 	assert.Equal(t, true, textElement.Optional)
 	assert.Equal(t, "testing value", textElement.Value)
 	assert.Equal(t, 1000, textElement.MaxLength)
 	assert.Equal(t, 10, textElement.MinLength)
 	assert.Equal(t, "testing hint", textElement.Hint)
-	assert.Equal(t, "email", textElement.Subtype)
+	assert.Equal(t, InputSubtypeEmail, textElement.Subtype)
 
-	// Test the text element is correctly parsed
-	selectElement := dialog.Elements[1].(*DialogSelectElement)
+	// Test the select element is correctly parsed
+	selectElement := dialog.Elements[1].(*DialogInputSelect)
 	assert.Equal(t, "testing label", selectElement.Label)
 	assert.Equal(t, "testing name", selectElement.Name)
-	assert.Equal(t, "select", selectElement.Type)
+	assert.Equal(t, InputTypeSelect, selectElement.Type)
 	assert.Equal(t, "testing placeholder", selectElement.Placeholder)
 	assert.Equal(t, true, selectElement.Optional)
 	assert.Equal(t, "testing value", selectElement.Value)
-	assert.Equal(t, "users", selectElement.DataSource)
+	assert.Equal(t, DialogDataSourceUsers, selectElement.DataSource)
 	assert.Equal(t, "", selectElement.SelectedOptions)
 	assert.Equal(t, "option 1", selectElement.Options[0].Label)
 	assert.Equal(t, "1", selectElement.Options[0].Value)
@@ -299,7 +300,47 @@ func TestOpenDialog(t *testing.T) {
 	}
 	err = api.OpenDialog("", *dialog)
 	if err == nil {
-		t.Errorf("Did not error with empty trigger", err)
+		t.Errorf("Did not error with empty trigger, %s", err)
 		return
 	}
+}
+
+const (
+	triggerID      = "trigger_xyz"
+	callbackID     = "callback_xyz"
+	notifyOnCancel = false
+	title          = "Dialog_title"
+	submitLabel    = "Send"
+	token          = "xoxa-123-123-123-213"
+)
+
+func _mocDialog() *Dialog {
+	triggerID := triggerID
+	callbackID := callbackID
+	notifyOnCancel := notifyOnCancel
+	title := title
+	submitLabel := submitLabel
+
+	return &Dialog{
+		TriggerID:      triggerID,
+		CallbackID:     callbackID,
+		NotifyOnCancel: notifyOnCancel,
+		Title:          title,
+		SubmitLabel:    submitLabel,
+	}
+}
+
+func TestDialogCreate(t *testing.T) {
+	dialog := _mocDialog()
+	if dialog == nil {
+		t.Errorf("Should be able to construct a dialog")
+		t.Fail()
+	}
+}
+
+func ExampleDialog() {
+	dialog := _mocDialog()
+	fmt.Println(*dialog)
+	// Output:
+	// {trigger_xyz callback_xyz Dialog_title Send false []}
 }
