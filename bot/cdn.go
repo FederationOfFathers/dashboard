@@ -128,11 +128,11 @@ func handleChannelUpload(m *slack.MessageEvent) bool {
 	if !m.Msg.Upload {
 		return false
 	}
-	file := m.Files[0]
+	file := &m.Files[0]
 
 	// get the username by the ID from the DB
+	var user = ":space_invader:"
 	profile, err := data.User(m.User)
-	var user string
 	if err != nil {
 		Logger.Error("Could not get name for user",
 			zap.String("userID", m.User),
@@ -197,7 +197,6 @@ func handleChannelUpload(m *slack.MessageEvent) bool {
 						m.Channel,
 						"",
 						slack.PostMessageParameters{
-							Text:        "",
 							AsUser:      true,
 							UnfurlLinks: true,
 							UnfurlMedia: true,
@@ -209,6 +208,7 @@ func handleChannelUpload(m *slack.MessageEvent) bool {
 									ImageURL:   fileURL,
 								},
 							},
+							ThreadTimestamp: m.ThreadTimestamp,
 						})
 					if err != nil {
 						Logger.Error(
@@ -223,10 +223,11 @@ func handleChannelUpload(m *slack.MessageEvent) bool {
 				}
 			} else {
 				rtm.SendMessage(&slack.OutgoingMessage{
-					ID:      int(time.Now().UnixNano()),
-					Channel: m.Channel,
-					Text:    fmt.Sprintf("%s uploaded the file *%s*\n%s", user, file.Title, fileURL),
-					Type:    "message",
+					ID:              int(time.Now().UnixNano()),
+					Channel:         m.Channel,
+					Text:            fmt.Sprintf("%s uploaded the file *%s*\n%s", user, file.Title, fileURL),
+					Type:            "message",
+					ThreadTimestamp: m.ThreadTimestamp,
 				})
 			}
 			Logger.Info("saved CDN file", zap.String("url", fileURL), zap.Int("size", len(buf)))
@@ -244,7 +245,7 @@ func handleDMUpload(m *slack.MessageEvent) bool {
 	if !m.Msg.Upload {
 		return false
 	}
-	if buf, err := fileBytes(m.Files[0]); err != nil {
+	if buf, err := fileBytes(&m.Files[0]); err != nil {
 		Logger.Info("error downloading file", zap.Error(err))
 	} else {
 		path := fmt.Sprintf("%s/%s", CdnPath, time.Now().Format("2006/01/02/15"))
