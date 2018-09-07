@@ -12,6 +12,7 @@ func TestAppMention(t *testing.T) {
 				"user": "U061F7AUR",
 				"text": "<@U0LAN0Z89> is it everything a river should be?",
 				"ts": "1515449522.000016",
+				"thread_ts": "1515449522.000016",
 				"channel": "C0LAN2Q65",
 				"event_ts": "1515449522000016"
 		}
@@ -107,7 +108,17 @@ func TestMessageEvent(t *testing.T) {
 				"text": "Live long and prospect.",
 				"ts": "1355517523.000005",
 				"event_ts": "1355517523.000005",
-				"channel_type": "channel"
+				"channel_type": "channel",
+				"message": {
+					"text": "To infinity and beyond.",
+					"edited": {
+						"user": "U2147483697",
+						"ts": "1355517524.000000"
+					}
+				},
+				"previous_message": {
+					"text": "Live long and prospect."
+				}
 		}
 	`)
 	err := json.Unmarshal(rawE, &MessageEvent{})

@@ -2,6 +2,7 @@ package slackevents
 
 import (
 	"encoding/json"
+
 	"github.com/nlopes/slack"
 )
 
@@ -27,6 +28,7 @@ type MessageAction struct {
 	MessageTimestamp json.Number              `json:"message_ts"`
 	AttachmentId     json.Number              `json:"attachment_id"`
 	Token            string                   `json:"token"`
+	Message          slack.Message            `json:"message"`
 	OriginalMessage  slack.Message            `json:"original_message"`
 	ResponseUrl      string                   `json:"response_url"`
 	TriggerId        string                   `json:"trigger_id"`
