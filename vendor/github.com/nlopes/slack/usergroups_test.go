@@ -126,7 +126,11 @@ func getUserGroups(rw http.ResponseWriter, r *http.Request) {
                   "group2",
                   "group3"
                 ]
-            },
+			},
+            "users": [
+                "user1",
+                "user2"	
+            ],
             "user_count": 2
         }
     ]
@@ -141,7 +145,7 @@ func TestGetUserGroups(t *testing.T) {
 	SLACK_API = "http://" + serverAddr + "/"
 	api := New("testing-token")
 
-	userGroups, err := api.GetUserGroups()
+	userGroups, err := api.GetUserGroups(GetUserGroupsOptionIncludeUsers(true))
 	if err != nil {
 		t.Errorf("Unexpected error: %s", err)
 		return
@@ -170,6 +174,10 @@ func TestGetUserGroups(t *testing.T) {
 		Prefs: UserGroupPrefs{
 			Channels: []string{"channel1", "channel2"},
 			Groups:   []string{"group1", "group2", "group3"},
+		},
+		Users: []string{
+			"user1",
+			"user2",
 		},
 		UserCount: 2,
 	}
