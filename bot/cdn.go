@@ -139,7 +139,13 @@ func handleChannelUpload(m *slack.MessageEvent) bool {
 			zap.String("filename", file.Name),
 			zap.Error(err))
 	} else {
-		user = profile.Name
+		if profile.Profile.DisplayName != "" {
+			user = profile.Profile.DisplayName
+		} else if profile.Profile.RealName != "" {
+			user = profile.Profile.RealName
+		} else {
+			user = profile.Name
+		}
 	}
 
 	Logger.Info("File upload detected", zap.String("username", user), zap.String("filename", file.Name))
