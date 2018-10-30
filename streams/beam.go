@@ -3,6 +3,7 @@ package streams
 import (
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"net/http"
 	"time"
 
@@ -37,9 +38,9 @@ func (b *Mixer) Update() error {
 	b.Online = false
 	b.Game = ""
 	b.StartedAt = ""
-	var c = new(mixerChannelResponse)
+	var c = mixerChannelResponse{}
 	var cURL = fmt.Sprintf("https://mixer.com/api/v1/channels/%s", b.BeamUsername)
-	bplog.Info("fetching channel", zap.String("url", cURL))
+	bplog.Debug("fetching channel", zap.String("url", cURL))
 	chResponse, err := http.Get(cURL)
 	if err != nil {
 		return err
@@ -51,8 +52,14 @@ func (b *Mixer) Update() error {
 	} else if chResponse.StatusCode != 200 {
 		return fmt.Errorf("got HTTP %d '%s' for '%s'", chResponse.StatusCode, chResponse.Status, cURL)
 	}
-	if err := json.NewDecoder(chResponse.Body).Decode(&c); err != nil {
-		return err
+
+	bodyContent, err := ioutil.ReadAll(chResponse.Body)
+	if err != nil {
+		bplog.Error("Unable to read body bytes", zap.Error(err))
+	}
+
+	if err := json.Unmarshal(bodyContent, &c); err != nil {
+		return fmt.Errorf("Unable to decode JSON - %s", err.Error())
 	}
 	if !c.ChannelOnline {
 		return nil
@@ -63,9 +70,9 @@ func (b *Mixer) Update() error {
 	b.Title = c.Name
 	b.BeamUsername = c.Token
 	b.AvatarUrl = c.User.AvatarUrl
-	var m = new(mixerManifestResponse)
+	var m = mixerManifestResponse{}
 	var mURL = fmt.Sprintf("https://mixer.com/api/v1/channels/%d/manifest.light2", b.ChannelID)
-	bplog.Info("fetching manifest", zap.String("url", mURL))
+	bplog.Debug("fetching manifest", zap.String("url", mURL))
 	rsp, err := http.Get(mURL)
 	if err != nil {
 		return err
