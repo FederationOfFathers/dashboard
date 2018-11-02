@@ -21,7 +21,7 @@ type mixerChannelResponse struct {
 	Name          string `json:"name"`
 	Token         string `json:"token"`
 	ChannelOnline bool   `json:"online"`
-	ChannelID     int64
+	ChannelID     int64  `json:"id"`
 	User          struct {
 		AvatarUrl string `json:"avatarUrl"`
 	} `json:"user"`
@@ -50,7 +50,7 @@ func (b *Mixer) Update() error {
 		bplog.Info(fmt.Sprintf("channel %s is not valid (404)", cURL))
 		return nil
 	} else if chResponse.StatusCode != 200 {
-		return fmt.Errorf("got HTTP %d '%s' for '%s'", chResponse.StatusCode, chResponse.Status, cURL)
+		return fmt.Errorf("got HTTP %d - '%s' for '%s'", chResponse.StatusCode, chResponse.Status, cURL)
 	}
 
 	bodyContent, err := ioutil.ReadAll(chResponse.Body)
