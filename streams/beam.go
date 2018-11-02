@@ -15,6 +15,7 @@ import (
 
 var bplog *zap.Logger
 
+// Mixer for mixer
 type Mixer mixer.Mixer
 
 type mixerChannelResponse struct {
