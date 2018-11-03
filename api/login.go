@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/gorilla/mux"
 	"github.com/labstack/gommon/log"
@@ -76,6 +77,23 @@ func init() {
 			return
 		}
 		json.NewEncoder(w).Encode("wait")
+	})
+
+	// LOGOUT
+	Router.Path("/api/v0/logout").Methods("GET").HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "text/json")
+		http.SetCookie(
+			w,
+			&http.Cookie{
+				Name:     "secure-cookie",
+				Value:    "",
+				Path:     "/",
+				Domain:   "fofgaming.com",
+				Expires:  time.Now().Add(-365 * 24 * time.Hour), // -365 in order to subtract 1 year
+				HttpOnly: false,
+			},
+		)
+		json.NewEncoder(w).Encode("logout complete")
 	})
 
 }
