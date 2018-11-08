@@ -5,17 +5,19 @@ import (
 	"fmt"
 	"os"
 
+	"io/ioutil"
+
 	"github.com/FederationOfFathers/dashboard/api"
 	"github.com/FederationOfFathers/dashboard/bot"
 	"github.com/FederationOfFathers/dashboard/bridge"
 	"github.com/FederationOfFathers/dashboard/db"
 	"github.com/FederationOfFathers/dashboard/events"
 	"github.com/FederationOfFathers/dashboard/messaging"
+	"github.com/FederationOfFathers/dashboard/metrics"
 	"github.com/FederationOfFathers/dashboard/store"
 	"github.com/FederationOfFathers/dashboard/streams"
 	"github.com/apokalyptik/cfg"
 	"go.uber.org/zap"
-	"io/ioutil"
 	"gopkg.in/yaml.v2"
 )
 
@@ -23,6 +25,7 @@ var twitchClientID = ""
 var slackAPIKey = "xox...."
 var slackMessagingKey = ""
 var discordCfg = bot.DiscordCfg{}
+var rollbarCfg = metrics.RollbarConfig{}
 var logger *zap.Logger
 var devPort = 0
 var DB *db.DB
@@ -33,17 +36,30 @@ var mindStreams bool
 func init() {
 
 	if os.Getenv("DEV_LOGGING") == "" {
-		logger, _ = zap.NewProduction()
+		logger, _ = zap.NewProduction(zap.Hooks(rollbarCfg.LoggerHook))
 	} else {
-		logger, _ = zap.NewDevelopment()
+		logger, _ = zap.NewDevelopment(zap.Hooks(rollbarCfg.LoggerHook))
 	}
-	bot.Logger = logger.With(zap.String("module", "bot"))
-	api.Logger = logger.With(zap.String("module", "api"))
-	events.Logger = logger.With(zap.String("module", "events"))
-	streams.Logger = logger.With(zap.String("module", "streams"))
-	db.Logger = logger.With(zap.String("module", "db"))
-	bridge.Logger = logger.With(zap.String("module", "bridge"))
-	messaging.Logger = logger.With(zap.String("module", "messaging"))
+	logger = logger.Named("main")
+
+	// ROLLBAR
+	if err := unmarshalConfig("cfg-rollbar.yml", &rollbarCfg); err != nil {
+		fmt.Printf("Unable to unmarshal rollbar config - %s\n", err.Error())
+	} else if rollbarCfg.Token != "" {
+		if home := os.Getenv("SERVICE_DIR"); home == "" && rollbarCfg.Environment == "" { // need a better environment flag
+			rollbarCfg.Environment = "production"
+		}
+		rollbarCfg.Init()
+		logger.Info("Rollbar initialized")
+	}
+
+	bot.Logger = logger.With(zap.String("module", "bot")).Named("bot")
+	api.Logger = logger.With(zap.String("module", "api")).Named("api")
+	events.Logger = logger.With(zap.String("module", "events")).Named("events")
+	streams.Logger = logger.With(zap.String("module", "streams")).Named("streams")
+	db.Logger = logger.With(zap.String("module", "db")).Named("db")
+	bridge.Logger = logger.With(zap.String("module", "bridge")).Named("bridge")
+	messaging.Logger = logger.With(zap.String("module", "messaging")).Named("messaging")
 
 	scfg := cfg.New("cfg-slack")
 	scfg.StringVar(&slackAPIKey, "apiKey", slackAPIKey, "Slack API Key (env: SLACK_APIKEY)")

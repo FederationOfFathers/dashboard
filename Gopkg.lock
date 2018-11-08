@@ -186,6 +186,14 @@
   version = "v1"
 
 [[projects]]
+  digest = "1:75f4f546e19477e82dc2c07e36011b10ccdf7284df08fc9cb4209ee8a9dfddb8"
+  name = "github.com/rollbar/rollbar-go"
+  packages = ["."]
+  pruneopts = ""
+  revision = "d450a931d7a085523b60f0f7c98487333a8ce5fa"
+  version = "v1.0.2"
+
+[[projects]]
   digest = "1:dcabff3fee44d17e8b5e928acc6da2562d95a377fb5905dd40cb4c987dabba28"
   name = "github.com/speps/go-hashids"
   packages = ["."]
@@ -307,8 +315,10 @@
     "github.com/nu7hatch/gouuid",
     "github.com/pborman/uuid",
     "github.com/robfig/cron",
+    "github.com/rollbar/rollbar-go",
     "github.com/speps/go-hashids",
     "go.uber.org/zap",
+    "go.uber.org/zap/zapcore",
     "golang.org/x/net/context",
     "golang.org/x/net/webdav",
     "gopkg.in/djherbis/stow.v2",

@@ -1,0 +1,4 @@
+# token from rollbar api
+token: ""
+# environment used for rollbar reporting. If blank, dashboard will attempt to determine the environment
+environment: ""
