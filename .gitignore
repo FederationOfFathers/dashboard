@@ -5,6 +5,7 @@ cfg-discord.yml
 cfg-api.yml
 cfg-db.yml
 cfg-events.yml
+cfg-rollbar.yml
 database.bolt.*
 .database.bolt.*
 # Compiled Object files, Static and Dynamic libs (Shared Objects)
