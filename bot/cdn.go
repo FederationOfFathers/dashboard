@@ -11,7 +11,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/FederationOfFathers/dashboard/environment"
 	"github.com/nlopes/slack"
 	"go.uber.org/zap"
 )
@@ -129,10 +128,6 @@ func handleChannelUpload(m *slack.MessageEvent) bool {
 	if !m.Msg.Upload {
 		return false
 	}
-	// don't handle upload messages if dev, since dev and prod both manage slack
-	if environment.IsDev {
-		return false
-	}
 	file := &m.Files[0]
 
 	// get the username by the ID from the DB
@@ -199,10 +194,13 @@ func handleChannelUpload(m *slack.MessageEvent) bool {
 					zap.String("file", file.ID))
 			}
 			if _, _, err := rtm.DeleteMessage(m.Channel, m.Timestamp); err != nil {
-				Logger.Error(fmt.Sprintf("unable to delete message - %s", err.Error()),
-					zap.String("username", user),
-					zap.String("filename", file.Name),
-					zap.Error(err))
+				if err.Error() != "message_not_found" { // message not found means the file deletion deleted the message
+					Logger.Error(fmt.Sprintf("unable to delete message - %s", err.Error()),
+						zap.String("username", user),
+						zap.String("channel", m.Channel),
+						zap.String("messageTime", m.Timestamp),
+						zap.Error(err))
+				}
 			}
 
 			if isImage.MatchString(strings.ToLower(file.Name)) {
