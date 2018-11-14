@@ -2,12 +2,12 @@ package bot
 
 import (
 	"fmt"
-	"os"
 	"strings"
 	"time"
 
 	"github.com/FederationOfFathers/dashboard/bridge"
 	"github.com/FederationOfFathers/dashboard/db"
+	"github.com/FederationOfFathers/dashboard/environment"
 	"github.com/FederationOfFathers/dashboard/messaging"
 	"github.com/nlopes/slack"
 	"go.uber.org/zap"
@@ -80,10 +80,12 @@ func SlackConnect(slackToken string) error {
 		Logger.Warn("Using default client for fofbot messaging")
 	}
 	if StartupNotice {
-		if home := os.Getenv("SERVICE_DIR"); home != "" {
+		if environment.IsDev {
 			SendMessage("#-fof-dashboard", "Dev Dashboard starting up...")
-		} else {
+		} else if environment.IsProd {
 			SendMessage("#-fof-dashboard", "Production Dashboard starting up...")
+		} else if environment.IsLocal {
+			SendMessage("#-fof-dashboard", "Localhost Dashboard starting up...")
 		}
 	}
 	return nil

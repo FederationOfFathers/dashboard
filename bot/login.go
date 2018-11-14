@@ -2,10 +2,10 @@ package bot
 
 import (
 	"fmt"
-	"os"
 	"strings"
 	"time"
 
+	"github.com/FederationOfFathers/dashboard/environment"
 	"github.com/nlopes/slack"
 )
 
@@ -29,7 +29,7 @@ func SendDevLogin(user string) {
 }
 
 func handleDevLogin(m *slack.MessageEvent) bool {
-	if home := os.Getenv("SERVICE_DIR"); home == "" {
+	if !environment.IsDev {
 		return false
 	}
 
@@ -78,7 +78,7 @@ func handleLoginCode(m *slack.MessageEvent) bool {
 }
 
 func handleLogin(m *slack.MessageEvent) bool {
-	if home := os.Getenv("SERVICE_DIR"); home != "" {
+	if !environment.IsProd {
 		return false
 	}
 	if len(strings.TrimSpace(m.Msg.Text)) != 5 {

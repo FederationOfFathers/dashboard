@@ -11,6 +11,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/FederationOfFathers/dashboard/environment"
 	"github.com/nlopes/slack"
 	"go.uber.org/zap"
 )
@@ -126,6 +127,10 @@ func handleChannelUpload(m *slack.MessageEvent) bool {
 		return false
 	}
 	if !m.Msg.Upload {
+		return false
+	}
+	// don't handle upload messages if dev, since dev and prod both manage slack
+	if environment.IsDev {
 		return false
 	}
 	file := &m.Files[0]

@@ -1,13 +1,10 @@
 package metrics
 
 import (
-	"os"
-
+	"github.com/FederationOfFathers/dashboard/environment"
 	"github.com/rollbar/rollbar-go"
 	"go.uber.org/zap/zapcore"
 )
-
-const prodServicePath = "/var/lib/dashboard/prod"
 
 // RollbarConfig config for rollbar integration
 type RollbarConfig struct {
@@ -22,8 +19,12 @@ func (r *RollbarConfig) Init() {
 
 	if r.Environment != "" {
 		rollbar.SetEnvironment(r.Environment)
-	} else if _, err := os.Stat(prodServicePath); !os.IsNotExist(err) { // need a better environment flag
+	} else if environment.IsProd {
 		rollbar.SetEnvironment("production")
+	} else if environment.IsDev {
+		rollbar.SetEnvironment("development")
+	} else if environment.IsLocal {
+		rollbar.SetEnvironment("localhost")
 	}
 
 	rollbar.Wait()
