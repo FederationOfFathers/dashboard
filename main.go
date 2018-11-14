@@ -11,6 +11,7 @@ import (
 	"github.com/FederationOfFathers/dashboard/bot"
 	"github.com/FederationOfFathers/dashboard/bridge"
 	"github.com/FederationOfFathers/dashboard/db"
+	"github.com/FederationOfFathers/dashboard/environment"
 	"github.com/FederationOfFathers/dashboard/events"
 	"github.com/FederationOfFathers/dashboard/messaging"
 	"github.com/FederationOfFathers/dashboard/metrics"
@@ -100,7 +101,7 @@ func main() {
 	api.DB = DB
 	bot.DB = DB
 	bot.AuthTokenGenerator = api.GenerateValidAuthTokens
-	if home := os.Getenv("SERVICE_DIR"); home == "" {
+	if environment.IsProd {
 		bot.LoginLink = fmt.Sprintf("http://dashboard.fofgaming.com/")
 	} else {
 		bot.LoginLink = fmt.Sprintf("http://fofgaming.com%s/", api.ListenOn)

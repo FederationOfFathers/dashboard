@@ -194,10 +194,13 @@ func handleChannelUpload(m *slack.MessageEvent) bool {
 					zap.String("file", file.ID))
 			}
 			if _, _, err := rtm.DeleteMessage(m.Channel, m.Timestamp); err != nil {
-				Logger.Error(fmt.Sprintf("unable to delete message - %s", err.Error()),
-					zap.String("username", user),
-					zap.String("filename", file.Name),
-					zap.Error(err))
+				if err.Error() != "message_not_found" { // message not found means the file deletion deleted the message
+					Logger.Error(fmt.Sprintf("unable to delete message - %s", err.Error()),
+						zap.String("username", user),
+						zap.String("channel", m.Channel),
+						zap.String("messageTime", m.Timestamp),
+						zap.Error(err))
+				}
 			}
 
 			if isImage.MatchString(strings.ToLower(file.Name)) {
