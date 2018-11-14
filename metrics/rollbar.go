@@ -1,9 +1,13 @@
 package metrics
 
 import (
+	"os"
+
 	"github.com/rollbar/rollbar-go"
 	"go.uber.org/zap/zapcore"
 )
+
+const prodServicePath = "/var/lib/dashboard/prod"
 
 // RollbarConfig config for rollbar integration
 type RollbarConfig struct {
@@ -13,10 +17,13 @@ type RollbarConfig struct {
 
 // Init starts up rollbar. Without this, there are no rollbar metrics.
 func (r *RollbarConfig) Init() {
+
 	rollbar.SetToken(r.Token)
 
 	if r.Environment != "" {
 		rollbar.SetEnvironment(r.Environment)
+	} else if _, err := os.Stat(prodServicePath); !os.IsNotExist(err) { // need a better environment flag
+		rollbar.SetEnvironment("production")
 	}
 
 	rollbar.Wait()

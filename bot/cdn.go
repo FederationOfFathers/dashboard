@@ -189,9 +189,12 @@ func handleChannelUpload(m *slack.MessageEvent) bool {
 			fileURL := CdnPrefix + urlPath[len(CdnPath):]
 
 			//delete file and message
-			rtm.DeleteFile(file.ID)
+			if err := rtm.DeleteFile(file.ID); err != nil {
+				Logger.Error(fmt.Sprintf("unable to delete file - %s", err.Error()),
+					zap.String("file", file.ID))
+			}
 			if _, _, err := rtm.DeleteMessage(m.Channel, m.Timestamp); err != nil {
-				Logger.Error("Unable to delete message",
+				Logger.Error(fmt.Sprintf("unable to delete message - %s", err.Error()),
 					zap.String("username", user),
 					zap.String("filename", file.Name),
 					zap.Error(err))

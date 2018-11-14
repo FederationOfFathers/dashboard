@@ -117,7 +117,7 @@ func updateMixer(s *db.Stream) {
 	}
 	err := m.Update()
 	if err != nil {
-		bplog.Error("Error updating mixer stream details", zap.Error(err))
+		bplog.Error(fmt.Sprintf("error updating mixer stream details - %s", err.Error()), zap.Error(err))
 		return
 	}
 

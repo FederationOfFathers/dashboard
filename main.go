@@ -46,9 +46,6 @@ func init() {
 	if err := unmarshalConfig("cfg-rollbar.yml", &rollbarCfg); err != nil {
 		fmt.Printf("Unable to unmarshal rollbar config - %s\n", err.Error())
 	} else if rollbarCfg.Token != "" {
-		if home := os.Getenv("SERVICE_DIR"); home == "" && rollbarCfg.Environment == "" { // need a better environment flag
-			rollbarCfg.Environment = "production"
-		}
 		rollbarCfg.Init()
 		logger.Info("Rollbar initialized")
 	}
