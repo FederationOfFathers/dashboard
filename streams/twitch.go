@@ -33,7 +33,7 @@ func MustTwitch(oauth string) {
 type twitchStream twitch.StreamType
 
 func mindTwitch() {
-	twlog = Logger.With(zap.String("service", "twitch"))
+	twlog = Logger.Named("twitch")
 	twlog.Debug("begin minding")
 	for _, stream := range Streams {
 		if stream.Twitch == "" {
