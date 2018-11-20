@@ -12,6 +12,9 @@ type RollbarConfig struct {
 	Environment string `yaml:"environment"`
 }
 
+type levelEnabler struct {
+}
+
 // Init starts up rollbar. Without this, there are no rollbar metrics.
 func (r *RollbarConfig) Init() {
 
@@ -30,30 +33,79 @@ func (r *RollbarConfig) Init() {
 	rollbar.Wait()
 }
 
-// LoggerHook zapcore Hook for Rollbar. Outputs only error and warn messages
-func (r *RollbarConfig) LoggerHook(entry zapcore.Entry) error {
+// RollbarZapCore is a custom core to send logs to Rollbar. Add the core using zapcore.NewTee
+type RollbarZapCore struct {
+	levelEnabler
+	coreFields map[string]interface{}
+}
 
-	// run only if rollbar is configured
-	if r.Token == "" {
-		return nil
+// NewRollbarCore creates a new RollbarZapCore
+func NewRollbarCore() *RollbarZapCore {
+	return &RollbarZapCore{
+		coreFields: make(map[string]interface{}),
 	}
-	go func(e zapcore.Entry) {
+}
 
-		data := map[string]interface{}{
-			"logger": e.LoggerName,
-			"file":   e.Caller.TrimmedPath(),
-		}
-		switch e.Level {
-		case zapcore.ErrorLevel:
-			rollbar.Error(e.Message, data)
-		case zapcore.WarnLevel:
-			rollbar.Warning(e.Message, data)
-		case zapcore.DPanicLevel, zapcore.PanicLevel, zapcore.FatalLevel:
-			rollbar.Critical(e.Message, data)
-		}
+func (le *levelEnabler) Enabled(l zapcore.Level) bool {
+	return l >= zapcore.WarnLevel
+}
 
-	}(entry)
+// With provides structure
+func (c *RollbarZapCore) With(fields []zapcore.Field) zapcore.Core {
 
+	fieldMap := fieldsToMap(fields)
+
+	for k, v := range fieldMap {
+		c.coreFields[k] = v
+	}
+
+	return c
+}
+
+// Check determines if this should be sent to roll bar based on LevelEnabler
+func (c *RollbarZapCore) Check(entry zapcore.Entry, checkedEntry *zapcore.CheckedEntry) *zapcore.CheckedEntry {
+	if c.levelEnabler.Enabled(entry.Level) {
+		return checkedEntry.AddCore(entry, c)
+	}
+	return checkedEntry
+}
+
+func (c *RollbarZapCore) Write(entry zapcore.Entry, fields []zapcore.Field) error {
+
+	fieldMap := fieldsToMap(fields)
+	for k, v := range fieldMap {
+		c.coreFields[k] = v
+	}
+
+	c.coreFields["logger"] = entry.LoggerName
+	c.coreFields["file"] = entry.Caller.TrimmedPath()
+
+	switch entry.Level {
+	case zapcore.ErrorLevel:
+		rollbar.Error(entry.Message, c.coreFields)
+	case zapcore.WarnLevel:
+		rollbar.Warning(entry.Message, c.coreFields)
+	case zapcore.DPanicLevel:
+		rollbar.Critical(entry.Message, c.coreFields)
+	}
 	return nil
+}
 
+// Sync flushes
+func (c *RollbarZapCore) Sync() error {
+	rollbar.Wait()
+	return nil
+}
+
+func fieldsToMap(fields []zapcore.Field) map[string]interface{} {
+	enc := zapcore.NewMapObjectEncoder()
+	for _, f := range fields {
+		f.AddTo(enc)
+	}
+
+	m := make(map[string]interface{})
+	for k, v := range enc.Fields {
+		m[k] = v
+	}
+	return m
 }

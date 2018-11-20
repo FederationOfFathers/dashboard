@@ -6,7 +6,7 @@ var ytlog *zap.Logger
 var YoutubeAPIKey string
 
 func mindYoutube() {
-	ytlog = Logger.With(zap.String("service", "youtube"))
+	ytlog = Logger.Named("youtube")
 	ytlog.Debug("begin minding")
 	for _, stream := range Streams {
 		if stream.Youtube == "" {

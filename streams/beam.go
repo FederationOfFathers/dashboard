@@ -97,7 +97,7 @@ func (b *Mixer) Update() error {
 }
 
 func mindMixer() {
-	bplog = Logger.With(zap.String("service", "mixer"))
+	bplog = Logger.Named("mixer")
 	bplog.Debug("begin minding")
 	for _, stream := range Streams {
 		if stream.Beam == "" {
@@ -116,7 +116,7 @@ func updateMixer(s *db.Stream) {
 	}
 	err := m.Update()
 	if err != nil {
-		bplog.Error(fmt.Sprintf("error updating mixer stream details - %s", err.Error()), zap.Error(err))
+		bplog.Error("Error updating mixer stream details", zap.Error(err))
 		return
 	}
 

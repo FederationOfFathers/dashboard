@@ -19,6 +19,7 @@ import (
 	"github.com/FederationOfFathers/dashboard/streams"
 	"github.com/apokalyptik/cfg"
 	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 	"gopkg.in/yaml.v2"
 )
 
@@ -36,12 +37,15 @@ var mindStreams bool
 
 func init() {
 
-	if os.Getenv("DEV_LOGGING") == "" {
-		logger, _ = zap.NewProduction(zap.Hooks(rollbarCfg.LoggerHook))
+	rollbar := metrics.NewRollbarCore()
+	if environment.IsProd {
+		logger, _ = zap.NewProduction()
 	} else {
-		logger, _ = zap.NewDevelopment(zap.Hooks(rollbarCfg.LoggerHook))
+		logger, _ = zap.NewDevelopment()
 	}
-	logger = logger.Named("main")
+	logger = logger.WithOptions(zap.WrapCore(func(core zapcore.Core) zapcore.Core {
+		return zapcore.NewTee(core, rollbar)
+	})).Named("main")
 
 	// ROLLBAR
 	if err := unmarshalConfig("cfg-rollbar.yml", &rollbarCfg); err != nil {
@@ -51,13 +55,13 @@ func init() {
 		logger.Info("Rollbar initialized")
 	}
 
-	bot.Logger = logger.With(zap.String("module", "bot")).Named("bot")
-	api.Logger = logger.With(zap.String("module", "api")).Named("api")
-	events.Logger = logger.With(zap.String("module", "events")).Named("events")
-	streams.Logger = logger.With(zap.String("module", "streams")).Named("streams")
-	db.Logger = logger.With(zap.String("module", "db")).Named("db")
-	bridge.Logger = logger.With(zap.String("module", "bridge")).Named("bridge")
-	messaging.Logger = logger.With(zap.String("module", "messaging")).Named("messaging")
+	bot.Logger = logger.Named("bot")
+	api.Logger = logger.Named("api")
+	events.Logger = logger.Named("events")
+	streams.Logger = logger.Named("streams")
+	db.Logger = logger.Named("db")
+	bridge.Logger = logger.Named("bridge")
+	messaging.Logger = logger.Named("messaging")
 
 	scfg := cfg.New("cfg-slack")
 	scfg.StringVar(&slackAPIKey, "apiKey", slackAPIKey, "Slack API Key (env: SLACK_APIKEY)")
