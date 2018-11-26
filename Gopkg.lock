@@ -10,6 +10,14 @@
   revision = "703f8911690139c3e1062143aaa00fb913c8dbe5"
 
 [[projects]]
+  digest = "1:07ad857905edc82c3a087156034dc7ee50c80f7ab269d7a320c4b990a0f68860"
+  name = "github.com/bearcherian/rollzap"
+  packages = ["."]
+  pruneopts = ""
+  revision = "3ec080b9be8f772eb72c4d47a5c48db77e3bd610"
+  version = "v1.0.2"
+
+[[projects]]
   digest = "1:ed112122ed4a920d944cc99b9d00b0441c11685939c28462c719488d36fe29aa"
   name = "github.com/boltdb/bolt"
   packages = ["."]
@@ -301,6 +309,7 @@
   analyzer-version = 1
   input-imports = [
     "github.com/apokalyptik/cfg",
+    "github.com/bearcherian/rollzap",
     "github.com/boltdb/bolt",
     "github.com/bwmarrin/discordgo",
     "github.com/dineshappavoo/basex",
