@@ -18,6 +18,7 @@ import (
 	"github.com/FederationOfFathers/dashboard/store"
 	"github.com/FederationOfFathers/dashboard/streams"
 	"github.com/apokalyptik/cfg"
+	"github.com/bearcherian/rollzap"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"gopkg.in/yaml.v2"
@@ -37,22 +38,23 @@ var mindStreams bool
 
 func init() {
 
-	rollbar := metrics.NewRollbarCore()
 	if environment.IsProd {
 		logger, _ = zap.NewProduction()
 	} else {
 		logger, _ = zap.NewDevelopment()
 	}
-	logger = logger.WithOptions(zap.WrapCore(func(core zapcore.Core) zapcore.Core {
-		return zapcore.NewTee(core, rollbar)
-	})).Named("main")
+	logger = logger.Named("main")
 
 	// ROLLBAR
+	rollbarCore := rollzap.NewRollbarCore(zapcore.WarnLevel)
 	if err := unmarshalConfig("cfg-rollbar.yml", &rollbarCfg); err != nil {
-		fmt.Printf("Unable to unmarshal rollbar config - %s\n", err.Error())
+		logger.Error("Unable to unmarshal rollbar config", zap.Error(err))
 	} else if rollbarCfg.Token != "" {
 		rollbarCfg.Init()
 		logger.Info("Rollbar initialized")
+		logger = logger.WithOptions(zap.WrapCore(func(core zapcore.Core) zapcore.Core {
+			return zapcore.NewTee(core, rollbarCore)
+		}))
 	}
 
 	bot.Logger = logger.Named("bot")

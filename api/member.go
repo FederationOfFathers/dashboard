@@ -3,6 +3,7 @@ package api
 import (
 	"encoding/json"
 	"net/http"
+	"strconv"
 	"strings"
 
 	"github.com/FederationOfFathers/dashboard/bridge"
@@ -12,6 +13,7 @@ import (
 )
 
 func init() {
+	// v0 using slack id
 	Router.Path("/api/v0/member/{memberID}").Methods("GET").Handler(authenticated(
 		func(w http.ResponseWriter, r *http.Request) {
 			w.Header().Set("Content-Type", "application/json")
@@ -32,6 +34,33 @@ func init() {
 		},
 	))
 
+	// v1, using member id
+	Router.Path("/api/v1/member/{memberID}").Methods("GET").Handler(authenticated(
+		func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Content-Type", "application/json")
+
+			// get memberId as an int, invalid member id returns a 404
+			memberID, err := strconv.Atoi(mux.Vars(r)["memberID"])
+			if err != nil {
+				w.WriteHeader(http.StatusBadRequest)
+				w.Write([]byte("400 bad request"))
+				return
+			}
+
+			// find the member
+			member, err := DB.MemberByID(memberID)
+			if err == gorm.ErrRecordNotFound || member == nil { // if not found, return 404
+				http.NotFound(w, r)
+				return
+			} else if err != nil { // if db error, 500
+				w.WriteHeader(http.StatusInternalServerError)
+				return
+			}
+			json.NewEncoder(w).Encode(member)
+		},
+	))
+
+	// v0, using slack id
 	Router.Path("/api/v0/member/{memberID}").Methods("PUT", "POST").Handler(
 		authenticated(
 			func(w http.ResponseWriter, r *http.Request) {

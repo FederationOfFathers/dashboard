@@ -14,6 +14,7 @@ func init() {
 			id := getSlackUserID(r)
 			w.Header().Set("X-UID", id)
 			user, _ := bridge.Data.Slack.User(id)
+			member, _ := DB.MemberBySlackID(id)
 			admin, _ := bridge.Data.Slack.IsUserIDAdmin(id)
 			userGroups := bridge.Data.Slack.UserGroups(id)
 			userGroupsVisible := map[string]string{}
@@ -26,6 +27,7 @@ func init() {
 				userGroupsVisible[group.ID] = visible
 			}
 			var rval = map[string]interface{}{
+				"member":        member,
 				"user":          user,
 				"admin":         admin,
 				"groups":        userGroups,
