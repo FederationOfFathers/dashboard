@@ -9,14 +9,14 @@ import (
 var cTypeDigit = regexp.MustCompile("^[0-9]+$")
 
 type Member struct {
-	ID      int    `sql:"bigint(20) NOT NULL AUTO_INCREMENT"`
-	Slack   string `gorm:"type:varchar(191);not null;default:'';unique_index"`
-	Xbl     string `gorm:"type:varchar(191);not null;default:'';index"`
-	Psn     string `gorm:"type:varchar(191);not null;default:''"`
-	Destiny string `gorm:"type:varchar(191);not null;default:''"`
-	Seen    int    `gorm:"type:bigint;not null;index;default:0"`
-	Name    string `gorm:"type:varchar(191);not null;default:''"`
-	TZ      string `gorm:"type:varchar(191);not null;default:''"`
+	ID      int    `sql:"bigint(20) NOT NULL AUTO_INCREMENT" json:"id"`
+	Slack   string `gorm:"type:varchar(191);not null;default:'';unique_index" json:"slack_id"`
+	Xbl     string `gorm:"type:varchar(191);not null;default:'';index" json:"-"`
+	Psn     string `gorm:"type:varchar(191);not null;default:''" json:"-"`
+	Destiny string `gorm:"type:varchar(191);not null;default:''" json:"-"`
+	Seen    int    `gorm:"type:bigint;not null;index;default:0" json:"-"`
+	Name    string `gorm:"type:varchar(191);not null;default:''" json:"name"`
+	TZ      string `gorm:"type:varchar(191);not null;default:''" json:"-"`
 	db      *DB    `gorm:"-"`
 }
 
