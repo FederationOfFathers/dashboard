@@ -3,6 +3,7 @@ package api
 import (
 	"encoding/json"
 	"net/http"
+	"strconv"
 
 	"github.com/FederationOfFathers/dashboard/bridge"
 	"go.uber.org/zap"
@@ -40,7 +41,7 @@ func init() {
 			if err != nil {
 				Logger.Error("Unable to get member", zap.Error(err), zap.String("slackId", id))
 			}
-			json.NewEncoder(w).Encode(bridge.OldEventToolAuthorization(string(member.ID)))
+			json.NewEncoder(w).Encode(bridge.OldEventToolAuthorization(strconv.Itoa(member.ID)))
 		},
 	)
 }
