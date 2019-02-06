@@ -3,12 +3,14 @@ package api
 import (
 	"encoding/json"
 	"net/http"
+	"strconv"
 
 	"github.com/FederationOfFathers/dashboard/bridge"
 	"go.uber.org/zap"
 )
 
 func init() {
+	// legacy - use old slack name
 	Router.Path("/api/v0/auth/team-tool").Methods("GET").HandlerFunc(
 		func(w http.ResponseWriter, r *http.Request) {
 			var err error
@@ -24,7 +26,7 @@ func init() {
 		},
 	)
 
-	// V1 - uses member XBL Gamer Tag
+	// V1 - uses member ID in the auth
 	Router.Path("/api/v1/auth/team-tool").Methods("GET").HandlerFunc(
 		func(w http.ResponseWriter, r *http.Request) {
 			var err error
@@ -39,7 +41,7 @@ func init() {
 			if err != nil {
 				Logger.Error("Unable to get member", zap.Error(err), zap.String("slackId", id))
 			}
-			json.NewEncoder(w).Encode(bridge.OldEventToolAuthorization(string(member.Xbl)))
+			json.NewEncoder(w).Encode(bridge.OldEventToolAuthorization(strconv.Itoa(member.ID)))
 		},
 	)
 }
