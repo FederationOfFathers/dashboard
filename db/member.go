@@ -11,6 +11,7 @@ var cTypeDigit = regexp.MustCompile("^[0-9]+$")
 type Member struct {
 	ID      int    `sql:"bigint(20) NOT NULL AUTO_INCREMENT" json:"id"`
 	Slack   string `gorm:"type:varchar(191);not null;default:'';unique_index" json:"slack_id"`
+	Discord string `gorm:"type:varchar(191);null;unique_index" json:"discord"`
 	Xbl     string `gorm:"type:varchar(191);not null;default:'';index" json:"-"`
 	Psn     string `gorm:"type:varchar(191);not null;default:''" json:"-"`
 	Destiny string `gorm:"type:varchar(191);not null;default:''" json:"-"`
