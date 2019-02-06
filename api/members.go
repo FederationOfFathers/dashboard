@@ -41,6 +41,7 @@ func membersToMembersRestricted(members []*db.Member) map[string]memberRestricte
 			Name:    member.Name,
 			Slack:   member.Slack,
 			Discord: member.Discord,
+			Xbox:    member.Xbl,
 		}
 	}
 
