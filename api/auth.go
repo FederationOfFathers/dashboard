@@ -24,7 +24,7 @@ func init() {
 		who := args.Get("w")
 		minitoken := args.Get("t")
 		if validateMiniAuthToken(who, minitoken) {
-			authorize(who, w, r)
+			authorize(who, 0, w, r)
 			if args.Get("r") == "0" {
 				w.Header().Set("Content-Type", "text/json")
 				json.NewEncoder(w).Encode("ok")
@@ -40,10 +40,10 @@ func init() {
 	// v1 using member id
 	Router.Path("/api/v1/login").Methods("GET").HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		args := r.URL.Query()
-		who := args.Get("w")
+		who, err := strconv.Atoi(args.Get("w")) // if this conversion fails, then we have a bad request
 		minitoken := args.Get("t")
-		if validateMiniAuthToken(who, minitoken) {
-			authorize(who, w, r)
+		if err != nil && validateMiniAuthTokenForID(who, minitoken) {
+			authorize("", who, w, r)
 			if args.Get("r") == "0" {
 				w.Header().Set("Content-Type", "text/json")
 				json.NewEncoder(w).Encode("ok")
