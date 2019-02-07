@@ -42,7 +42,7 @@ func init() {
 		args := r.URL.Query()
 		who, err := strconv.Atoi(args.Get("w")) // if this conversion fails, then we have a bad request
 		minitoken := args.Get("t")
-		if err != nil && validateMiniAuthTokenForID(who, minitoken) {
+		if err == nil && validateMiniAuthTokenForID(who, minitoken) {
 			authorize("", who, w, r)
 			if args.Get("r") == "0" {
 				w.Header().Set("Content-Type", "text/json")
@@ -143,8 +143,48 @@ func validateMiniAuthTokenForID(forID int, token string) bool {
 
 func getSlackUserID(r *http.Request) string {
 	auth := requestAuth(r)
-	id, _ := auth["userid"]
+	id, ok := auth["userid"]
+	if ok {
+		return id
+	}
+
+	// if no userid, look for memberid and find the slackid. return '' on error
+	memberidStr, ok := auth["memberid"]
+	if ok {
+		memberid, err := strconv.Atoi(memberidStr)
+		if err != nil {
+			return id
+		}
+		member, err := DB.MemberByID(memberid)
+		if err != nil {
+			return id
+		}
+		id = member.Slack
+	}
+
 	return id
+}
+
+// returns member id or -1 if it cannot be found
+func getMemberID(r *http.Request) int {
+	auth := requestAuth(r)
+	if id, ok := auth["memberid"]; ok {
+		memberid, err := strconv.Atoi(id)
+		if err != nil {
+			return -1
+		}
+		return memberid
+	}
+	slackid, ok := auth["userid"]
+	if ok {
+		member, err := DB.MemberBySlackID(slackid)
+		if err != nil {
+			return 0
+		}
+		return member.ID
+	}
+
+	return -1
 }
 
 func getSlackUserName(r *http.Request) string {

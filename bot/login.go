@@ -7,6 +7,7 @@ import (
 
 	"github.com/FederationOfFathers/dashboard/environment"
 	"github.com/nlopes/slack"
+	"go.uber.org/zap"
 )
 
 var LoginLink = ""
@@ -65,7 +66,18 @@ func handleLoginCode(m *slack.MessageEvent) bool {
 		max = 190
 	}
 	var handled bool
-	handled = 0 < DB.Exec("UPDATE logins SET member = ? WHERE code = ? LIMIT 1", m.User, strings.ToLower(m.Msg.Text)[:max]).RowsAffected
+	member, err := DB.MemberBySlackID(m.User)
+	if err != nil {
+		Logger.Error("no member found", zap.String("slackId", m.User), zap.Error(err))
+		return false
+	}
+	if dbErr := DB.Exec("UPDATE logins SET member = ?, member_id = ? WHERE code = ? LIMIT 1", m.User, member.ID, strings.ToLower(m.Msg.Text)[:max]).Error; dbErr != nil {
+		Logger.Error("unable to update login", zap.String("code", m.Text), zap.String("user", m.User), zap.Int("id", member.ID), zap.Error(dbErr))
+		handled = false
+	} else {
+		handled = true
+	}
+
 	if handled {
 		rtm.SendMessage(&slack.OutgoingMessage{
 			ID:      int(time.Now().UnixNano()),

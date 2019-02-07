@@ -1,6 +1,10 @@
 package db
 
-import "time"
+import (
+	"time"
+
+	"go.uber.org/zap"
+)
 
 type Logins struct {
 	ID       int    `gorm:"type:int(11);not null;auto_increment;primary_key"`
@@ -13,12 +17,13 @@ type Logins struct {
 // GetLoginForCode returns a Logins{} where the code matches and an error if any
 func (d *DB) GetLoginForCode(code string) (Logins, error) {
 
-	login := Logins{}
-	err := d.Where("code =?", code).First(&login).Error
+	var login Logins
+	err := d.Raw("SELECT * FROM logins WHERE code = ? LIMIT 1", code).Scan(&login).Error
 	return login, err
 }
 
 // DeleteLoginForCode deletes login rows with the matching code
 func (d *DB) DeleteLoginForCode(code string) {
-	d.Where("code = ?", code).Delete(Logins{})
+	Logger.Debug("Deleteing", zap.String("code", code))
+	d.Exec("DELETE FROM logins WHERE code = ?", code)
 }
