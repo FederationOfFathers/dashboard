@@ -5,11 +5,13 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
 
 	"github.com/gorilla/mux"
+	"github.com/jinzhu/gorm"
 	"github.com/labstack/gommon/log"
 	uuid "github.com/nu7hatch/gouuid"
 	hashids "github.com/speps/go-hashids"
@@ -54,6 +56,8 @@ func init() {
 		}
 		json.NewEncoder(w).Encode(s)
 	})
+
+	// v0 using slack
 	Router.Path("/api/v0/login/check/{code}").Methods("GET").HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "text/json")
 		if err := DB.Exec("DELETE FROM logins WHERE `expiry` < NOW()").Error; err != nil {
@@ -76,6 +80,40 @@ func init() {
 			http.Redirect(w, r, link, http.StatusTemporaryRedirect)
 			return
 		}
+		json.NewEncoder(w).Encode("wait")
+	})
+
+	// V1 using member id instead of slack
+	Router.Path("/api/v1/login/check/{code}").Methods("GET").HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "text/json")
+		if err := DB.Exec("DELETE FROM logins WHERE `expiry` < NOW()").Error; err != nil {
+			log.Error("cleaning logins", zap.Error(err))
+		}
+
+		code := mux.Vars(r)["code"]
+		login, err := DB.GetLoginForCode(code)
+
+		// handle errors
+		if err != nil {
+			// no record = already used the code
+			if err == gorm.ErrRecordNotFound {
+				json.NewEncoder(w).Encode("gone")
+				return
+			}
+			log.Error("login code check", zap.Error(err))
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+
+		// record found, redirect to login
+		if login.MemberID != 0 {
+			var link = fmt.Sprintf("/api/v1/login?w=%d&t=%s&r=0", login.MemberID, GenerateValidAuthTokens(strconv.Itoa(login.MemberID))[0])
+			DB.DeleteLoginForCode(code)
+			http.Redirect(w, r, link, http.StatusTemporaryRedirect)
+			return
+		}
+
+		// keep waiting
 		json.NewEncoder(w).Encode("wait")
 	})
 
