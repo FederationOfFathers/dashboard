@@ -8,7 +8,7 @@ import (
 
 type Logins struct {
 	Code     string    `gorm:"type:varchar(191);not null;default:'';primary_key"`
-	Member   string    `gorm:"type:varchar(191);null"`
+	Member   string    `gorm:"type:varchar(191);null;default:''"`
 	MemberID int       `gorm:"type:int(11);null"`
 	Expiry   time.Time `gorm:"not null;default:'1970-01-01 00:00:01';index:expiry"`
 }
