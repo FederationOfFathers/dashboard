@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/gorilla/securecookie"
@@ -35,9 +36,10 @@ func requestAuth(r *http.Request) map[string]string {
 	return map[string]string{}
 }
 
-func authorize(userID string, w http.ResponseWriter, r *http.Request) {
+func authorize(userID string, memberID int, w http.ResponseWriter, r *http.Request) {
 	var auth = requestAuth(r)
-	auth["userid"] = userID
+	auth["userid"] = userID                   //slack userid
+	auth["memberid"] = strconv.Itoa(memberID) //member id
 	if encoded, err := cookie.Encode(cookieName, auth); err == nil {
 		http.SetCookie(
 			w,
@@ -56,6 +58,9 @@ func authorize(userID string, w http.ResponseWriter, r *http.Request) {
 func authorized(w http.ResponseWriter, r *http.Request) (*http.Request, error) {
 	if a := r.Context().Value(authContext); a != nil {
 		auth := a.(map[string]string)
+		if memberid, memberOk := auth["memberid"]; memberOk && memberid != "" {
+			return r, nil
+		}
 		if _, ok := auth["userid"]; ok {
 			return r, nil
 		}

@@ -125,33 +125,6 @@
   version = "v1.0"
 
 [[projects]]
-  digest = "1:8b892c6273cbc58834d83016abbc942bfec885b01e1a26db0955d7bec885f628"
-  name = "github.com/labstack/gommon"
-  packages = [
-    "color",
-    "log",
-  ]
-  pruneopts = ""
-  revision = "57409ada9da0f2afad6664c49502f8c50fbd8476"
-  version = "0.2.3"
-
-[[projects]]
-  digest = "1:9ea83adf8e96d6304f394d40436f2eb44c1dc3250d223b74088cc253a6cd0a1c"
-  name = "github.com/mattn/go-colorable"
-  packages = ["."]
-  pruneopts = ""
-  revision = "167de6bfdfba052fa6b2d3664c8f5272e23c9072"
-  version = "v0.0.9"
-
-[[projects]]
-  digest = "1:78229b46ddb7434f881390029bd1af7661294af31f6802e0e1bedaad4ab0af3c"
-  name = "github.com/mattn/go-isatty"
-  packages = ["."]
-  pruneopts = ""
-  revision = "0360b2af4f38e8d38c7fce2a9f4e702702d73a39"
-  version = "v0.0.3"
-
-[[projects]]
   digest = "1:f126c22d768e4047b5d478081451c8735a188da1958e7d9ab9830c5a28bc4eff"
   name = "github.com/nlopes/slack"
   packages = [
@@ -208,22 +181,6 @@
   pruneopts = ""
   revision = "d1d57a886aa7e3ef6092b70ceab077e35ee8e0ce"
   version = "v1.0.0"
-
-[[projects]]
-  branch = "master"
-  digest = "1:857a9ecd5cb13379ecc8f798f6e6b6b574c98b9355657d91e068275f1120aaf7"
-  name = "github.com/valyala/bytebufferpool"
-  packages = ["."]
-  pruneopts = ""
-  revision = "e746df99fe4a3986f4d4f79e13c1e0117ce9c2f7"
-
-[[projects]]
-  branch = "master"
-  digest = "1:bf6f8915c0338e875383cb7fdebd58a4d360a232f461d9a029d7ccb12f90c5d7"
-  name = "github.com/valyala/fasttemplate"
-  packages = ["."]
-  pruneopts = ""
-  revision = "dcecefd839c4193db0d35b88ec65b4c12d360ab0"
 
 [[projects]]
   digest = "1:6e8d05f4da3ff913adf807cb34623811f764b4924369f65c3ab9db744e8fe6ad"
@@ -319,7 +276,6 @@
     "github.com/jinzhu/gorm",
     "github.com/jinzhu/gorm/dialects/mysql",
     "github.com/knspriggs/go-twitch",
-    "github.com/labstack/gommon/log",
     "github.com/nlopes/slack",
     "github.com/nu7hatch/gouuid",
     "github.com/pborman/uuid",
