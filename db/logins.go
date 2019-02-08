@@ -7,11 +7,10 @@ import (
 )
 
 type Logins struct {
-	ID       int    `gorm:"type:int(11);not null;auto_increment;primary_key"`
-	Member   string `gorm:"type:varchar(191);null"`
-	MemberID int
-	code     string `gorm:"type:varchar(8};not null"`
-	expiry   time.Time
+	Code     string    `gorm:"type:varchar(191);not null;default:'';primary_key"`
+	Member   string    `gorm:"type:varchar(191);null"`
+	MemberID int       `gorm:"type:int(11);null"`
+	Expiry   time.Time `gorm:"not null;default:'1970-01-01 00:00:01';index:expiry"`
 }
 
 // GetLoginForCode returns a Logins{} where the code matches and an error if any
