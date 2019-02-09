@@ -94,8 +94,8 @@ func init() {
 					return
 				}
 
-				// saved, now redirect to member page
-				json.NewEncoder(w).Encode("ok")
+				// redirect
+				http.Redirect(w, r, "https://ui.fofgaming.com/#main=members", http.StatusTemporaryRedirect)
 			}
 
 		},
