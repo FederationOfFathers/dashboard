@@ -10,6 +10,7 @@ import (
 	"github.com/FederationOfFathers/dashboard/api"
 	"github.com/FederationOfFathers/dashboard/bot"
 	"github.com/FederationOfFathers/dashboard/bridge"
+	"github.com/FederationOfFathers/dashboard/config"
 	"github.com/FederationOfFathers/dashboard/db"
 	"github.com/FederationOfFathers/dashboard/environment"
 	"github.com/FederationOfFathers/dashboard/events"
@@ -59,6 +60,7 @@ func init() {
 
 	bot.Logger = logger.Named("bot")
 	api.Logger = logger.Named("api")
+	config.Logger = logger.Named("config")
 	events.Logger = logger.Named("events")
 	streams.Logger = logger.Named("streams")
 	db.Logger = logger.Named("db")
