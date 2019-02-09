@@ -1,6 +1,7 @@
 package config
 
 import (
+	"fmt"
 	"io/ioutil"
 	"os"
 
@@ -15,9 +16,11 @@ var Logger *zap.Logger
 var DiscordConfig *DiscordCfg
 
 func init() {
+
 	err := unmarshalConfig("cfg-discord.yml", &DiscordConfig)
 	if err != nil {
-		Logger.Error("Unable to load Discord config", zap.Error(err))
+		fmt.Printf("Unable to load Discord config. %s", err)
+		DiscordConfig = nil
 	}
 }
 
@@ -25,8 +28,7 @@ func init() {
 func unmarshalConfig(fileName string, cfgObject interface{}) error {
 	// exit quietly if no file. assume we are not configuring that portion
 	if _, err := os.Stat(fileName); err != nil {
-		Logger.Info("File does not exist", zap.String("file", fileName))
-		return nil
+		return err
 	}
 
 	// read file data

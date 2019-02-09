@@ -3,6 +3,7 @@ package api
 import (
 	"crypto/md5"
 	"crypto/sha1"
+	"fmt"
 	"net/http"
 	"os"
 
@@ -62,4 +63,9 @@ func Run() {
 				),
 			),
 		)))
+}
+
+func NotImplemented(w http.ResponseWriter, e *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+	fmt.Fprint(w, "Not Implemented")
 }
