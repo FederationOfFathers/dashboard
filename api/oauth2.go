@@ -29,8 +29,9 @@ func init() {
 		RedirectURL:  "https://dashboard.fofgaming.com/api/v1/oauth/discord",
 	}
 
-	Router.Path("/api/v1/oauth/discord").Methods("GET").HandlerFunc(
+	Router.Path("/api/v1/oauth/discord").Methods("GET").Handler(authenticated(
 		func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Content-Type", "text/plain")
 
 			query := r.URL.Query()
 			code := query.Get("code")
@@ -39,7 +40,7 @@ func init() {
 			if code == "" || state == "" {
 				// if no code/state redirect to auth url
 				authURL := conf.AuthCodeURL("asdasdasd13424yhion2f0") // TODO get proper state
-				http.Redirect(w, r, authURL, 302)
+				json.NewEncoder(w).Encode(authURL)
 			} else {
 
 				// exchange code for a user token
@@ -47,24 +48,33 @@ func init() {
 				token, err := conf.Exchange(ctx, code)
 				if err != nil {
 					Logger.Error("Could not get token", zap.Error(err))
+					w.WriteHeader(http.StatusInternalServerError)
+					return
 				}
 
 				// create a new client with the token and get the user/@me endpoint
 				client := conf.Client(ctx, token)
-				res, err := client.Get("https://discordapp.com/api/user/@me")
+				res, err := client.Get("https://discordapp.com/api/users/@me")
 				if err != nil {
 					Logger.Error("Could not get user object", zap.Error(err))
+					w.WriteHeader(http.StatusInternalServerError)
+					return
 				}
 
 				// unmarshall the Body to a User{}
 				body, err := ioutil.ReadAll(res.Body)
 				if err != nil {
 					Logger.Error("Could not parse body", zap.Error(err))
+					w.WriteHeader(http.StatusInternalServerError)
+					return
 				}
+
 				userObj := discordgo.User{}
 				err = json.Unmarshal(body, &userObj)
 				if err != nil {
 					Logger.Error("Could not parse JSON", zap.Error(err))
+					w.WriteHeader(http.StatusInternalServerError)
+					return
 				}
 
 				// store the id to the db
@@ -72,14 +82,24 @@ func init() {
 				member, err := DB.MemberByID(id)
 				if err != nil {
 					Logger.Error("could not find member", zap.Int("member_id", id), zap.Error(err))
+					w.WriteHeader(http.StatusInternalServerError)
+					return
 				}
 				member.Discord = userObj.ID
-				member.Save()
+				member.Name = userObj.Username
 
+				if err := member.Save(); err != nil {
+					Logger.Error("unable to save discord id", zap.Int("member", member.ID), zap.String("discord id", userObj.ID), zap.Error(err))
+					w.WriteHeader(http.StatusInternalServerError)
+					return
+				}
+
+				// saved, now redirect to member page
+				json.NewEncoder(w).Encode("ok")
 			}
 
 		},
-	)
+	))
 }
 
 func loadDiscordCfg() *bot.DiscordCfg {
