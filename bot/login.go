@@ -61,6 +61,9 @@ func SendLogin(user string) {
 }
 
 func handleLoginCode(m *slack.MessageEvent) bool {
+	if strings.HasPrefix(strings.ToLower(m.Msg.Text), "discord ") || m.Msg.User == "" {
+		return false
+	}
 	max := len(m.Msg.Text)
 	if max > 190 {
 		max = 190

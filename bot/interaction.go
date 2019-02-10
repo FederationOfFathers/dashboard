@@ -44,6 +44,7 @@ var DirectMessageHandlers = []MessageHandler{
 	handleDevLogin,
 	handleDice,
 	handleTimeout,
+	handleDiscordLink,
 }
 
 func handleChannelMessage(m *slack.MessageEvent) bool {

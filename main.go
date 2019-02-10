@@ -137,12 +137,8 @@ func main() {
 	// start discord bot
 	if discordCfg.Token != "" {
 		logger.Info("Starting discord")
-		discordApi := bot.NewDiscordAPI(discordCfg)
-		discordApi.Connect()
-		if discordCfg.RoleCfg.ChannelId != "" {
-			discordApi.StartRoleHandlers()
-		}
-		defer discordApi.Shutdown()
+		discordApi := bot.StartDiscord(discordCfg)
+
 		messaging.AddMsgAPI(discordApi)
 	}
 
