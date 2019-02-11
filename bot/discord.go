@@ -138,7 +138,7 @@ func (d *DiscordAPI) FindIDByUsernameStartingAt(username string, snowflake strin
 	for _, member := range members {
 		maxID = member.User.ID
 		// return matching usrname/discriminator combo
-		if member.User.Username == usernameParts[0] && member.User.Discriminator == usernameParts[1] {
+		if strings.ToLower(member.User.Username) == strings.ToLower(usernameParts[0]) && member.User.Discriminator == usernameParts[1] {
 			return member.User.ID, member.Nick
 		}
 	}

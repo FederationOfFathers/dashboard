@@ -36,6 +36,7 @@ var GroupMessageHandlers = []MessageHandler{
 	handleTimeout,
 }
 var DirectMessageHandlers = []MessageHandler{
+	handleDiscordLink,
 	handleLoginCode,
 	handleLogin,
 	handleDMUpload,
@@ -44,7 +45,6 @@ var DirectMessageHandlers = []MessageHandler{
 	handleDevLogin,
 	handleDice,
 	handleTimeout,
-	handleDiscordLink,
 }
 
 func handleChannelMessage(m *slack.MessageEvent) bool {
