@@ -19,6 +19,8 @@ func (d *DB) migrate() {
 	d.DB.Set("gorm:table_options", "ENGINE=InnoDB CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci").AutoMigrate(&Stream{})
 	d.DB.Set("gorm:table_options", "ENGINE=InnoDB CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci").AutoMigrate(&Event{})
 	d.DB.Set("gorm:table_options", "ENGINE=InnoDB CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci").AutoMigrate(&EventMember{})
+	d.DB.Exec("DROP TABLE logins")
+	d.DB.Set("gorm:table_options", "ENGINE=InnoDB CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci").AutoMigrate(&Logins{})
 }
 
 func New(dialect string, args ...interface{}) *DB {

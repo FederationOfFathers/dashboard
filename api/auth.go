@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/FederationOfFathers/dashboard/bridge"
@@ -16,12 +17,33 @@ import (
 var AuthSecret = ""
 
 func init() {
+
+	// v0 using slack
 	Router.Path("/api/v0/login").Methods("GET").HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		args := r.URL.Query()
 		who := args.Get("w")
 		minitoken := args.Get("t")
 		if validateMiniAuthToken(who, minitoken) {
-			authorize(who, w, r)
+			authorize(who, 0, w, r)
+			if args.Get("r") == "0" {
+				w.Header().Set("Content-Type", "text/json")
+				json.NewEncoder(w).Encode("ok")
+				return
+			}
+			http.Redirect(w, r, "https://ui.fofgaming.com/", http.StatusTemporaryRedirect)
+			return
+		}
+		w.WriteHeader(http.StatusForbidden)
+		w.Write([]byte("Invalid link. Please get another"))
+	})
+
+	// v1 using member id
+	Router.Path("/api/v1/login").Methods("GET").HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		args := r.URL.Query()
+		who, err := strconv.Atoi(args.Get("w")) // if this conversion fails, then we have a bad request
+		minitoken := args.Get("t")
+		if err == nil && validateMiniAuthTokenForID(who, minitoken) {
+			authorize("", who, w, r)
 			if args.Get("r") == "0" {
 				w.Header().Set("Content-Type", "text/json")
 				json.NewEncoder(w).Encode("ok")
@@ -73,6 +95,7 @@ func generateMiniAuthToken(forWhat string, when int) string {
 	return fmt.Sprintf("%0x", mac.Sum(nil))[22:34]
 }
 
+// Deprecated for slack usage
 func validateMiniAuthToken(forWhat, token string) bool {
 	// The loops in here don't break early on purpose.
 	var valid = false
@@ -87,6 +110,31 @@ func validateMiniAuthToken(forWhat, token string) bool {
 			userValid = true
 		}
 	}
+
+	if valid == true && userValid == true {
+		return true
+	}
+	return false
+}
+
+// runs validation for member id
+func validateMiniAuthTokenForID(forID int, token string) bool {
+	// The loops in here don't break early on purpose.
+	var valid = false
+	var userValid = false
+	for _, possible := range GenerateValidAuthTokens(strconv.Itoa(forID)) {
+		if hmac.Equal([]byte(token), []byte(possible)) {
+			valid = true
+		}
+	}
+
+	member, err := DB.MemberByID(forID)
+	if err != nil || member.ID <= 0 {
+		userValid = false
+	}
+
+	userValid = member.ID == forID
+
 	if valid == true && userValid == true {
 		return true
 	}
@@ -95,8 +143,44 @@ func validateMiniAuthToken(forWhat, token string) bool {
 
 func getSlackUserID(r *http.Request) string {
 	auth := requestAuth(r)
-	id, _ := auth["userid"]
+	id := auth["userid"]
+	if id != "" {
+		return id
+	}
+
+	// if no userid, look for memberid and find the slackid. return '' on error
+	memberidStr := auth["memberid"]
+	if memberidStr != "" {
+		if memberid, err := strconv.Atoi(memberidStr); err == nil {
+			member, err := DB.MemberByID(memberid)
+			if err == nil {
+				return member.Slack
+			}
+		}
+	}
+
 	return id
+}
+
+// returns member id or -1 if it cannot be found
+func getMemberID(r *http.Request) int {
+	auth := requestAuth(r)
+	id := auth["memberid"]
+	if id != "" {
+		if memberid, err := strconv.Atoi(id); err == nil {
+			return memberid
+		}
+	}
+
+	// if no memberid, try slack id
+	slackid := auth["userid"]
+	if slackid != "" {
+		if member, err := DB.MemberBySlackID(slackid); err == nil {
+			return member.ID
+		}
+	}
+
+	return -1
 }
 
 func getSlackUserName(r *http.Request) string {

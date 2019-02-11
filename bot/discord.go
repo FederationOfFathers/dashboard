@@ -1,48 +1,61 @@
 package bot
 
 import (
+	"fmt"
+	"strings"
+
+	"github.com/FederationOfFathers/dashboard/messaging"
 	"github.com/bwmarrin/discordgo"
 	"go.uber.org/zap"
-	"fmt"
-	"github.com/FederationOfFathers/dashboard/messaging"
 )
 
 type DiscordAPI struct {
-	Config DiscordCfg
-	discord *discordgo.Session
+	Config         DiscordCfg
+	discord        *discordgo.Session
 	assignmentMsgs map[string]map[string]string
 }
 
 type EmojiRole struct {
 	EmojiId string `yaml:"emojiId"`
-	RoleId string `yaml:"roleId"`
+	RoleId  string `yaml:"roleId"`
 }
 
 type DiscordEmojiRoleGroup struct {
-	MessageTitle string `yaml:"messageTitle"`
-	MessageBody string `yaml:"messageBody"`
-	Roles []EmojiRole `yaml:"roles"`
-
+	MessageTitle string      `yaml:"messageTitle"`
+	MessageBody  string      `yaml:"messageBody"`
+	Roles        []EmojiRole `yaml:"roles"`
 }
 
 type DiscordRoleCfg struct {
-	ChannelId string `yaml:"channelId"`
+	ChannelId       string                  `yaml:"channelId"`
 	EmojiRoleGroups []DiscordEmojiRoleGroup `yaml:"emojiRoles"`
-
 }
 
 type DiscordCfg struct {
-	ClientId string `yaml:"appClientId"`
-	Token string `yaml:"botToken"`
-	StreamChannelId string `yaml:"streamChannelId"`
-	GuildId string `yaml:"guildId"`
-	RoleCfg DiscordRoleCfg `yaml:"roleConfig"`
+	ClientId        string         `yaml:"appClientId"`
+	Token           string         `yaml:"botToken"`
+	StreamChannelId string         `yaml:"streamChannelId"`
+	GuildId         string         `yaml:"guildId"`
+	RoleCfg         DiscordRoleCfg `yaml:"roleConfig"`
 }
 
-func NewDiscordAPI(cfg DiscordCfg) DiscordAPI {
-	return DiscordAPI{
+var discordApi *DiscordAPI
+
+func NewDiscordAPI(cfg DiscordCfg) *DiscordAPI {
+	return &DiscordAPI{
 		Config: cfg,
 	}
+}
+
+// StartDiscord starts Discord API bot
+func StartDiscord(cfg DiscordCfg) *DiscordAPI {
+	discordApi = NewDiscordAPI(cfg)
+	discordApi.Connect()
+	if cfg.RoleCfg.ChannelId != "" {
+		discordApi.StartRoleHandlers()
+	}
+
+	return discordApi
 }
 
 func (d DiscordAPI) roleAssignmentHandler(s *discordgo.Session, event *discordgo.MessageReactionAdd) {
@@ -61,7 +74,7 @@ func (d DiscordAPI) roleAssignmentHandler(s *discordgo.Session, event *discordgo
 			emojiId = fmt.Sprintf(":%s:%s", event.Emoji.Name, event.Emoji.ID)
 		}
 
-		if roleId, ok := roles[emojiId]; ok{
+		if roleId, ok := roles[emojiId]; ok {
 			// get the user from the server/guild
 			member, err := d.discord.GuildMember(d.Config.GuildId, event.UserID)
 			if err != nil {
@@ -93,16 +106,48 @@ func (d DiscordAPI) roleAssignmentHandler(s *discordgo.Session, event *discordgo
 		)
 
 		if err != nil {
-		Logger.Error("could not remove reaction from message",
-			zap.String("user", event.UserID),
-			zap.String("emoji", emojiId),
-			zap.Error(err))
+			Logger.Error("could not remove reaction from message",
+				zap.String("user", event.UserID),
+				zap.String("emoji", emojiId),
+				zap.Error(err))
 		}
 	}
 
 }
 
-// Needs to be called before any other API function work
+// FindIDByUsername searches the server for a user with the specified username. Returns the ID and username
+func (d *DiscordAPI) FindIDByUsername(username string) (string, string) {
+	return d.FindIDByUsernameStartingAt(username, "0")
+}
+
+// FindIDByUsernameStartingAt searches the server for a user with the specified username starting at the id/snowflake. Returns the ID and username
+func (d *DiscordAPI) FindIDByUsernameStartingAt(username string, snowflake string) (string, string) {
+	members, err := d.discord.GuildMembers(d.Config.GuildId, snowflake, 1000)
+	if err != nil {
+		Logger.Error("unable to get guild members list", zap.Error(err))
+	}
+
+	// if no members, we've iterated through all members
+	if len(members) <= 0 {
+		return "", ""
+	}
+
+	// search for the member in the current list
+	usernameParts := strings.SplitN(username, "#", 2)
+	maxID := snowflake
+	for _, member := range members {
+		maxID = member.User.ID
+		// return matching usrname/discriminator combo
+		if strings.ToLower(member.User.Username) == strings.ToLower(usernameParts[0]) && member.User.Discriminator == usernameParts[1] {
+			return member.User.ID, member.Nick
+		}
+	}
+
+	// recursion to keep searching
+	return d.FindIDByUsernameStartingAt(username, maxID)
+}
+
+// Connect Needs to be called before any other API function work
 func (d *DiscordAPI) Connect() {
 	dg, err := discordgo.New("Bot " + d.Config.Token)
 	if err != nil {
@@ -114,7 +159,7 @@ func (d *DiscordAPI) Connect() {
 	dg.Open()
 }
 
-func (d *DiscordAPI) StartRoleHandlers(){
+func (d *DiscordAPI) StartRoleHandlers() {
 	d.listRoles()
 	d.clearRoleChannel()
 	d.createRoleMessages()
@@ -124,6 +169,7 @@ func (d *DiscordAPI) StartRoleHandlers(){
 
 // Needs to be called to disconnect from discord
 func (d *DiscordAPI) Shutdown() {
+	Logger.Warn("Discord is shutting down")
 	d.discord.Close()
 }
 
@@ -141,20 +187,20 @@ func (d DiscordAPI) PostStreamMessage(sm messaging.StreamMessage) error {
 		URL: sm.UserLogo,
 	}
 	footer := discordgo.MessageEmbedFooter{
-		Text: fmt.Sprintf("%s | %s", sm.Platform, sm.Timestamp),
+		Text:    fmt.Sprintf("%s | %s", sm.Platform, sm.Timestamp),
 		IconURL: sm.PlatformLogo,
 	}
 	messageEmbed := discordgo.MessageEmbed{
 		Description: sm.URL,
-		Color: sm.PlatformColorInt,
-		URL: sm.URL,
-		Author: &author,
-		Thumbnail: &thumbnail,
-		Footer: &footer,
+		Color:       sm.PlatformColorInt,
+		URL:         sm.URL,
+		Author:      &author,
+		Thumbnail:   &thumbnail,
+		Footer:      &footer,
 		Fields: []*discordgo.MessageEmbedField{
 			{
-				Name: "Game",
-				Value: fmt.Sprintf("%s - %s", sm.Game, sm.Description),
+				Name:   "Game",
+				Value:  fmt.Sprintf("%s - %s", sm.Game, sm.Description),
 				Inline: false,
 			},
 		},
@@ -167,7 +213,7 @@ func (d DiscordAPI) PostStreamMessage(sm messaging.StreamMessage) error {
 func (d *DiscordAPI) clearRoleChannel() {
 	channelId := d.Config.RoleCfg.ChannelId
 
-	messages, err := d.discord.ChannelMessages(channelId,50,"","","")
+	messages, err := d.discord.ChannelMessages(channelId, 50, "", "", "")
 	if err != nil {
 		Logger.Error("Unable to access channel messages", zap.String("channelId", channelId), zap.Error(err))
 		return
@@ -190,9 +236,9 @@ func (d *DiscordAPI) createRoleMessages() {
 	d.assignmentMsgs = make(map[string]map[string]string)
 	for _, group := range d.Config.RoleCfg.EmojiRoleGroups {
 		messageEmbed := discordgo.MessageEmbed{
-			Title: group.MessageTitle,
+			Title:       group.MessageTitle,
 			Description: group.MessageBody,
-			Color: 15581239,
+			Color:       15581239,
 		}
 		// create the message
 		message, err := d.discord.ChannelMessageSendEmbed(d.Config.RoleCfg.ChannelId, &messageEmbed)
@@ -255,6 +301,6 @@ func (d *DiscordAPI) listRoles() {
 	}
 
 	for i, role := range roles {
-		Logger.Info(fmt.Sprintf("Role %d", i), zap.Any("role",role))
+		Logger.Info(fmt.Sprintf("Role %d", i), zap.Any("role", role))
 	}
 }
