@@ -138,6 +138,7 @@ func main() {
 	if discordCfg.Token != "" {
 		logger.Info("Starting discord")
 		discordApi := bot.StartDiscord(discordCfg)
+		defer discordApi.Shutdown()
 
 		messaging.AddMsgAPI(discordApi)
 	}

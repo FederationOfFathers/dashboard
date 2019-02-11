@@ -54,7 +54,6 @@ func StartDiscord(cfg DiscordCfg) *DiscordAPI {
 	if cfg.RoleCfg.ChannelId != "" {
 		discordApi.StartRoleHandlers()
 	}
-	defer discordApi.Shutdown()
 
 	return discordApi
 }
@@ -170,6 +169,7 @@ func (d *DiscordAPI) StartRoleHandlers() {
 
 // Needs to be called to disconnect from discord
 func (d *DiscordAPI) Shutdown() {
+	Logger.Warn("Discord is shutting down")
 	d.discord.Close()
 }
 
