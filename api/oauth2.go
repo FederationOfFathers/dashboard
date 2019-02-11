@@ -99,7 +99,6 @@ func discordOauthHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		member.Discord = userObj.ID
-		member.Name = userObj.Username
 
 		if err := member.Save(); err != nil {
 			Logger.Error("unable to save discord id", zap.Int("member", member.ID), zap.String("discord id", userObj.ID), zap.Error(err))
