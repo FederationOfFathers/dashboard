@@ -15,9 +15,7 @@ func handleDiscordLink(m *slack.MessageEvent) bool {
 
 	if strings.ToLower(msg[0]) == "discord" {
 		var outgoingText string
-		if discordApi == nil {
-			outgoingText = "Discord sync is not currently running"
-		} else {
+		if discordApi != nil {
 			discordMember := msg[1]
 			outgoingText = syncDiscordFromMsg(discordMember, m)
 		}
