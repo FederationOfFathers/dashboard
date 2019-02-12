@@ -95,6 +95,18 @@ func (d DiscordAPI) roleAssignmentHandler(s *discordgo.Session, event *discordgo
 			if !userHadRole {
 				d.addRoleToUser(event.UserID, roleId)
 			}
+
+			// DM the user the confirmation
+			role, err := d.FindGuildRole(roleId)
+			if err != nil {
+				Logger.Error("Unable to find role", zap.Error(err))
+			}
+			if userHadRole {
+				d.SendDM(event.UserID, fmt.Sprintf("The %s role has been removed", role.Name))
+			} else {
+				d.SendDM(event.UserID, fmt.Sprintf("You now have the %s role!", role.Name))
+			}
+
 		}
 
 		// remove the users reaction. If the add/remove failed, they can click it again to re-trigger
@@ -118,6 +130,22 @@ func (d DiscordAPI) roleAssignmentHandler(s *discordgo.Session, event *discordgo
 // FindIDByUsername searches the server for a user with the specified username. Returns the ID and username
 func (d *DiscordAPI) FindIDByUsername(username string) (string, string) {
 	return d.FindIDByUsernameStartingAt(username, "0")
+}
+
+// FindGuildRole searches the configured guild roles to find the one that matches the given roleID
+func (d *DiscordAPI) FindGuildRole(roleID string) (*discordgo.Role, error) {
+	roles, err := d.discord.GuildRoles(d.Config.GuildId)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, role := range roles {
+		if role.ID == roleID {
+			return role, nil
+		}
+	}
+
+	return nil, fmt.Errorf("No matching role found")
 }
 
 // FindIDByUsernameStartingAt searches the server for a user with the specified username starting at the id/snowflake. Returns the ID and username
@@ -171,6 +199,18 @@ func (d *DiscordAPI) StartRoleHandlers() {
 func (d *DiscordAPI) Shutdown() {
 	Logger.Warn("Discord is shutting down")
 	d.discord.Close()
+}
+
+// SendDM sends a DM to a user from the bot
+func (d *DiscordAPI) SendDM(userID string, message string) {
+	if ch, err := d.discord.UserChannelCreate(userID); err != nil {
+		Logger.Error("Unable to create DM", zap.String("userID", userID), zap.Error(err))
+	} else {
+		_, err := d.discord.ChannelMessageSend(ch.ID, message)
+		if err != nil {
+			Logger.Error("unable to send DM", zap.String("userID", userID), zap.String("message", message), zap.Error(err))
+		}
+	}
 }
 
 func (d DiscordAPI) PostStreamMessage(sm messaging.StreamMessage) error {
