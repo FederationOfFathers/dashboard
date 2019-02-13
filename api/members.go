@@ -10,6 +10,7 @@ import (
 )
 
 type memberRestricted struct {
+	ID      int    `json:"id"`
 	Name    string `json:"name"`
 	Slack   string `json:"slack"`
 	Discord string `json:"discord"`
@@ -38,6 +39,7 @@ func membersToMembersRestricted(members []*db.Member) map[string]memberRestricte
 	membersRestricted := map[string]memberRestricted{}
 	for _, member := range members {
 		membersRestricted[string(strconv.Itoa(member.ID))] = memberRestricted{
+			ID:      member.ID,
 			Name:    member.Name,
 			Slack:   member.Slack,
 			Discord: member.Discord,
