@@ -97,9 +97,9 @@ func discordOauthVerify(w http.ResponseWriter, r *http.Request) {
 
 		// store the id to the db
 		id := getMemberID(r)
-		member, err := DB.MemberByID(id)
+		member, err := DB.MemberByAny(id)
 		if err != nil {
-			Logger.Error("could not find member", zap.Int("member_id", id), zap.Error(err))
+			Logger.Error("could not find member", zap.String("member_id", id), zap.Error(err))
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}

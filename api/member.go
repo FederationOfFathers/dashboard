@@ -66,14 +66,15 @@ func init() {
 			func(w http.ResponseWriter, r *http.Request) {
 				w.Header().Set("Content-Type", "application/json")
 				defer r.Body.Close()
-				member, err := DB.MemberBySlackID(mux.Vars(r)["memberID"])
+				memberID := mux.Vars(r)["memberID"]
+				member, err := DB.MemberBySlackID(memberID)
 				if err != nil {
-					Logger.Error("member lookup", zap.Error(err))
+					Logger.Error("member lookup", zap.String("memberID", memberID), zap.Error(err))
 					http.NotFound(w, r)
 					return
 				}
-				if member.Slack != mux.Vars(r)["memberID"] {
-					Logger.Error("member mismatch", zap.Error(err))
+				if member.Slack != memberID {
+					Logger.Error("member mismatch", zap.String("slack", member.Slack), zap.String("memberID", memberID), zap.Error(err))
 					http.NotFound(w, r)
 					return
 				}
