@@ -55,6 +55,7 @@ func authorize(userID string, memberID int, w http.ResponseWriter, r *http.Reque
 	}
 }
 
+// TODO if using old userid, replace with memberid based token
 func authorized(w http.ResponseWriter, r *http.Request) (*http.Request, error) {
 	if a := r.Context().Value(authContext); a != nil {
 		auth := a.(map[string]string)
