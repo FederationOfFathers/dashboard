@@ -22,7 +22,7 @@ var conf = &oauth2.Config{
 	ClientSecret: "",
 	Scopes:       []string{"identify"},
 	Endpoint:     discordEndpoint,
-	RedirectURL:  "https://dashboard.fofgaming.com/api/v1/oauth/discord",
+	RedirectURL:  "https://dashboard.fofgaming.com/api/v1/oauth/discord/verify",
 }
 
 func init() {
@@ -36,9 +36,10 @@ func initDiscordOauth() {
 		conf.ClientID = config.DiscordConfig.ClientId
 		conf.ClientSecret = config.DiscordConfig.Secret
 
-		Router.Path("/api/v1/oauth/discord").Methods("GET").Handler(authenticated(discordOauthHandler))
+		Router.Path("/api/v1/oauth/discord").Methods("GET").HandlerFunc(discordOauthHandler)
+		Router.Path("/api/v1/oauth/discord/verify").Methods("GET").Handler(authenticated(discordOauthVerify))
 	} else {
-		Router.Path("/api/v1/oauth/discord").Methods("GET").Handler(authenticated(NotImplemented))
+		Router.Path("/api/v1/oauth/discord").Methods("GET").HandlerFunc(NotImplemented)
 	}
 
 }
@@ -46,14 +47,18 @@ func initDiscordOauth() {
 func discordOauthHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/plain")
 
+	authURL := conf.AuthCodeURL("asdasdasd13424yhion2f0") // TODO get proper state
+	json.NewEncoder(w).Encode(authURL)
+
+}
+
+func discordOauthVerify(w http.ResponseWriter, r *http.Request) {
 	query := r.URL.Query()
 	code := query.Get("code")
 	state := query.Get("state")
 
 	if code == "" || state == "" {
-		// if no code/state redirect to auth url
-		authURL := conf.AuthCodeURL("asdasdasd13424yhion2f0") // TODO get proper state
-		json.NewEncoder(w).Encode(authURL)
+		w.WriteHeader(http.StatusBadRequest)
 	} else {
 
 		// exchange code for a user token
