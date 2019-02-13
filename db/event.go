@@ -41,11 +41,12 @@ type Event struct {
 	gorm.Model
 	db *DB `gorm:"-"`
 
-	When    *time.Time `gorm:"index"`
-	Where   string     `gorm:"index"`
-	Title   string     `gorm:"type:varchar(191);not null;default:''"`
-	GUID    string     `gorm:"type:varchar(191);not null;default:'';unique_index"`
-	Members []EventMember
+	When         *time.Time `gorm:"index"`
+	Where        string     `gorm:"index"`
+	Title        string     `gorm:"type:varchar(191);not null;default:''"`
+	EventChannel EventChannel
+	GUID         string `gorm:"type:varchar(191);not null;default:'';unique_index"`
+	Members      []EventMember
 }
 
 type EventMember struct {
@@ -54,6 +55,15 @@ type EventMember struct {
 	Type    int
 	EventID uint
 	Member  Member
+}
+
+type EventChannel struct {
+	gorm.Model
+
+	ChannelID           string `gorm:"type:varchar(191);not null;unique_index"`
+	ChannelCategoryName string
+	ChannelName         string
+	db                  *DB `gorm:"-"`
 }
 
 func (d *DB) NewEvent() *Event {
@@ -103,4 +113,32 @@ func (e *Event) Save() error {
 func (e *Event) BeforeCreate() error {
 	e.GUID = uuid.New()
 	return nil
+}
+
+// SaveEventChannel creates or saves an EventChannel
+func (d *DB) SaveEventChannel(e *EventChannel) error {
+
+	existingCh := &EventChannel{}
+	d.Where("channel_id = ?", e.ChannelID).Find(&existingCh)
+
+	// create
+	if existingCh.ID == 0 {
+		Logger.Info("new guild channel", zap.String("id", e.ChannelID), zap.String("name", e.ChannelName))
+		return d.Create(e).Error
+	}
+
+	// update
+	existingCh.ChannelName = e.ChannelName
+	existingCh.ChannelCategoryName = e.ChannelCategoryName
+
+	return d.Save(&existingCh).Error
+
+}
+
+// PurgeOldEventChannels purge event channels that have not been updated in the given amount of time
+func (d *DB) PurgeOldEventChannels(t time.Duration) {
+	Logger.Info("Purging old channels", zap.Duration("duration", t))
+	now := time.Now()
+	now = now.Add(t)
+	d.Unscoped().Where("updated_at < ?", now).Delete(&EventChannel{})
 }

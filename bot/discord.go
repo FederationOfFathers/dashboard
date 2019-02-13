@@ -3,7 +3,9 @@ package bot
 import (
 	"fmt"
 	"strings"
+	"time"
 
+	"github.com/FederationOfFathers/dashboard/db"
 	"github.com/FederationOfFathers/dashboard/messaging"
 	"github.com/bwmarrin/discordgo"
 	"go.uber.org/zap"
@@ -21,6 +23,21 @@ type DiscordCfg struct {
 	StreamChannelId string         `yaml:"streamChannelId"`
 	GuildId         string         `yaml:"guildId"`
 	RoleCfg         DiscordRoleCfg `yaml:"roleConfig"`
+}
+
+type GuildChannels struct {
+	Categories []ChannelCategory
+}
+
+type ChannelCategory struct {
+	ID       string
+	Name     string
+	Channels []*Channel
+}
+
+type Channel struct {
+	ID   string
+	Name string
 }
 
 var discordApi *DiscordAPI
@@ -47,6 +64,101 @@ func StartDiscord(cfg DiscordCfg) *DiscordAPI {
 	go mindLists()
 
 	return discordApi
+
+}
+
+// MindGuild starts routines to monitor Discord things like channels
+func (d *DiscordAPI) MindGuild() {
+	// get channels and save them to the db
+	go d.mindChannelList()
+
+}
+
+func (d *DiscordAPI) mindChannelList() {
+	ticker := time.Tick(1 * time.Minute)
+
+	for {
+		select {
+		case <-ticker:
+			channels := d.guildChannels()
+			if err := saveChannelsToDB(channels); err == nil {
+				// purge old channels if no errors on save
+				DB.PurgeOldEventChannels(-1 * time.Minute)
+			}
+		}
+	}
+
+}
+
+func (d *DiscordAPI) guildChannels() *GuildChannels {
+	guildChannels := &GuildChannels{}
+	channels, err := d.discord.GuildChannels(d.Config.GuildId)
+	if err != nil {
+		Logger.Error("unable to get guild channels", zap.Error(err))
+	}
+
+	var textCh = []discordgo.Channel{}
+	// get the categories
+	for _, ch := range channels {
+		switch ch.Type {
+		case discordgo.ChannelTypeGuildCategory: // create categories
+			category := &ChannelCategory{
+				ID:   ch.ID,
+				Name: ch.Name,
+			}
+			guildChannels.Categories = append(guildChannels.Categories, *category)
+		case discordgo.ChannelTypeGuildText: // store text channels for iteration
+			textCh = append(textCh, *ch)
+		}
+
+	}
+
+	// sort the text channels
+	for _, ch := range textCh {
+		parentID := ch.ParentID
+		if parentID == "" { // skip chanenls without category
+			continue
+		}
+		for i, cat := range guildChannels.Categories { // find a the parent category and add it
+			if cat.ID == parentID {
+				tCh := &Channel{
+					ID:   ch.ID,
+					Name: ch.Name,
+				}
+				guildChannels.Categories[i].Channels = append(guildChannels.Categories[i].Channels, tCh)
+			}
+		}
+	}
+
+	return guildChannels
+}
+
+func (d DiscordAPI) roleAssignmentHandler(s *discordgo.Session, event *discordgo.MessageReactionAdd) {
+
+	// skip if the event was from the bot/app
+	if event.UserID == d.Config.ClientId {
+		return
+	}
+
+	// only handle if the message is one we have configured
+	if roles, ok := d.assignmentMsgs[event.MessageID]; ok {
+
+		// Unicode emojis use the unicode character (name) as the id. Others use the name and integer as the id.
+		emojiId := event.Emoji.Name
+		if event.Emoji.ID != "" {
+			emojiId = fmt.Sprintf(":%s:%s", event.Emoji.Name, event.Emoji.ID)
+		}
+
+		if roleId, ok := roles[emojiId]; ok {
+			// get the user from the server/guild
+			member, err := d.discord.GuildMember(d.Config.GuildId, event.UserID)
+			if err != nil {
+				Logger.Error("Unable to get member", zap.Error(err))
+				return
+			}
+		}
+	}
+
 }
 
 func (d *DiscordAPI) teamCommandHandler(s *discordgo.Session, event *discordgo.MessageCreate) {
@@ -172,5 +284,121 @@ func (d DiscordAPI) PostStreamMessage(sm messaging.StreamMessage) error {
 		},
 	}
 	_, err := d.discord.ChannelMessageSendEmbed(d.Config.StreamChannelId, &messageEmbed)
+	return err
+}
+
+// removes all messages entered by this bot in the channel. Uses the ClientID of the bot/app
+func (d *DiscordAPI) clearRoleChannel() {
+	channelId := d.Config.RoleCfg.ChannelId
+
+	messages, err := d.discord.ChannelMessages(channelId, 50, "", "", "")
+	if err != nil {
+		Logger.Error("Unable to access channel messages", zap.String("channelId", channelId), zap.Error(err))
+		return
+	}
+	for _, message := range messages {
+		if message.Author.ID == d.Config.ClientId {
+			err := d.discord.ChannelMessageDelete(channelId, message.ID)
+			if err == nil {
+				Logger.Info("Removed bot message", zap.String("messageId", message.ID))
+			} else {
+				Logger.Error("Unable to remove message", zap.String("messageId", message.ID), zap.Error(err))
+			}
+
+		}
+	}
+}
+
+// creates messages in the channel and adds the emojis
+func (d *DiscordAPI) createRoleMessages() {
+	d.assignmentMsgs = make(map[string]map[string]string)
+	for _, group := range d.Config.RoleCfg.EmojiRoleGroups {
+		messageEmbed := discordgo.MessageEmbed{
+			Title:       group.MessageTitle,
+			Description: group.MessageBody,
+			Color:       15581239,
+		}
+		// create the message
+		message, err := d.discord.ChannelMessageSendEmbed(d.Config.RoleCfg.ChannelId, &messageEmbed)
+		if err != nil {
+			Logger.Error("Unable to create message", zap.Error(err))
+			continue
+		}
+		Logger.Info("Added role message", zap.String("message", group.MessageTitle), zap.String("messageId", message.ID))
+
+		// add the emojis
+		emojiRoles := make(map[string]string)
+		for _, role := range group.Roles {
+			emojiRoles[role.EmojiId] = role.RoleId
+			err := d.discord.MessageReactionAdd(d.Config.RoleCfg.ChannelId, message.ID, role.EmojiId)
+			if err != nil {
+				Logger.Error("Unable to add emoji to message",
+					zap.String("emojiId", role.EmojiId),
+					zap.String("messageId", message.ID),
+					zap.Error(err),
+				)
+			}
+		}
+
+		d.assignmentMsgs[message.ID] = emojiRoles
+	}
+}
+
+func (d DiscordAPI) addRoleToUser(userId string, roleId string) {
+	err := d.discord.GuildMemberRoleAdd(d.Config.GuildId, userId, roleId)
+	if err != nil {
+		Logger.Error("could not add role",
+			zap.String("userId", userId),
+			zap.String("roleId", roleId),
+			zap.Error(err))
+	} else {
+		Logger.Info("added role to user",
+			zap.String("userId", userId),
+			zap.String("roleId", roleId),
+		)
+	}
+}
+
+func (d DiscordAPI) removeRoleFromUser(userId string, roleId string) {
+	err := d.discord.GuildMemberRoleRemove(d.Config.GuildId, userId, roleId)
+	if err != nil {
+		Logger.Error("could not remove role", zap.Error(err))
+	} else {
+		Logger.Info("removed role from user",
+			zap.String("userId", userId),
+			zap.String("roleId", roleId),
+		)
+	}
+}
+func (d *DiscordAPI) listRoles() {
+	roles, err := d.discord.GuildRoles(d.Config.GuildId)
+
+	if err != nil {
+		Logger.Error("Could not get roles", zap.Error(err))
+		return
+	}
+
+	for i, role := range roles {
+		Logger.Info(fmt.Sprintf("Role %d", i), zap.Any("role", role))
+	}
+}
+
+func saveChannelsToDB(gc *GuildChannels) error {
+	var err error
+	for _, cat := range gc.Categories {
+		for _, ch := range cat.Channels {
+			dbEventChannel := &db.EventChannel{
+				ChannelID:           ch.ID,
+				ChannelCategoryName: cat.Name,
+				ChannelName:         ch.Name,
+			}
+
+			if err1 := DB.SaveEventChannel(dbEventChannel); err1 != nil {
+				err = err1
+				Logger.Error("unable to save event channel data", zap.Error(err1))
+			}
+		}
+	}
+
 	return err
 }
