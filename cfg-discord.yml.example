@@ -13,6 +13,7 @@
 # for role IDs type `\@role`, and the role ID will be displayed as <@&12345>. The numeric portion is the ID
 #
 appClientId: ""
+appSecret: ""
 botToken: ""
 streamChannelId: ""
 guildId: ""
