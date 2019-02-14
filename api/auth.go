@@ -168,16 +168,20 @@ func getSlackUserID(r *http.Request) string {
 	return id
 }
 
-func getMemberID(r *http.Request) string {
+func getMemberID(r *http.Request) int {
 	auth := requestAuth(r)
 	id := auth["memberid"]
-	if id != "" {
-		return id
+	if memberID, err := strconv.Atoi(id); err == nil {
+		return memberID
 	}
 
 	// if no memberid, try slack id
 	slackid := auth["userid"]
-	return slackid
+	member, err := DB.MemberBySlackID(slackid)
+	if err != nil {
+		Logger.Error("could not get member from request", zap.Error(err))
+	}
+	return member.ID
 
 }
 

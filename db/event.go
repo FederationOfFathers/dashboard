@@ -115,6 +115,29 @@ func (e *Event) BeforeCreate() error {
 	return nil
 }
 
+// EventChannelByID returns an EventChannel found by the ID
+func (d *DB) EventChannelByID(id int) (*EventChannel, error) {
+	var eventChannel EventChannel
+	err := d.Where(id).First(&eventChannel).Error
+	return &eventChannel, err
+}
+
+// EventChannels gets all event channels in the DB, or an error
+func (d *DB) EventChannels() ([]EventChannel, error) {
+	evChannels := []EventChannel{}
+	err := d.Find(&evChannels).Error
+
+	return evChannels, err
+}
+
+// EventByID gets an event by the id field
+func (d *DB) EventByID(id int) (*Event, error) {
+	event := &Event{}
+	err := d.Where(id).Find(&event).Error
+	event.db = d
+	return event, err
+}
+
 // SaveEventChannel creates or saves an EventChannel
 func (d *DB) SaveEventChannel(e *EventChannel) error {
 
