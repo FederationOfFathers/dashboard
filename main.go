@@ -128,7 +128,6 @@ func main() {
 	slackApi := bot.NewSlackAPI(bot.MessagingKey, streamChannel)
 	slackApi.Connect()
 	defer slackApi.Shutdown()
-	messaging.AddMsgAPI(slackApi)
 
 	bridge.SlackCoreDataUpdated = bot.SlackCoreDataUpdated
 	bridge.OldEventToolLink = events.OldEventToolLink
