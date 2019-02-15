@@ -41,30 +41,43 @@ type Event struct {
 	gorm.Model
 	db *DB `gorm:"-"`
 
-	When         *time.Time `gorm:"index"`
-	Where        string     `gorm:"index"`
-	Title        string     `gorm:"type:varchar(191);not null;default:''"`
-	EventChannel EventChannel
-	GUID         string `gorm:"type:varchar(191);not null;default:'';unique_index"`
-	Members      []EventMember
+	When           *time.Time `gorm:"index"`
+	Where          string     `gorm:"index"`
+	Title          string     `gorm:"type:varchar(191);not null;default:''"`
+	Description    string     `gorm:"type:varchar(256);"`
+	EventChannel   EventChannel
+	EventChannelID int
+	GUID           string `gorm:"type:varchar(191);not null;default:'';unique_index"`
+	Need           int
+	Members        []EventMember
 }
 
 type EventMember struct {
 	gorm.Model
 
-	Type    int
-	EventID uint
-	Member  Member
+	Type     int
+	EventID  uint
+	Member   Member `json:"-"`
+	MemberID int
 }
 
 type EventChannel struct {
-	gorm.Model
+	gorm.Model `json:"-"`
 
-	ChannelID           string `gorm:"type:varchar(191);not null;unique_index"`
-	ChannelCategoryName string
-	ChannelName         string
-	db                  *DB `gorm:"-"`
+	ChannelID           string `gorm:"type:varchar(191);not null;unique_index" json:"channelID"`
+	ChannelCategoryName string `json:"categoryName"`
+	ChannelName         string `json:"name"`
+	db                  *DB    `gorm:"-"`
 }
+
+const (
+	// EventMemberTypeHost is the person who created the event
+	EventMemberTypeHost int = iota
+	// EventMemberTypeMember is a member who is joining the event
+	EventMemberTypeMember
+	// EventMemberTypeAlt is someone who is joining as a backup or tentatively avaialble
+	EventMemberTypeAlt
+)
 
 func (d *DB) NewEvent() *Event {
 	return &Event{
@@ -78,7 +91,7 @@ func (d *DB) Events() ([]*Event, error) {
 	for _, event := range e {
 		Logger.Debug(fmt.Sprintf("%#v", event))
 		event.db = d
-		event.db.Model(event).Related(&event.Members, "EventMembers")
+		event.db.Model(event).Related(&event.Members, "EventMembers").Related(&event.EventChannel, "EventChannelID")
 	}
 	if err != nil && err != gorm.ErrRecordNotFound {
 		return e, err
@@ -115,10 +128,17 @@ func (e *Event) BeforeCreate() error {
 	return nil
 }
 
-// EventChannelByID returns an EventChannel found by the ID
+// EventChannelByID returns an EventChannel found by the DB ID
 func (d *DB) EventChannelByID(id int) (*EventChannel, error) {
 	var eventChannel EventChannel
 	err := d.Where(id).First(&eventChannel).Error
+	return &eventChannel, err
+}
+
+// EventChanneByChannelID returns an event channel the by discord channel id (snowflake)
+func (d *DB) EventChannelByChannelID(chID string) (*EventChannel, error) {
+	var eventChannel EventChannel
+	err := d.Where(&EventChannel{ChannelID: chID}).First(&eventChannel).Error
 	return &eventChannel, err
 }
 

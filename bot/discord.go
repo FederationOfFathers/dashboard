@@ -2,6 +2,7 @@ package bot
 
 import (
 	"fmt"
+	"strconv"
 	"strings"
 	"time"
 
@@ -285,6 +286,51 @@ func (d DiscordAPI) PostStreamMessage(sm messaging.StreamMessage) error {
 	}
 	_, err := d.discord.ChannelMessageSendEmbed(d.Config.StreamChannelId, &messageEmbed)
 	return err
+}
+
+func (d *DiscordAPI) PostNewEventMessage(e *db.Event) error {
+	if d.discord == nil {
+		return fmt.Errorf("discord API not connected")
+	}
+	var host string
+	var members []string
+	for _, member := range e.Members {
+		if member.Type == db.EventMemberTypeHost {
+			host = member.Member.Name
+		}
+		members = append(members, member.Member.Name)
+	}
+
+	messageEmbed := discordgo.MessageEmbed{
+		Title:       fmt.Sprintf("%s has created a new event", host),
+		Description: e.Title,
+		Color:       0x007BFF,
+		Fields: []*discordgo.MessageEmbedField{
+			{
+				Name:   "Date",
+				Value:  e.When.Format("1/2, 15:04 PM"),
+				Inline: true,
+			},
+			{
+				Name:   "Players Needed",
+				Value:  strconv.Itoa(e.Need),
+				Inline: true,
+			},
+			{
+				Name:   fmt.Sprintf("Going (%d)", len(members)),
+				Value:  strings.Join(members, " "),
+				Inline: false,
+			},
+		},
+		Footer: &discordgo.MessageEmbedFooter{
+			Text: "Go to http://ui.fofgaming.com to join",
+		},
+	}
+
+	_, err := d.discord.ChannelMessageSendEmbed(e.EventChannel.ChannelID, &messageEmbed)
+
+	return err
+
 }
 
 // removes all messages entered by this bot in the channel. Uses the ClientID of the bot/app

@@ -1,11 +1,13 @@
 package messaging
 
 import (
+	"reflect"
+	"time"
+
 	"github.com/FederationOfFathers/dashboard/clients/mixer"
+	"github.com/FederationOfFathers/dashboard/db"
 	"github.com/knspriggs/go-twitch"
 	"go.uber.org/zap"
-	"time"
-	"reflect"
 )
 
 var msgApis []MsgAPI
@@ -26,12 +28,13 @@ type StreamMessage struct {
 
 // Add Messaging APIs that will be used to send messages
 func AddMsgAPI(msgApi MsgAPI) {
-	Logger.Info("Adding new message API",zap.String("type", reflect.TypeOf(msgApi).String()))
+	Logger.Info("Adding new message API", zap.String("type", reflect.TypeOf(msgApi).String()))
 	msgApis = append(msgApis, msgApi)
 }
 
 type MsgAPI interface {
 	PostStreamMessage(sm StreamMessage) error
+	PostNewEventMessage(e *db.Event) error
 	//PostMessageToChannel(channel string, message string)
 }
 
@@ -68,6 +71,15 @@ func SendMixerStreamMessage(m mixer.Mixer) {
 		Timestamp:        time.Now().Format("01/02/2006 15:04 MST"),
 	}
 	postStreamMessageToAllApis(sm)
+}
+
+func SendNewEventMessage(e *db.Event) {
+	for _, msgApi := range msgApis {
+		err := msgApi.PostNewEventMessage(e)
+		if err != nil {
+			Logger.Error("unable to send event notice", zap.Error(err), zap.Any("event", e))
+		}
+	}
 }
 
 func postStreamMessageToAllApis(sm StreamMessage) {

@@ -2,24 +2,82 @@ package api
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
+	"sort"
 	"strconv"
 	"time"
 
 	"github.com/FederationOfFathers/dashboard/db"
+	"github.com/FederationOfFathers/dashboard/messaging"
 	"go.uber.org/zap"
 )
+
+type EventCreateRequestBody struct {
+	Title       string
+	Description string
+	When        string
+	Where       string
+	Need        string
+}
+
+type Event struct {
+	ID      uint
+	When    *time.Time
+	Where   string
+	Title   string
+	Members []db.EventMember
+	Need    int
+}
+type EventsResponse struct {
+	Channels []*EventsResponseChannel
+}
+
+type EventsResponseChannel struct {
+	*db.EventChannel
+	Events []Event `json:"events"`
+}
 
 func init() {
 	Router.Path("/api/v1/events").Methods("GET").Handler(authenticated(
 		func(w http.ResponseWriter, r *http.Request) {
 			w.Header().Set("Content-Type", "application/json")
-			events, err := DB.Events()
+
+			eventsResponse := map[string]*EventsResponseChannel{}
+
+			channels, err := DB.EventChannels()
 			if err != nil {
+				Logger.Error("could not get channels", zap.Error(err))
 				w.WriteHeader(http.StatusInternalServerError)
 				return
 			}
-			json.NewEncoder(w).Encode(events)
+			for i := range channels {
+				erc := &EventsResponseChannel{&channels[i], []Event{}}
+				eventsResponse[erc.ChannelID] = erc
+			}
+
+			events, err := DB.Events()
+			if err != nil {
+				Logger.Error("could not get events", zap.Error(err))
+				w.WriteHeader(http.StatusInternalServerError)
+				return
+			}
+
+			// add the events to the correct eventsResponse
+			for _, e := range events {
+				if er, ok := eventsResponse[e.EventChannel.ChannelID]; ok {
+					event := Event{
+						ID:      e.ID,
+						When:    e.When,
+						Where:   e.Where,
+						Title:   e.Title,
+						Members: e.Members,
+						Need:    e.Need,
+					}
+					er.Events = append(er.Events, event)
+				}
+			}
+			json.NewEncoder(w).Encode(eventsResponse)
 		},
 	))
 
@@ -28,9 +86,16 @@ func init() {
 		func(w http.ResponseWriter, r *http.Request) {
 			w.Header().Set("Content-Type", "application/json")
 
+			decoder := json.NewDecoder(r.Body)
+			var data EventCreateRequestBody
+
+			if err := decoder.Decode(&data); err != nil {
+				Logger.Error("Unable to decode body", zap.Error(err))
+			}
 			// convert time
-			timestamp, err := strconv.Atoi(r.FormValue("when"))
+			timestamp, err := strconv.Atoi(data.When)
 			if err != nil {
+				Logger.Error("bad timestamp", zap.String("when", data.When))
 				w.WriteHeader(http.StatusInternalServerError)
 				return
 			}
@@ -39,28 +104,25 @@ func init() {
 			member, err := DB.MemberByID(getMemberID(r))
 
 			if err != nil {
+				Logger.Error("couldn't find a member", zap.Error(err))
 				w.WriteHeader(http.StatusInternalServerError)
 				return
 			}
 
 			// get channel in DB
-			where, err := strconv.Atoi(r.FormValue("where"))
+			eventChannel, err := DB.EventChannelByChannelID(data.Where)
 			if err != nil {
-				Logger.Error("invalid channel id", zap.String("where", r.FormValue("where")), zap.Error(err))
-				w.WriteHeader(http.StatusBadRequest)
-				return
-			}
-			eventChannel, err := DB.EventChannelByID(where)
-			if err != nil {
-				Logger.Error("Invalid event channel", zap.Int("channel_id", where), zap.Error(err))
+				Logger.Error("Invalid event channel", zap.String("channel_id", data.Where), zap.Error(err))
 			}
 
 			// build the event
 			event := DB.NewEvent()
 			event.EventChannel = *eventChannel
-			event.Title = r.FormValue("title")
+			event.Title = data.Title
+			event.Description = data.Description
+			event.Need, _ = strconv.Atoi(data.Need)
 			event.Members = []db.EventMember{
-				{Member: *member},
+				{Member: *member, Type: db.EventMemberTypeHost}, // creator is automatically the host
 			}
 			if t := time.Unix(int64(timestamp), 0); true {
 				event.When = &t
@@ -68,9 +130,13 @@ func init() {
 
 			// save the event
 			if err := event.Save(); err != nil {
+				Logger.Error("could not save the event", zap.Error(err))
 				w.WriteHeader(http.StatusInternalServerError)
 				return
 			}
+
+			// send a message about the new event
+			go messaging.SendNewEventMessage(event)
 
 			json.NewEncoder(w).Encode(event)
 		},
@@ -107,6 +173,13 @@ func init() {
 				Logger.Error("unable to get event channels", zap.Error(err))
 				w.WriteHeader(http.StatusInternalServerError)
 			}
+
+			// sort the channel names
+			sort.Slice(eventChannels, func(i, j int) bool {
+				iCh := fmt.Sprintf("%s:%s", eventChannels[i].ChannelCategoryName, eventChannels[i].ChannelName)
+				jCh := fmt.Sprintf("%s:%s", eventChannels[j].ChannelCategoryName, eventChannels[j].ChannelName)
+				return iCh < jCh
+			})
 
 			json.NewEncoder(w).Encode(eventChannels)
 		},
