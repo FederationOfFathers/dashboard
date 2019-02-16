@@ -74,7 +74,11 @@ func discordOauthVerify(w http.ResponseWriter, r *http.Request) {
 		ctx := context.Background()
 		token, err := conf.Exchange(ctx, code)
 		if err != nil {
-			Logger.Error("Could not get token", zap.Error(err))
+			Logger.Error("Could not get token",
+				zap.String("code", code),
+				zap.String("state", state),
+				zap.String("id", id),
+				zap.Error(err))
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
