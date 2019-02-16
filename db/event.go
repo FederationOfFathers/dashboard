@@ -41,13 +41,13 @@ type Event struct {
 	gorm.Model
 	db *DB `gorm:"-"`
 
-	When           *time.Time `gorm:"index"`
-	Where          string     `gorm:"index"`
-	Title          string     `gorm:"type:varchar(191);not null;default:''"`
-	Description    string     `gorm:"type:varchar(256);"`
-	EventChannel   EventChannel
-	EventChannelID int
-	GUID           string `gorm:"type:varchar(191);not null;default:'';unique_index"`
+	When           *time.Time   `gorm:"index"`
+	Where          string       `gorm:"index"`
+	Title          string       `gorm:"type:varchar(191);not null;default:''"`
+	Description    string       `gorm:"type:varchar(256);"`
+	EventChannel   EventChannel `gorm:"foreignkey:ChannelID"`
+	EventChannelID string       `gorm:"type:varchar(191);not null"`
+	GUID           string       `gorm:"type:varchar(191);not null;default:'';unique_index"`
 	Need           int
 	Members        []EventMember
 }
@@ -61,12 +61,13 @@ type EventMember struct {
 }
 
 type EventChannel struct {
-	gorm.Model `json:"-"`
-
-	ChannelID           string `gorm:"type:varchar(191);not null;unique_index" json:"channelID"`
-	ChannelCategoryName string `json:"categoryName"`
-	ChannelName         string `json:"name"`
-	db                  *DB    `gorm:"-"`
+	ID                  string `gorm:"type:varchar(191);not null;primary_key" json:"channelID"`
+	CreatedAt           time.Time
+	UpdatedAt           time.Time
+	DeletedAt           *time.Time `sql:"index"`
+	ChannelCategoryName string     `json:"categoryName"`
+	ChannelName         string     `json:"name"`
+	db                  *DB        `gorm:"-"`
 }
 
 const (
@@ -87,14 +88,16 @@ func (d *DB) NewEvent() *Event {
 func (d *DB) Events() ([]*Event, error) {
 	var e []*Event
 	err := d.Find(&e).Error
-	for _, event := range e {
-		Logger.Debug(fmt.Sprintf("%#v", event))
-		event.db = d
-		event.db.Model(event).Related(&event.Members, "EventMembers").Related(&event.EventChannel, "EventChannelID")
-	}
 	if err != nil && err != gorm.ErrRecordNotFound {
 		return e, err
 	}
+
+	for _, event := range e {
+		Logger.Debug(fmt.Sprintf("%#v", event))
+		event.db = d
+		event.db.Model(event).Related(&event.Members).Related(&event.EventChannel, "EventChannelID")
+	}
+
 	return e, nil
 }
 
@@ -137,7 +140,7 @@ func (d *DB) EventChannelByID(id int) (*EventChannel, error) {
 // EventChanneByChannelID returns an event channel the by discord channel id (snowflake)
 func (d *DB) EventChannelByChannelID(chID string) (*EventChannel, error) {
 	var eventChannel EventChannel
-	err := d.Where(&EventChannel{ChannelID: chID}).First(&eventChannel).Error
+	err := d.Where(&EventChannel{ID: chID}).First(&eventChannel).Error
 	return &eventChannel, err
 }
 
@@ -152,7 +155,10 @@ func (d *DB) EventChannels() ([]EventChannel, error) {
 // EventByID gets an event by the id field
 func (d *DB) EventByID(id int) (*Event, error) {
 	event := &Event{}
-	err := d.Where(id).Find(&event).Error
+	event.ID = uint(id)
+	// err := d.Raw("SELECT * FROM events INNER JOIN event_members ON events.id = event_members.event_id WHERE events.id = ?", id).Scan(event).Error
+	err := d.Model(event).Related(&event.Members, "EventMembers").Related(&event.EventChannel, "EventChannelID").Error
+
 	event.db = d
 	return event, err
 }
@@ -161,11 +167,11 @@ func (d *DB) EventByID(id int) (*Event, error) {
 func (d *DB) SaveEventChannel(e *EventChannel) error {
 
 	existingCh := &EventChannel{}
-	d.Where("channel_id = ?", e.ChannelID).Find(&existingCh)
+	err := d.Where("channel_id = ?", e.ID).Find(&existingCh).Error
 
 	// create
-	if existingCh.ID == 0 {
-		Logger.Info("new guild channel", zap.String("id", e.ChannelID), zap.String("name", e.ChannelName))
+	if err == gorm.ErrRecordNotFound {
+		Logger.Info("new guild channel", zap.String("id", e.ID), zap.String("name", e.ChannelName))
 		return d.Create(e).Error
 	}
 
@@ -177,8 +183,13 @@ func (d *DB) SaveEventChannel(e *EventChannel) error {
 
 }
 
+// DeleteEvent delete event
+func (d *DB) DeleteEvent(e Event) {
+	d.Unscoped().Delete(&e)
+}
+
 // PurgeOldEventChannels purge event channels that have not been updated in the given amount of time
-func (d *DB) PurgeOldEventChannels(t time.Duration) {
+func (d *DB) PurgeOldEventChannels(t time.Duration) { //TODO fix this
 	Logger.Info("Purging old channels", zap.Duration("duration", t))
 	now := time.Now()
 	now = now.Add(t)

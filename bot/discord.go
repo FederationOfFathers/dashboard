@@ -338,7 +338,7 @@ func (d *DiscordAPI) PostNewEventMessage(e *db.Event) error {
 		},
 	}
 
-	_, err := d.discord.ChannelMessageSendEmbed(e.EventChannel.ChannelID, &messageEmbed)
+	_, err := d.discord.ChannelMessageSendEmbed(e.EventChannel.ID, &messageEmbed)
 	if err != nil {
 		Logger.Error("unable to send discord message", zap.Error(err), zap.Any("message", messageEmbed))
 	}
@@ -448,9 +448,10 @@ func saveChannelsToDB(gc *GuildChannels) error {
 	for _, cat := range gc.Categories {
 		for _, ch := range cat.Channels {
 			dbEventChannel := &db.EventChannel{
-				ChannelID:           ch.ID,
+				ID:                  ch.ID,
 				ChannelCategoryName: cat.Name,
 				ChannelName:         ch.Name,
+				UpdatedAt:           time.Now(),
 			}
 
 			if err1 := DB.SaveEventChannel(dbEventChannel); err1 != nil {

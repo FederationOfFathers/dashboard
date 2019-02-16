@@ -58,7 +58,7 @@ func init() {
 			}
 			for i := range channels {
 				erc := &EventsResponseChannel{&channels[i], []Event{}}
-				eventsResponse[erc.ChannelID] = erc
+				eventsResponse[erc.ID] = erc
 			}
 
 			events, err := DB.Events()
@@ -70,7 +70,7 @@ func init() {
 
 			// add the events to the correct eventsResponse
 			for _, e := range events {
-				if er, ok := eventsResponse[e.EventChannel.ChannelID]; ok {
+				if er, ok := eventsResponse[e.EventChannel.ID]; ok {
 					event := Event{
 						ID:      e.ID,
 						When:    e.When,
@@ -123,6 +123,7 @@ func init() {
 			// build the event
 			event := DB.NewEvent()
 			event.EventChannel = *eventChannel
+			event.EventChannelID = data.Where
 			event.Title = data.Title
 			event.Description = data.Description
 			event.Need = data.Need
