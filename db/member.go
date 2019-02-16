@@ -47,6 +47,13 @@ func (d *DB) MemberByID(id int) (*Member, error) {
 	return m, err
 }
 
+func (d *DB) MemberByDiscordID(id string) (*Member, error) {
+	m := new(Member)
+	err := d.DB.Where("discord = ?", id).First(&m).Error
+	m.db = d
+	return m, err
+}
+
 func (d *DB) MemberByName(name string) (*Member, error) {
 	m := new(Member)
 	err := d.DB.Where("name = ?", name).First(&m).Error
