@@ -57,7 +57,6 @@ type EventMember struct {
 
 	Type     int
 	EventID  uint
-	Member   Member `json:"-"`
 	MemberID int
 }
 

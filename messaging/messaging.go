@@ -77,7 +77,7 @@ func SendNewEventMessage(e *db.Event) {
 	for _, msgApi := range msgApis {
 		err := msgApi.PostNewEventMessage(e)
 		if err != nil {
-			Logger.Error("unable to send event notice", zap.Error(err), zap.Any("event", e))
+			Logger.Error("unable to send event notice", zap.Any("event", e))
 		}
 	}
 }

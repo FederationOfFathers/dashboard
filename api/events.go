@@ -18,9 +18,13 @@ type EventCreateRequestBody struct {
 	Description string
 	When        string
 	Where       string
-	Need        string
+	Need        int
 }
 
+type EventJoinRequestBody struct {
+	Type    int
+	EventID int
+}
 type Event struct {
 	ID      uint
 	When    *time.Time
@@ -39,6 +43,7 @@ type EventsResponseChannel struct {
 }
 
 func init() {
+	// get events grouped by channel
 	Router.Path("/api/v1/events").Methods("GET").Handler(authenticated(
 		func(w http.ResponseWriter, r *http.Request) {
 			w.Header().Set("Content-Type", "application/json")
@@ -120,9 +125,9 @@ func init() {
 			event.EventChannel = *eventChannel
 			event.Title = data.Title
 			event.Description = data.Description
-			event.Need, _ = strconv.Atoi(data.Need)
+			event.Need = data.Need
 			event.Members = []db.EventMember{
-				{Member: *member, Type: db.EventMemberTypeHost}, // creator is automatically the host
+				{MemberID: member.ID, Type: db.EventMemberTypeHost}, // creator is automatically the host
 			}
 			if t := time.Unix(int64(timestamp), 0); true {
 				event.When = &t
@@ -130,7 +135,7 @@ func init() {
 
 			// save the event
 			if err := event.Save(); err != nil {
-				Logger.Error("could not save the event", zap.Error(err))
+				Logger.Error("could not save the event", zap.Any("event", event), zap.Error(err))
 				w.WriteHeader(http.StatusInternalServerError)
 				return
 			}
@@ -145,19 +150,31 @@ func init() {
 	// Join an event
 	Router.Path("/api/v1/events/join").Methods("POST").Handler(authenticated(
 		func(w http.ResponseWriter, r *http.Request) {
+
+			w.Header().Set("Content-Type", "application/json")
+
+			decoder := json.NewDecoder(r.Body)
+			var data EventJoinRequestBody
+
+			if err := decoder.Decode(&data); err != nil {
+				Logger.Error("Unable to decode body", zap.Error(err))
+			}
+
+			// member
 			member, err := DB.MemberByID(getMemberID(r))
 			if err != nil {
 				Logger.Error("could not get a valid member", zap.Error(err))
 			}
-			eventID, err := strconv.Atoi(r.FormValue("eventID"))
+
+			//event
+			event, err := DB.EventByID(data.EventID)
 			if err != nil {
-				Logger.Error("bad event id", zap.String("eventID", r.FormValue("eventID")), zap.Error(err))
-				w.WriteHeader(http.StatusBadRequest)
+				Logger.Error("unable to find event", zap.Int("eventID", data.EventID), zap.Error(err))
+				w.WriteHeader(http.StatusInternalServerError)
 				return
 			}
-			event, err := DB.EventByID(eventID)
 
-			event.Members = append(event.Members, db.EventMember{Member: *member})
+			event.Members = append(event.Members, db.EventMember{MemberID: member.ID, Type: data.Type})
 			event.Save()
 
 			w.WriteHeader(http.StatusOK)
@@ -165,6 +182,7 @@ func init() {
 		},
 	))
 
+	// get the channels
 	Router.Path("/api/v1/events/channels").Methods("GET").Handler(authenticated(
 		func(w http.ResponseWriter, r *http.Request) {
 			w.Header().Set("Content-Type", "application/json")

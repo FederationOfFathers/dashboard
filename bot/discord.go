@@ -294,12 +294,18 @@ func (d *DiscordAPI) PostNewEventMessage(e *db.Event) error {
 	}
 	var host string
 	var members []string
-	for _, member := range e.Members {
-		if member.Type == db.EventMemberTypeHost {
-			host = member.Member.Name
+	for _, eMember := range e.Members {
+		m, err := DB.MemberByID(eMember.MemberID)
+		if err != nil {
+			Logger.Error("unable to get member", zap.Int("id", eMember.MemberID), zap.Error(err))
 		}
-		members = append(members, member.Member.Name)
+		if eMember.Type == db.EventMemberTypeHost {
+			host = m.Name
+		}
+		members = append(members, m.Name)
 	}
+
+	openSpots := e.Need - len(members)
 
 	messageEmbed := discordgo.MessageEmbed{
 		Title:       fmt.Sprintf("%s has created a new event", host),
@@ -317,17 +323,25 @@ func (d *DiscordAPI) PostNewEventMessage(e *db.Event) error {
 				Inline: true,
 			},
 			{
+				Name:   "Open Spots",
+				Value:  strconv.Itoa(openSpots),
+				Inline: true,
+			},
+			{
 				Name:   fmt.Sprintf("Going (%d)", len(members)),
 				Value:  strings.Join(members, " "),
 				Inline: false,
 			},
 		},
 		Footer: &discordgo.MessageEmbedFooter{
-			Text: "Go to http://ui.fofgaming.com to join",
+			Text: "Go to https://ui.fofgaming.com to join",
 		},
 	}
 
 	_, err := d.discord.ChannelMessageSendEmbed(e.EventChannel.ChannelID, &messageEmbed)
+	if err != nil {
+		Logger.Error("unable to send discord message", zap.Error(err), zap.Any("message", messageEmbed))
+	}
 
 	return err
 
