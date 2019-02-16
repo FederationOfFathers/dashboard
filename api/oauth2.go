@@ -64,7 +64,7 @@ func discordOauthVerify(w http.ResponseWriter, r *http.Request) {
 	id := getMemberID(r)
 
 	// if id == 0, then this is a login, not a sync
-	isAuthenticated := id >= 0
+	isAuthenticated := id != ""
 
 	if code == "" || state == "" {
 		w.WriteHeader(http.StatusBadRequest)
@@ -121,9 +121,9 @@ func discordOauthVerify(w http.ResponseWriter, r *http.Request) {
 			authorize("", member.ID, w, r)
 
 		} else {
-			member, err := DB.MemberByID(id)
+			member, err := DB.MemberByAny(id)
 			if err != nil {
-				Logger.Error("could not find member", zap.Int("member_id", id), zap.Error(err))
+				Logger.Error("could not find member", zap.String("member_id", id), zap.Error(err))
 				w.WriteHeader(http.StatusInternalServerError)
 				w.Write([]byte("error"))
 				return
