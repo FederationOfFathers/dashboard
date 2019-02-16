@@ -2,12 +2,14 @@ package api
 
 import (
 	"context"
+	"database/sql"
 	"encoding/json"
 	"io/ioutil"
 	"net/http"
 
 	"github.com/FederationOfFathers/dashboard/config"
 	"github.com/bwmarrin/discordgo"
+	"github.com/jinzhu/gorm"
 	"go.uber.org/zap"
 	"golang.org/x/oauth2"
 )
@@ -38,6 +40,7 @@ func initDiscordOauth() {
 
 		Router.Path("/api/v1/oauth/discord").Methods("GET").HandlerFunc(discordOauthHandler)
 		Router.Path("/api/v1/oauth/discord/verify").Methods("GET").Handler(authenticated(discordOauthVerify))
+		Router.Path("/api/v1/oauth/discord/login").Methods("GET").HandlerFunc(discordOauthVerify)
 	} else {
 		Router.Path("/api/v1/oauth/discord").Methods("GET").HandlerFunc(NotImplemented)
 	}
@@ -56,6 +59,12 @@ func discordOauthVerify(w http.ResponseWriter, r *http.Request) {
 	query := r.URL.Query()
 	code := query.Get("code")
 	state := query.Get("state")
+
+	// get authenticated user
+	id := getMemberID(r)
+
+	// if id == 0, then this is a login, not a sync
+	isAuthenticated := id >= 0
 
 	if code == "" || state == "" {
 		w.WriteHeader(http.StatusBadRequest)
@@ -95,20 +104,40 @@ func discordOauthVerify(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		// store the id to the db
-		id := getMemberID(r)
-		member, err := DB.MemberByAny(id)
-		if err != nil {
-			Logger.Error("could not find member", zap.String("member_id", id), zap.Error(err))
-			w.WriteHeader(http.StatusInternalServerError)
-			return
-		}
-		member.Discord = userObj.ID
+		// unauthenticated user
+		if !isAuthenticated {
+			member, err := DB.MemberByDiscordID(userObj.ID)
+			if err == gorm.ErrRecordNotFound || err == sql.ErrNoRows {
+				w.WriteHeader(http.StatusForbidden)
+				w.Write([]byte("not authorizes"))
+				return
+			} else if err != nil {
+				Logger.Error("unable to check member", zap.String("discordid", userObj.ID), zap.Error(err))
+				w.WriteHeader(http.StatusInternalServerError)
+				w.Write([]byte("error"))
+			}
 
-		if err := member.Save(); err != nil {
-			Logger.Error("unable to save discord id", zap.Int("member", member.ID), zap.String("discord id", userObj.ID), zap.Error(err))
-			w.WriteHeader(http.StatusInternalServerError)
-			return
+			// set auth cookie and redirect
+			authorize("", member.ID, w, r)
+
+		} else {
+			member, err := DB.MemberByID(id)
+			if err != nil {
+				Logger.Error("could not find member", zap.Int("member_id", id), zap.Error(err))
+				w.WriteHeader(http.StatusInternalServerError)
+				w.Write([]byte("error"))
+				return
+			}
+
+			// set discord id
+			member.Discord = userObj.ID
+
+			if err := member.Save(); err != nil {
+				Logger.Error("unable to save discord id", zap.Int("member", member.ID), zap.String("discord id", userObj.ID), zap.Error(err))
+				w.WriteHeader(http.StatusInternalServerError)
+				w.Write([]byte("error"))
+				return
+			}
 		}
 
 		// redirect
