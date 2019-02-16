@@ -10,6 +10,7 @@ import (
 
 	"github.com/FederationOfFathers/dashboard/db"
 	"github.com/FederationOfFathers/dashboard/messaging"
+	"github.com/gorilla/mux"
 	"go.uber.org/zap"
 )
 
@@ -22,8 +23,7 @@ type EventCreateRequestBody struct {
 }
 
 type EventJoinRequestBody struct {
-	Type    int
-	EventID int
+	Type int
 }
 type Event struct {
 	ID      uint
@@ -149,12 +149,13 @@ func init() {
 	))
 
 	// Join an event
-	Router.Path("/api/v1/events/join").Methods("POST").Handler(authenticated(
+	Router.Path("/api/v1/events/{eventID}/join").Methods("POST").Handler(authenticated(
 		func(w http.ResponseWriter, r *http.Request) {
 
 			w.Header().Set("Content-Type", "application/json")
 
 			decoder := json.NewDecoder(r.Body)
+			vars := mux.Vars(r)
 			var data EventJoinRequestBody
 
 			if err := decoder.Decode(&data); err != nil {
@@ -168,9 +169,15 @@ func init() {
 			}
 
 			//event
-			event, err := DB.EventByID(data.EventID)
+			eventID, err := strconv.Atoi(vars["eventID"])
 			if err != nil {
-				Logger.Error("unable to find event", zap.Int("eventID", data.EventID), zap.Error(err))
+				Logger.Error("invalid eventID", zap.String("eventID", vars["eventID"]), zap.Error(err))
+				w.WriteHeader(http.StatusInternalServerError)
+				return
+			}
+			event, err := DB.EventByID(eventID)
+			if err != nil {
+				Logger.Error("unable to find event", zap.Int("eventID", eventID), zap.Error(err))
 				w.WriteHeader(http.StatusInternalServerError)
 				return
 			}
@@ -180,6 +187,46 @@ func init() {
 
 			w.WriteHeader(http.StatusOK)
 
+		},
+	))
+
+	// Delete event
+	Router.Path("/api/v1/events/{eventID}").Methods("DELETE").Handler(authenticated(
+		func(w http.ResponseWriter, r *http.Request) {
+			vars := mux.Vars(r)
+
+			// get member
+			member, err := DB.MemberByID(getMemberID(r))
+			if err != nil {
+				Logger.Error("invalid member", zap.Int("memberid", getMemberID(r)))
+			}
+
+			//get event
+			eventID, err := strconv.Atoi(vars["eventID"])
+			if err != nil {
+				Logger.Error("invalid eventID", zap.String("eventID", vars["eventID"]), zap.Error(err))
+				w.WriteHeader(http.StatusInternalServerError)
+				return
+			}
+			event, err := DB.EventByID(eventID)
+			if err != nil {
+				Logger.Error("unable to find", zap.Int("eventID", eventID), zap.Error(err))
+			}
+
+			isOwner := false
+			for _, eM := range event.Members {
+				if eM.MemberID == member.ID && eM.Type == db.EventMemberTypeHost {
+					isOwner = true
+					break
+				}
+			}
+
+			if isOwner {
+				Logger.Info("Deleting event", zap.Any("event", event))
+				DB.DeleteEvent(*event)
+			} else {
+				Logger.Debug("bad delete request from user", zap.Int("id", member.ID), zap.Any("event", event))
+			}
 		},
 	))
 
