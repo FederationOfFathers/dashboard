@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"io/ioutil"
 	"net/http"
+	"strings"
 
 	"github.com/FederationOfFathers/dashboard/config"
 	"github.com/bwmarrin/discordgo"
@@ -24,8 +25,11 @@ var conf = &oauth2.Config{
 	ClientSecret: "",
 	Scopes:       []string{"identify"},
 	Endpoint:     discordEndpoint,
-	RedirectURL:  "https://dashboard.fofgaming.com/api/v1/oauth/discord/verify",
 }
+
+const host = "https://dashboard.fofgaming.com" //TODO make public hostname configurable
+const redirectVerifyURL = host + "/api/v1/oauth/discord/verify"
+const redirectLoginURL = host + "/api/v1/oauth/discord/login"
 
 func init() {
 	initDiscordOauth()
@@ -50,6 +54,7 @@ func initDiscordOauth() {
 func discordOauthHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/plain")
 
+	conf.RedirectURL = redirectVerifyURL
 	authURL := conf.AuthCodeURL("asdasdasd13424yhion2f0") // TODO get proper state
 	json.NewEncoder(w).Encode(authURL)
 
@@ -66,7 +71,15 @@ func discordOauthVerify(w http.ResponseWriter, r *http.Request) {
 	// if id == 0, then this is a login, not a sync
 	isAuthenticated := id != ""
 
+	// IMPORTANT - set the redirect URL, without this OAuth will fail
+	if strings.HasSuffix(r.URL.Path, "verify") {
+		conf.RedirectURL = redirectVerifyURL
+	} else {
+		conf.RedirectURL = redirectLoginURL
+	}
+
 	if code == "" || state == "" {
+		Logger.Error("bad request", zap.String("code", code), zap.String("state", state))
 		w.WriteHeader(http.StatusBadRequest)
 	} else {
 
@@ -78,6 +91,8 @@ func discordOauthVerify(w http.ResponseWriter, r *http.Request) {
 				zap.String("code", code),
 				zap.String("state", state),
 				zap.String("id", id),
+				zap.Strings("scopes", conf.Scopes),
+				zap.String("redirecturi", conf.RedirectURL),
 				zap.Error(err))
 			w.WriteHeader(http.StatusInternalServerError)
 			return
@@ -99,7 +114,6 @@ func discordOauthVerify(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
-
 		userObj := discordgo.User{}
 		err = json.Unmarshal(body, &userObj)
 		if err != nil {
