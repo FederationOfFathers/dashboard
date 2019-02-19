@@ -6,165 +6,141 @@ import (
 	"time"
 
 	"github.com/FederationOfFathers/dashboard/store"
-	"github.com/nlopes/slack"
+	"github.com/bwmarrin/discordgo"
 	"go.uber.org/zap"
 )
 
-var SlackCoreDataUpdated = sync.NewCond(new(sync.Mutex))
+var DiscordCoreDataUpdated = sync.NewCond(new(sync.Mutex))
 
 // ErrUsernameNotFound represents being unable to find a user by a given name (they can change)
 var ErrUsernameNotFound = fmt.Errorf("Unable to find any user by that name")
 var ErrChannelNotFound = fmt.Errorf("Unable to find any channel by that name")
-var ErrGroupNotFound = fmt.Errorf("Unable to find any group by that name")
+var ErrRoleNotFound = fmt.Errorf("Unable to find any role by that name")
 
 // ErrSlackAPIUnresponsive means that on boot up we were unable to fetch any users from the slack api
 // so we assume that the api is unresponsive. It needs to be there at least when starting up to get
 // initial lists of users, groups, and channels
-var ErrSlackAPIUnresponsive = fmt.Errorf("The slack api returned no data. Error assumed")
+var ErrDiscordAPIUnresponsive = fmt.Errorf("The Discord api returned no data. Error assumed")
 
 // UpdateTimer sets how often to check for updated users, group, and channel lists in slack
 var UpdateTimer = 30 * time.Minute
 var UpdateRequest = make(chan struct{})
 
+// var connection *slack.Info
+var connected bool
+var token string
+
+// var Logger *zap.Logger
+var StartupNotice = false
+
+// LogLevel sets the logging verbosity for the package
+var LogLevel = zap.InfoLevel
+
 // SlackData is the structure for the state that we are geeping "up to date" during runtime. It is
 // ephemeral and goes away to be repopulated on program shutdown
-type SlackData struct {
+type DiscordData struct {
 	sync.RWMutex
-	Users    []slack.User
-	Groups   []slack.Group
-	Channels []slack.Channel
+	Users             []*discordgo.Member
+	Roles             []*discordgo.Role
+	ChannelCategories []*discordgo.Channel
+	Channels          []*discordgo.Channel
 }
 
-func (s *SlackData) load() {
-	store.DB.Slack().Pull("v1-data", &s)
+func (d *DiscordData) load() {
+	store.DB.Discord().Pull("v1-data", &d) // v2-data? discord-data?
 }
 
-func (s *SlackData) save() {
-	store.DB.Slack().Put("v1-data", s)
+func (d *DiscordData) save() {
+	store.DB.Discord().Put("v1-data", d)
 }
 
 // Data is the living representation of the current SlackData
-var data = new(SlackData)
+var data = new(DiscordData)
 
-func (s *SlackData) IsUserIDAdmin(id string) (bool, error) {
+func (d *DiscordData) IsUserIDAdmin(id string) (bool, error) {
 	return IsUserIDAdmin(id)
 }
 
-func (s *SlackData) IsUsernameAdmin(name string) (bool, error) {
-	return IsUsernameAdmin(name)
-}
-
-func (s *SlackData) User(id string) (*slack.User, error) {
-	s.Lock()
-	defer s.Unlock()
-	for _, u := range s.Users {
-		if u.ID == id {
-			return &u, nil
+func (d *DiscordData) Member(id string) (*discordgo.Member, error) {
+	d.Lock()
+	defer d.Unlock()
+	for _, u := range d.Users {
+		if u.User.ID == id {
+			return u, nil
 		}
 	}
 	return nil, ErrUsernameNotFound
 }
 
-func (s *SlackData) ChannelByName(channel string) (*slack.Channel, error) {
-	s.RLock()
-	defer s.RUnlock()
-	for c := range s.Channels {
-		if s.Channels[c].Name == channel {
-			return &s.Channels[c], nil
+func Member(id string) (*discordgo.Member, error) {
+	return data.Member(id)
+}
+func (d *DiscordData) ChannelByID(id string) (*discordgo.Channel, error) {
+	d.RLock()
+	defer d.RUnlock()
+	for c := range d.Channels {
+		if d.Channels[c].ID == id {
+			return d.Channels[c], nil
 		}
 	}
 	return nil, ErrChannelNotFound
 }
 
-func (s *SlackData) GroupByName(group string) (*slack.Group, error) {
-	s.Lock()
-	defer s.Unlock()
-	for g := range s.Groups {
-		if s.Groups[g].Name == group {
-			return &s.Groups[g], nil
+func (d *DiscordData) RoleByName(group string) (*discordgo.Role, error) {
+	d.Lock()
+	defer d.Unlock()
+	for g := range d.Roles {
+		if d.Roles[g].Name == group {
+			return d.Roles[g], nil
 		}
 	}
-	return nil, ErrGroupNotFound
+	return nil, ErrRoleNotFound
 }
 
 // UserByName is a helper function to find the slack.User for a given username (@{{username}})
-func (s *SlackData) UserByName(username string) (*slack.User, error) {
-	s.Lock()
-	defer s.Unlock()
-	for u := range s.Users {
-		if s.Users[u].Name == username {
-			return &s.Users[u], nil
+func (d *DiscordData) MemberByNick(username string) (*discordgo.Member, error) {
+	d.Lock()
+	defer d.Unlock()
+	for u := range d.Users {
+		if d.Users[u].Nick != "" && d.Users[u].Nick == username {
+			return d.Users[u], nil
+		}
+		if d.Users[u].User.Username == username {
+			return d.Users[u], nil
 		}
 	}
 	return nil, ErrUsernameNotFound
 }
 
-// UserGroups for a given userID get a list of slack.Groups that they are a member of. The bot
-// (or user) who we are needs to be in the groups. So it's a cross section of the groups that
-// we AND the user are both in.
-func (s *SlackData) UserGroups(userID string) []slack.Group {
-	var rval = []slack.Group{}
-	s.RLock()
-	for _, group := range s.Groups {
-		for _, member := range group.Members {
-			if member == userID {
-				rval = append(rval, group)
-			}
-		}
-	}
-	s.RUnlock()
-	return rval
-}
-
-// UserChannels returns a list of all slack.Channel that the user is a member of.
-// unlike Groups.. we do not need to be a member of the channel to see this info.
-func (s *SlackData) UserChannels(userID string) []slack.Channel {
-	var rval = []slack.Channel{}
-	s.RLock()
-	for _, channel := range s.Channels {
-		for _, member := range channel.Members {
-			if member == userID {
-				rval = append(rval, channel)
-			}
-		}
-	}
-	s.RUnlock()
-	return rval
-}
-
-// GetGroups return a list of all slack.Group that we are in
-func (s *SlackData) GetGroups() []slack.Group {
-	var rval = []slack.Group{}
-	s.RLock()
-	for _, v := range s.Groups {
-		rval = append(rval, v)
-	}
-	s.RUnlock()
-	return rval
-}
-
 // GetChannels returns a list of all slack.Channels
-func (s *SlackData) GetChannels() []slack.Channel {
-	var rval = []slack.Channel{}
-	s.RLock()
-	for _, v := range s.Channels {
-		rval = append(rval, v)
+func (d *DiscordData) GetChannels() []*discordgo.Channel {
+	var rval = []*discordgo.Channel{}
+	d.RLock()
+	for _, v := range d.Channels {
+		if v.Type == discordgo.ChannelTypeGuildText {
+			rval = append(rval, v)
+		}
 	}
-	s.RUnlock()
+	d.RUnlock()
 	return rval
 }
 
 // GetUsers returns a list of all slack.User
-func (s *SlackData) GetUsers() []slack.User {
-	var rval = []slack.User{}
-	s.RLock()
-	for _, v := range s.Users {
+func (d *DiscordData) GetMembers() []*discordgo.Member {
+	var rval = []*discordgo.Member{}
+	d.RLock()
+	for _, v := range d.Users {
 		rval = append(rval, v)
 	}
-	s.RUnlock()
+	d.RUnlock()
 	return rval
 }
 
+func GetMembers() []*discordgo.Member {
+	return data.Users
+}
+
+// starts the ting
 func mindLists() {
 	passiveUpdate := time.Tick(UpdateTimer)
 	tick := time.Tick(1 * time.Second)
@@ -187,85 +163,72 @@ func mindLists() {
 	}
 }
 
-func updateSlackUserList() error {
-	u, e := api.GetUsers()
-	if e != nil {
-		Logger.Error("Failed to fetch user list from slack", zap.Error(e))
-		return e
+func updateDiscordMemberList() error {
+	u := []*discordgo.Member{}
+
+	// get members
+	hasMoreMembers := true
+	next := "0"
+	for hasMoreMembers {
+		g, e := discordApi.discord.GuildMembers(discordApi.Config.GuildId, next, 1000)
+		if e != nil {
+			Logger.Error("Failed to fetch user list from discord", zap.Error(e))
+			return e
+		}
+		u = append(u, g...)
+
+		//
+		if len(g) < 1000 {
+			// last page has been processed
+			hasMoreMembers = false
+		} else {
+			// we have more pages to get
+			next = g[len(g)-1].User.ID
+		}
 	}
+
 	data.Lock()
 	data.Users = u
 	data.Unlock()
-	Logger.Info("Updated user list from slack", zap.Int("count", len(u)))
+	Logger.Info("Updated user list from discord", zap.Int("count", len(u)))
 	return nil
 }
 
-func updateSlackGroupsList() error {
-	g, e := api.GetGroups(false)
+func updateSlackRolesList() error {
+	r, e := discordApi.discord.GuildRoles(discordApi.Config.GuildId)
 	if e != nil {
-		Logger.Error("Failed to fetch group list from slack", zap.Error(e))
+		Logger.Error("Failed to fetch roles list from discord", zap.Error(e))
 		return e
 	}
 	data.Lock()
-	groups := []slack.Group{}
+	data.Roles = r
 	data.Unlock()
-	for _, gr := range g {
-		if gr.IsArchived {
-			// Archived groups aren't real groups
-			api.LeaveGroup(gr.ID)
-			continue
-		}
-		if len(gr.Members) < 2 {
-			// If I am the only member of a group then leave it
-			api.LeaveGroup(gr.ID)
-			continue
-		}
-		if len(gr.Name) > 5 && gr.Name[:5] == "mpdm-" {
-			// Multi Party Direct MEssages don't count
-			continue
-		}
-		groups = append(groups, gr)
-	}
-	data.Groups = groups
-	Logger.Info("Updated Group list from slack", zap.Int("count", len(g)))
+	Logger.Info("Updated Roles list from discord", zap.Int("count", len(r)))
 	return nil
 }
 
-func updateSlackChannelsList() error {
-	c, e := api.GetChannels(false)
+func updateDiscordChannelsList() error {
+	c, e := discordApi.discord.GuildChannels(discordApi.Config.GuildId)
 	if e != nil {
-		Logger.Error("Failed to fetch channel list from slack", zap.Error(e))
+		Logger.Error("Failed to fetch channel list from discord", zap.Error(e))
 		return e
 	}
 	data.Lock()
-	chans := []slack.Channel{}
+	categories := []*discordgo.Channel{}
+	chans := []*discordgo.Channel{}
 	for _, channel := range c {
-		if channel.IsArchived == true {
-			continue
+		if channel.Type == discordgo.ChannelTypeGuildText {
+			chans = append(chans, channel)
+		} else if channel.Type == discordgo.ChannelTypeGuildCategory {
+			categories = append(categories, channel)
 		}
-		chans = append(chans, channel)
+
 	}
 	data.Channels = chans
+	data.ChannelCategories = categories
 	data.Unlock()
-	Logger.Info("Updated Channel list from slack", zap.Int("count", len(c)))
-	if connected {
-		for _, channel := range chans {
-			if channel.IsMember {
-				continue
-			}
-			if _, err := rtm.JoinChannel(channel.ID); err != nil {
-				Logger.Error("failed to join channel",
-					zap.String("channel_id", channel.ID),
-					zap.String("channel_name", channel.Name),
-					zap.Error(err))
-			} else {
-				Logger.Info(
-					"joined channel",
-					zap.String("channel_id", channel.ID),
-					zap.String("channel_name", channel.Name))
-			}
-		}
-	}
+	Logger.Info("Updated ChannelCategories list from slack", zap.Int("count", len(categories)))
+	Logger.Info("Updated Channel list from slack", zap.Int("count", len(chans)))
 	return nil
 }
 
@@ -273,22 +236,22 @@ func populateLists() {
 	var wg sync.WaitGroup
 	wg.Add(3)
 	go func() {
-		updateSlackUserList()
+		updateDiscordMemberList()
 		wg.Done()
 	}()
 	go func() {
-		updateSlackGroupsList()
+		updateSlackRolesList()
 		wg.Done()
 	}()
 	go func() {
-		updateSlackChannelsList()
+		updateDiscordChannelsList()
 		wg.Done()
 	}()
 	wg.Wait()
 	data.Lock()
 	data.save()
-	SlackCoreDataUpdated.L.Lock()
-	SlackCoreDataUpdated.Broadcast()
-	SlackCoreDataUpdated.L.Unlock()
+	DiscordCoreDataUpdated.L.Lock()
+	DiscordCoreDataUpdated.Broadcast()
+	DiscordCoreDataUpdated.L.Unlock()
 	data.Unlock()
 }

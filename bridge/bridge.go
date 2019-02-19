@@ -12,27 +12,9 @@ import (
 
 var Logger *zap.Logger
 
-type SlackData interface {
-	IsUsernameAdmin(string) (bool, error)
-	IsUserIDAdmin(string) (bool, error)
-
-	ChannelByName(string) (*slack.Channel, error)
-	GetChannels() []slack.Channel
-	UserChannels(string) []slack.Channel
-
-	User(string) (*slack.User, error)
-	GetUsers() []slack.User
-	UserByName(string) (*slack.User, error)
-
-	UserGroups(string) []slack.Group
-	GetGroups() []slack.Group
-	GroupByName(string) (*slack.Group, error)
-}
-
 type EventData interface{}
 
 var Data = &struct {
-	Slack  SlackData
 	Seen   map[string]time.Time
 	Events EventData
 }{
@@ -40,7 +22,7 @@ var Data = &struct {
 }
 var OldEventToolAuthorization func(string) string
 var OldEventToolLink func(string) string
-var SlackCoreDataUpdated *sync.Cond
+var DiscordCoreDataUpdated *sync.Cond
 var SendMessage func(string, string)
 var PostMessage func(string, string, slack.PostMessageParameters) error
 

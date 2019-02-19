@@ -6,7 +6,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/FederationOfFathers/dashboard/bridge"
+	"github.com/FederationOfFathers/dashboard/bot"
 	"github.com/gorilla/mux"
 	"github.com/jinzhu/gorm"
 	"go.uber.org/zap"
@@ -14,10 +14,10 @@ import (
 
 func init() {
 	// v0 using slack id
-	Router.Path("/api/v0/member/{memberID}").Methods("GET").Handler(authenticated(
+	Router.Path("/api/v1/member/{memberID}").Methods("GET").Handler(authenticated(
 		func(w http.ResponseWriter, r *http.Request) {
 			w.Header().Set("Content-Type", "application/json")
-			member, err := DB.MemberBySlackID(mux.Vars(r)["memberID"])
+			member, err := DB.MemberByAny(mux.Vars(r)["memberID"])
 			if err != nil {
 				w.WriteHeader(http.StatusInternalServerError)
 				return
@@ -60,14 +60,14 @@ func init() {
 		},
 	))
 
-	// v0, using slack id
-	Router.Path("/api/v0/member/{memberID}").Methods("PUT", "POST").Handler(
+	// v1, using member id
+	Router.Path("/api/v1/member/{memberID}").Methods("PUT", "POST").Handler(
 		authenticated(
 			func(w http.ResponseWriter, r *http.Request) {
 				w.Header().Set("Content-Type", "application/json")
 				defer r.Body.Close()
 				memberID := mux.Vars(r)["memberID"]
-				member, err := DB.MemberBySlackID(memberID)
+				member, err := DB.MemberByAny(memberID)
 				if err != nil {
 					Logger.Error("member lookup", zap.String("memberID", memberID), zap.Error(err))
 					http.NotFound(w, r)
@@ -92,15 +92,22 @@ func init() {
 					return
 				}
 
-				sid := getSlackUserID(r)
-				admin, _ := bridge.Data.Slack.IsUserIDAdmin(sid)
-				if sid != member.Slack && !admin {
+				id := getMemberID(r)
+				mid, err := strconv.Atoi(id)
+				if err != nil {
+					Logger.Error("bad member id in request", zap.String("id", id), zap.Error(err))
+					w.WriteHeader(http.StatusInternalServerError)
+					return
+				}
+
+				admin, _ := bot.IsUserIDAdmin(member.Discord)
+				if mid != member.ID && !admin {
 					http.NotFound(w, r)
 					Logger.Debug(
 						"access control",
-						zap.String("sid", sid),
+						zap.Int("mid", mid),
 						zap.Bool("admin", admin),
-						zap.String("slack", member.Slack))
+						zap.String("discord", member.Discord))
 					return
 				}
 

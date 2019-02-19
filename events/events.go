@@ -7,7 +7,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/FederationOfFathers/dashboard/bridge"
 	"go.uber.org/zap"
 )
 
@@ -21,28 +20,6 @@ type Events struct {
 	saved   bool
 	started bool
 	list    []*Event
-}
-
-func (e *Events) FindForSlackUserID(userID string) []*Event {
-	var whereIDs = []string{}
-	for _, c := range bridge.Data.Slack.UserChannels(userID) {
-		whereIDs = append(whereIDs, c.ID)
-	}
-	for _, g := range bridge.Data.Slack.UserGroups(userID) {
-		whereIDs = append(whereIDs, g.ID)
-	}
-	var rval = []*Event{}
-	e.RLock()
-	for _, ev := range e.list {
-		for _, id := range whereIDs {
-			if id == ev.ID {
-				rval = append(rval, ev)
-				break
-			}
-		}
-	}
-	e.RUnlock()
-	return rval
 }
 
 func (e *Events) load() {

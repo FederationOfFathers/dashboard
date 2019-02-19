@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/FederationOfFathers/dashboard/bridge"
+	"github.com/FederationOfFathers/dashboard/bot"
 	"github.com/FederationOfFathers/dashboard/db"
 	"github.com/gorilla/mux"
 	"github.com/jinzhu/gorm"
@@ -13,12 +13,18 @@ import (
 )
 
 func init() {
-	Router.Path("/api/v0/meta/member/{memberID}/{key}").Methods("DELETE").Handler(authenticated(
+	Router.Path("/api/v1/meta/member/{memberID}/{key}").Methods("DELETE").Handler(authenticated(
 		func(w http.ResponseWriter, r *http.Request) {
 			w.Header().Set("Content-Type", "application/json")
-			id := getSlackUserID(r)
-			admin, _ := bridge.Data.Slack.IsUserIDAdmin(id)
-			member, err := DB.MemberBySlackID(mux.Vars(r)["memberID"])
+			id := getMemberID(r)
+			authMember, err := DB.MemberByAny(id)
+			if err != nil {
+				Logger.Error("invalid member", zap.String("id", id), zap.Error(err))
+				w.WriteHeader(http.StatusForbidden)
+				return
+			}
+			admin, _ := bot.IsUserIDAdmin(authMember.Discord)
+			member, err := DB.MemberByAny(mux.Vars(r)["memberID"])
 			if err != nil {
 				http.NotFound(w, r)
 				return
@@ -31,7 +37,7 @@ func init() {
 		},
 	))
 
-	Router.Path("/api/v0/meta/member/{memberID}").Methods("GET").Handler(authenticated(
+	Router.Path("/api/v1/meta/member/{memberID}").Methods("GET").Handler(authenticated(
 		func(w http.ResponseWriter, r *http.Request) {
 			w.Header().Set("Content-Type", "application/json")
 			member, err := DB.MemberByAny(mux.Vars(r)["memberID"])
@@ -65,12 +71,12 @@ func init() {
 		},
 	))
 
-	Router.Path("/api/v0/meta/member/{memberID}").Methods("PUT", "POST").Handler(
+	Router.Path("/api/v1/meta/member/{memberID}").Methods("PUT", "POST").Handler(
 		authenticated(
 			func(w http.ResponseWriter, r *http.Request) {
 				w.Header().Set("Content-Type", "application/json")
 				defer r.Body.Close()
-				member, err := DB.MemberBySlackID(mux.Vars(r)["memberID"])
+				member, err := DB.MemberByAny(mux.Vars(r)["memberID"])
 				if err != nil {
 					http.NotFound(w, r)
 					return
@@ -86,9 +92,14 @@ func init() {
 					Logger.Error("Error decoding JSON", zap.String("uri", r.URL.RawPath), zap.Error(err))
 				}
 
-				sid := getSlackUserID(r)
-				admin, _ := bridge.Data.Slack.IsUserIDAdmin(sid)
-				if sid != member.Slack && !admin {
+				id := getMemberID(r)
+				m, err := DB.MemberByAny(id)
+				if err != nil {
+					w.WriteHeader(http.StatusForbidden)
+					return
+				}
+				admin, _ := bot.IsUserIDAdmin(m.Discord)
+				if id != member.Discord && !admin {
 					http.NotFound(w, r)
 					return
 				}

@@ -1,25 +1,22 @@
 package bot
 
-var AdminChannel = "damnbot-admin"
+// role IDs
+var adminRoles = []string{""}
 
+// IsUserIDAdmin checkes the given Discord ID to check if the user has an admin role
 func IsUserIDAdmin(userID string) (bool, error) {
-	for _, channel := range data.UserGroups(userID) {
-		if channel.Name == AdminChannel {
-			return true, nil
-		}
+	m, e := data.Member(userID)
+	if e != nil {
+		return false, e
 	}
-	return false, nil
-}
 
-func IsUsernameAdmin(username string) (bool, error) {
-	if user, err := data.UserByName(username); err != nil {
-		return false, err
-	} else {
-		for _, channel := range data.UserGroups(user.ID) {
-			if channel.Name == AdminChannel {
+	for _, ur := range m.Roles {
+		for _, role := range adminRoles {
+			if ur == role {
 				return true, nil
 			}
 		}
 	}
+
 	return false, nil
 }

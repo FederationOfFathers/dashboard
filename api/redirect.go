@@ -3,16 +3,19 @@ package api
 import (
 	"net/http"
 
+	"github.com/FederationOfFathers/dashboard/bot"
 	"github.com/FederationOfFathers/dashboard/bridge"
 )
 
 func init() {
-	Router.Path("/api/v0/redirect/team-tool").Methods("GET").Handler(authenticated(
+
+	//TOD needed?
+	Router.Path("/api/v1/redirect/team-tool").Methods("GET").Handler(authenticated(
 		func(w http.ResponseWriter, r *http.Request) {
 			w.Header().Set("Content-Type", "text/plain")
-			id := getSlackUserID(r)
-			user, _ := bridge.Data.Slack.User(id)
-			http.Redirect(w, r, bridge.OldEventToolLink(user.Name), http.StatusTemporaryRedirect)
+			id := getMemberID(r)
+			user, _ := bot.Member(id)
+			http.Redirect(w, r, bridge.OldEventToolLink(user.Nick), http.StatusTemporaryRedirect)
 		},
 	))
 }

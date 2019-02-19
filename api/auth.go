@@ -9,7 +9,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/FederationOfFathers/dashboard/bridge"
+	"github.com/FederationOfFathers/dashboard/bot"
 	"go.uber.org/zap"
 )
 
@@ -67,8 +67,14 @@ func init() {
 }
 
 func requireAdmin(w http.ResponseWriter, r *http.Request) error {
-	id := getSlackUserID(r)
-	if admin, err := bridge.Data.Slack.IsUserIDAdmin(id); err != nil {
+	id := getMemberID(r)
+	member, err := DB.MemberByDiscordID(id)
+	if err != nil {
+		Logger.Error("could not find this user", zap.String("id", id), zap.Error(err))
+		w.WriteHeader(http.StatusInternalServerError)
+		return err
+	}
+	if admin, err := bot.IsUserIDAdmin(member.Discord); err != nil {
 		Logger.Error("error determining admin status", zap.Error(err))
 		w.WriteHeader(http.StatusInternalServerError)
 		return err
@@ -105,8 +111,8 @@ func validateMiniAuthToken(forWhat, token string) bool {
 			valid = true
 		}
 	}
-	for _, user := range bridge.Data.Slack.GetUsers() {
-		if user.ID == forWhat {
+	for _, user := range bot.GetMembers() {
+		if user.User.ID == forWhat {
 			userValid = true
 		}
 	}

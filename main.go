@@ -2,12 +2,12 @@
 package main
 
 import (
-	"fmt"
 	"os"
 
 	"io/ioutil"
 
 	"github.com/FederationOfFathers/dashboard/api"
+	"github.com/FederationOfFathers/dashboard/authentication"
 	"github.com/FederationOfFathers/dashboard/bot"
 	"github.com/FederationOfFathers/dashboard/bridge"
 	"github.com/FederationOfFathers/dashboard/config"
@@ -61,6 +61,7 @@ func init() {
 	bot.Logger = logger.Named("bot")
 	api.Logger = logger.Named("api")
 	config.Logger = logger.Named("config")
+	authentication.Logger = logger.Named("authentication")
 	events.Logger = logger.Named("events")
 	streams.Logger = logger.Named("streams")
 	db.Logger = logger.Named("db")
@@ -70,8 +71,6 @@ func init() {
 	scfg := cfg.New("cfg-slack")
 	scfg.StringVar(&slackAPIKey, "apiKey", slackAPIKey, "Slack API Key (env: SLACK_APIKEY)")
 	scfg.StringVar(&slackMessagingKey, "messagingKey", slackMessagingKey, "Slack Messaging API Key (env: SLACK_MESSAGINGAPIKEY)")
-	scfg.StringVar(&bot.CdnPrefix, "cdnPrefix", bot.CdnPrefix, "http url base from which to store saved uploads")
-	scfg.StringVar(&bot.CdnPath, "cdnPath", bot.CdnPath, "Filesystem path to store uploads in")
 	scfg.BoolVar(&bot.StartupNotice, "startupNotice", bot.StartupNotice, "send a start-up notice to slack")
 	scfg.StringVar(&streamChannel, "streamChannel", streamChannel, "where to send streaming notices")
 	scfg.BoolVar(&mindStreams, "mindStreams", mindStreams, "should we mind streaming?")
@@ -108,28 +107,8 @@ func main() {
 	streams.DB = DB
 	api.DB = DB
 	bot.DB = DB
-	bot.AuthTokenGenerator = api.GenerateValidAuthTokens
-	if environment.IsProd {
-		bot.LoginLink = fmt.Sprintf("http://dashboard.fofgaming.com/")
-	} else {
-		bot.LoginLink = fmt.Sprintf("http://fofgaming.com%s/", api.ListenOn)
-	}
 
-	// start a separate message Slack connection if there is a separate messaging key
-	if slackMessagingKey != "" {
-		bot.MessagingKey = slackMessagingKey
-	} else {
-		bot.MessagingKey = slackAPIKey
-	}
-	err := bot.SlackConnect(slackAPIKey)
-	if err != nil {
-		logger.Fatal("Unable to contact the slack API", zap.Error(err))
-	}
-	slackApi := bot.NewSlackAPI(bot.MessagingKey, streamChannel)
-	slackApi.Connect()
-	defer slackApi.Shutdown()
-
-	bridge.SlackCoreDataUpdated = bot.SlackCoreDataUpdated
+	bridge.DiscordCoreDataUpdated = bot.DiscordCoreDataUpdated
 	bridge.OldEventToolLink = events.OldEventToolLink
 	bridge.OldEventToolAuthorization = events.OldEventToolAuthorization
 
