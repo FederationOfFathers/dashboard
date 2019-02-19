@@ -2,37 +2,27 @@ package api
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 
-	"github.com/FederationOfFathers/dashboard/bridge"
+	"github.com/FederationOfFathers/dashboard/bot"
 )
 
 func init() {
-	Router.Path("/api/v0/ping").Methods("GET").Handler(authenticated(
+
+	Router.Path("/api/v1/ping").Methods("GET").Handler(authenticated(
 		func(w http.ResponseWriter, r *http.Request) {
 			w.Header().Set("Content-Type", "application/json")
-			id := getSlackUserID(r)
+			id := getMemberID(r)
+			Logger.Debug(fmt.Sprintf("id: %s", id))
 			w.Header().Set("X-UID", id)
-			user, _ := bridge.Data.Slack.User(id)
-			member, _ := DB.MemberBySlackID(id)
-			admin, _ := bridge.Data.Slack.IsUserIDAdmin(id)
-			userGroups := bridge.Data.Slack.UserGroups(id)
-			userGroupsVisible := map[string]string{}
-			for _, group := range userGroups {
-				var visible string
-				visDB().Get(group.ID, &visible)
-				if visible != "true" {
-					visible = "false"
-				}
-				userGroupsVisible[group.ID] = visible
-			}
+			member, _ := DB.MemberByAny(id)
+			admin, _ := bot.IsUserIDAdmin(member.Discord)
+			dMember, _ := bot.Member(member.Discord)
 			var rval = map[string]interface{}{
-				"member":        member,
-				"user":          user,
-				"admin":         admin,
-				"groups":        userGroups,
-				"group_visible": userGroupsVisible,
-				"channels":      bridge.Data.Slack.UserChannels(id),
+				"user":   member,
+				"member": dMember,
+				"admin":  admin,
 			}
 			json.NewEncoder(w).Encode(rval)
 		},
