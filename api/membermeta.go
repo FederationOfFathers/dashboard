@@ -99,7 +99,7 @@ func init() {
 					return
 				}
 				admin, _ := bot.IsUserIDAdmin(m.Discord)
-				if id != member.Discord && !admin {
+				if m.ID != member.ID && !admin {
 					http.NotFound(w, r)
 					return
 				}
