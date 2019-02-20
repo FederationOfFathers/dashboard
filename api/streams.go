@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/FederationOfFathers/dashboard/bridge"
+	"github.com/FederationOfFathers/dashboard/bot"
 	"github.com/FederationOfFathers/dashboard/streams"
 	"github.com/gorilla/mux"
 	"github.com/jinzhu/gorm"
@@ -21,12 +21,17 @@ func init() {
 		},
 	))
 
-	Router.Path("/api/v0/streams/{memberID}/{type}").Methods("DELETE").Handler(authenticated(
+	Router.Path("/api/v1/streams/{memberID}/{type}").Methods("DELETE").Handler(authenticated(
 		func(w http.ResponseWriter, r *http.Request) {
 			w.Header().Set("Content-Type", "application/json")
-			id := getSlackUserID(r)
-			admin, _ := bridge.Data.Slack.IsUserIDAdmin(id)
-			member, err := DB.MemberBySlackID(mux.Vars(r)["memberID"])
+			id := getMemberID(r)
+			m, err := DB.MemberByAny(id)
+			if err != nil {
+				w.WriteHeader(http.StatusForbidden)
+				return
+			}
+			admin, _ := bot.IsUserIDAdmin(m.Discord)
+			member, err := DB.MemberByAny(mux.Vars(r)["memberID"])
 			if err != nil {
 				http.NotFound(w, r)
 				return
@@ -47,7 +52,7 @@ func init() {
 		},
 	))
 
-	Router.Path("/api/v0/streams/{memberID}").Methods("GET").Handler(authenticated(
+	Router.Path("/api/v1/streams/{memberID}").Methods("GET").Handler(authenticated(
 		func(w http.ResponseWriter, r *http.Request) {
 			w.Header().Set("Content-Type", "application/json")
 			member, err := DB.MemberByAny(mux.Vars(r)["memberID"])
@@ -98,12 +103,17 @@ func init() {
 			}
 			w.Header().Set("Content-Type", "application/json")
 			if userID == "" {
-				userID = getSlackUserID(r)
+				userID = getMemberID(r)
 			}
 
-			sid := getSlackUserID(r)
-			admin, _ := bridge.Data.Slack.IsUserIDAdmin(sid)
-			if sid != userID {
+			mid := getMemberID(r)
+			m, merr := DB.MemberByAny(mid)
+			if merr != nil {
+				w.WriteHeader(http.StatusForbidden)
+				return
+			}
+			admin, _ := bot.IsUserIDAdmin(m.Discord)
+			if mid != userID {
 				if !admin {
 					http.NotFound(w, r)
 					return
@@ -123,6 +133,6 @@ func init() {
 			}
 		},
 	)
-	Router.Path("/api/v0/streams").Methods("PUT").Handler(streamSetHandler)
-	Router.Path("/api/v0/streams").Methods("POST").Handler(streamSetHandler)
+	Router.Path("/api/v1/streams").Methods("PUT").Handler(streamSetHandler)
+	Router.Path("/api/v1/streams").Methods("POST").Handler(streamSetHandler)
 }

@@ -20,8 +20,8 @@ type Store struct {
 	*bolt.DB
 }
 
-func (s *Store) Slack() *stow.Store {
-	return stow.NewJSONStore(s.DB, []byte("slack"))
+func (s *Store) Discord() *stow.Store {
+	return stow.NewJSONStore(s.DB, []byte("discord"))
 }
 
 func (s *Store) Streams() *stow.Store {

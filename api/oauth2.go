@@ -32,6 +32,7 @@ const redirectVerifyURL = host + "/api/v1/oauth/discord/verify"
 const redirectLoginURL = host + "/api/v1/oauth/discord/login"
 
 func init() {
+	// could have more OAuth configs here
 	initDiscordOauth()
 }
 

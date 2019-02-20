@@ -30,7 +30,7 @@ func init() {
 				w.WriteHeader(http.StatusInternalServerError)
 				return
 			}
-			member, err := DB.MemberBySlackID(getSlackUserID(r))
+			member, err := DB.MemberByAny(getMemberID(r))
 			if err != nil {
 				w.WriteHeader(http.StatusInternalServerError)
 				return

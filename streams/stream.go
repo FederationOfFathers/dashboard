@@ -73,7 +73,7 @@ func Owner(s *db.Stream) (*db.Member, error) {
 }
 
 func Add(kind, identifier, userID string) error {
-	member, err := DB.MemberBySlackID(userID)
+	member, err := DB.MemberByAny(userID)
 	if err != nil {
 		return err
 	}
