@@ -19,6 +19,7 @@ import (
 	"github.com/FederationOfFathers/dashboard/streams"
 	"github.com/apokalyptik/cfg"
 	"github.com/bearcherian/rollzap"
+	rollbar "github.com/rollbar/rollbar-go"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"gopkg.in/yaml.v2"
@@ -130,7 +131,9 @@ func main() {
 	}
 
 	events.Start()
+	rollbar.Info("starting up")
 	api.Run()
+
 }
 
 // unmarshal a config YML file into an interface
