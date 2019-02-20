@@ -105,8 +105,14 @@ func init() {
 				return
 			}
 
+			id := getMemberID(r)
+			mid, err := strconv.Atoi(id)
+			if err != nil {
+				w.WriteHeader(http.StatusForbidden)
+				return
+			}
 			// get the member
-			member, err := DB.MemberByID(getMemberID(r))
+			member, err := DB.MemberByID(mid)
 
 			if err != nil {
 				Logger.Error("couldn't find a member", zap.Error(err))
@@ -162,8 +168,14 @@ func init() {
 				Logger.Error("Unable to decode body", zap.Error(err))
 			}
 
+			id := getMemberID(r)
+			mid, err := strconv.Atoi(id)
+			if err != nil {
+				w.WriteHeader(http.StatusForbidden)
+				return
+			}
 			// member
-			member, err := DB.MemberByID(getMemberID(r))
+			member, err := DB.MemberByID(mid)
 			if err != nil {
 				Logger.Error("could not get a valid member", zap.Error(err))
 			}
@@ -195,10 +207,16 @@ func init() {
 		func(w http.ResponseWriter, r *http.Request) {
 			vars := mux.Vars(r)
 
-			// get member
-			member, err := DB.MemberByID(getMemberID(r))
+			id := getMemberID(r)
+			mid, err := strconv.Atoi(id)
 			if err != nil {
-				Logger.Error("invalid member", zap.Int("memberid", getMemberID(r)))
+				w.WriteHeader(http.StatusForbidden)
+				return
+			}
+			// get member
+			member, err := DB.MemberByID(mid)
+			if err != nil {
+				Logger.Error("invalid member", zap.String("memberid", id))
 			}
 
 			//get event
