@@ -61,7 +61,7 @@ type EventMember struct {
 }
 
 type EventChannel struct {
-	ID                  string `gorm:"type:varchar(191);not null;primary_key" json:"channelID"`
+	ID                  string `gorm:"type:varchar(191);not null;default:'';primary_key" json:"channelID"`
 	CreatedAt           time.Time
 	UpdatedAt           time.Time
 	DeletedAt           *time.Time `sql:"index"`
@@ -93,9 +93,8 @@ func (d *DB) Events() ([]*Event, error) {
 	}
 
 	for _, event := range e {
-		Logger.Debug(fmt.Sprintf("%#v", event))
 		event.db = d
-		event.db.Model(event).Related(&event.Members).Related(&event.EventChannel, "EventChannelID")
+		d.Raw("SELECT * FROM event_members WHERE event_id = ?", event.ID).Scan(&event.Members)
 	}
 
 	return e, nil
@@ -156,18 +155,40 @@ func (d *DB) EventChannels() ([]EventChannel, error) {
 func (d *DB) EventByID(id int) (*Event, error) {
 	event := &Event{}
 	event.ID = uint(id)
-	// err := d.Raw("SELECT * FROM events INNER JOIN event_members ON events.id = event_members.event_id WHERE events.id = ?", id).Scan(event).Error
-	err := d.Model(event).Related(&event.Members, "EventMembers").Related(&event.EventChannel, "EventChannelID").Error
+	err := d.Raw("SELECT * FROM events WHERE events.id = ? LIMIT 1", id).Scan(event).Error
 
 	event.db = d
 	return event, err
+}
+
+func (d *DB) EventMembers(event *Event) ([]*EventMember, error){
+	var members []*EventMember
+
+	err := d.Raw("SELECT * FROM event_members WHERE event_id = ?", event.ID).Scan(&members).Error
+
+	return members, err
+}
+
+func (d *DB) EventMemberByID(id uint) (*EventMember, error){
+	member := EventMember{}
+
+	err := d.Raw("SELECT * FROM event_members WHERE id = ? LIMIT 1", id).Scan(&member).Error
+
+	return &member, err
+
+}
+
+func (d *DB) DeleteEventMemberByID(u uint) {
+	if err := d.Exec("DELETE FROM event_members WHERE id = ?", u).Error; err != nil {
+		Logger.Error("unable to delete event members", zap.Uint("id", u), zap.Error(err))
+	}
 }
 
 // SaveEventChannel creates or saves an EventChannel
 func (d *DB) SaveEventChannel(e *EventChannel) error {
 
 	existingCh := &EventChannel{}
-	err := d.Where("channel_id = ?", e.ID).Find(&existingCh).Error
+	err := d.Where("id = ?", e.ID).Find(&existingCh).Error
 
 	// create
 	if err == gorm.ErrRecordNotFound {
@@ -185,7 +206,16 @@ func (d *DB) SaveEventChannel(e *EventChannel) error {
 
 // DeleteEvent delete event
 func (d *DB) DeleteEvent(e Event) {
-	d.Unscoped().Delete(&e)
+
+	//delete the members
+	if err := d.Exec("DELETE FROM event_members WHERE event_id = ?", e.ID).Error; err != nil {
+		Logger.Error("unable to delete event members", zap.Uint("event_id", e.ID), zap.Error(err))
+	}
+
+	// delete the event
+	if err := d.Unscoped().Delete(&e).Error; err != nil {
+		Logger.Error("unable to delete event", zap.Uint("event_id", e.ID), zap.Error(err))
+	}
 }
 
 // PurgeOldEventChannels purge event channels that have not been updated in the given amount of time

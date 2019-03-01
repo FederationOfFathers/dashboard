@@ -98,7 +98,7 @@ func (d *DiscordAPI) guildChannels() *GuildChannels {
 		Logger.Error("unable to get guild channels", zap.Error(err))
 	}
 
-	var textCh = []discordgo.Channel{}
+	var textCh []discordgo.Channel
 	// get the categories
 	for _, ch := range channels {
 		switch ch.Type {
@@ -117,7 +117,7 @@ func (d *DiscordAPI) guildChannels() *GuildChannels {
 	// sort the text channels
 	for _, ch := range textCh {
 		parentID := ch.ParentID
-		if parentID == "" { // skip chanenls without category
+		if parentID == "" { // skip channels without category
 			continue
 		}
 		for i, cat := range guildChannels.Categories { // find a the parent category and add it

@@ -23,8 +23,13 @@ type EventCreateRequestBody struct {
 }
 
 type EventJoinRequestBody struct {
-	Type int
+	Type int `json:"type"`
 }
+
+type EventLeaveRequestBody struct {
+	Member uint `json:"member"`
+}
+
 type Event struct {
 	ID      uint
 	When    *time.Time
@@ -70,7 +75,7 @@ func init() {
 
 			// add the events to the correct eventsResponse
 			for _, e := range events {
-				if er, ok := eventsResponse[e.EventChannel.ID]; ok {
+				if er, ok := eventsResponse[e.EventChannelID]; ok {
 					event := Event{
 						ID:      e.ID,
 						When:    e.When,
@@ -202,6 +207,55 @@ func init() {
 		},
 	))
 
+	// Leave an event
+	Router.Path("/api/v1/events/leave").Methods("POST").Handler(authenticated(
+		func(w http.ResponseWriter, r *http.Request) {
+
+			w.Header().Set("Content-Type", "application/json")
+
+			decoder := json.NewDecoder(r.Body)
+			//vars := mux.Vars(r)
+			var data EventLeaveRequestBody
+
+			if err := decoder.Decode(&data); err != nil {
+				Logger.Error("Unable to decode body", zap.Error(err))
+			}
+
+			id := getMemberID(r)
+			mid, err := strconv.Atoi(id)
+			if err != nil {
+				w.WriteHeader(http.StatusForbidden)
+				return
+			}
+
+			// logged in member
+			member, err := DB.MemberByID(mid)
+			if err != nil {
+				Logger.Error("could not get a valid member", zap.Error(err))
+				w.WriteHeader(http.StatusForbidden)
+				return
+			}
+
+			eMember, err := DB.EventMemberByID(data.Member)
+			if err != nil {
+				Logger.Error("unable to delete event member", zap.Uint("member id", data.Member), zap.Error(err))
+				w.WriteHeader(http.StatusBadRequest)
+				return
+			}
+
+
+			if member.ID != eMember.MemberID {
+				w.WriteHeader(http.StatusForbidden)
+				return
+			}
+
+			DB.DeleteEventMemberByID(data.Member)
+
+			w.WriteHeader(http.StatusOK)
+
+		},
+	))
+
 	// Delete event
 	Router.Path("/api/v1/events/{eventID}").Methods("DELETE").Handler(authenticated(
 		func(w http.ResponseWriter, r *http.Request) {
@@ -217,6 +271,8 @@ func init() {
 			member, err := DB.MemberByID(mid)
 			if err != nil {
 				Logger.Error("invalid member", zap.String("memberid", id))
+				w.WriteHeader(http.StatusForbidden)
+				return
 			}
 
 			//get event
@@ -229,10 +285,19 @@ func init() {
 			event, err := DB.EventByID(eventID)
 			if err != nil {
 				Logger.Error("unable to find", zap.Int("eventID", eventID), zap.Error(err))
+				w.WriteHeader(http.StatusInternalServerError)
+				return
+			}
+
+			members, err := DB.EventMembers(event)
+			if err != nil {
+				Logger.Error("unable to find event members", zap.Any("event", event), zap.Error(err))
+				w.WriteHeader(http.StatusInternalServerError)
+				return
 			}
 
 			isOwner := false
-			for _, eM := range event.Members {
+			for _, eM := range members {
 				if eM.MemberID == member.ID && eM.Type == db.EventMemberTypeHost {
 					isOwner = true
 					break
@@ -244,6 +309,8 @@ func init() {
 				DB.DeleteEvent(*event)
 			} else {
 				Logger.Debug("bad delete request from user", zap.Int("id", member.ID), zap.Any("event", event))
+				w.WriteHeader(http.StatusForbidden)
+				return
 			}
 		},
 	))
