@@ -26,10 +26,6 @@ type EventJoinRequestBody struct {
 	Type int `json:"type"`
 }
 
-type EventLeaveRequestBody struct {
-	Member uint `json:"member"`
-}
-
 type Event struct {
 	ID      uint
 	When    *time.Time
@@ -213,13 +209,6 @@ func init() {
 
 			w.Header().Set("Content-Type", "application/json")
 
-			decoder := json.NewDecoder(r.Body)
-			//vars := mux.Vars(r)
-			var data EventLeaveRequestBody
-
-			if err := decoder.Decode(&data); err != nil {
-				Logger.Error("Unable to decode body", zap.Error(err))
-			}
 
 			id := getMemberID(r)
 			mid, err := strconv.Atoi(id)
@@ -229,27 +218,13 @@ func init() {
 			}
 
 			// logged in member
-			member, err := DB.MemberByID(mid)
-			if err != nil {
+			if _, err := DB.MemberByID(mid); err != nil {
 				Logger.Error("could not get a valid member", zap.Error(err))
 				w.WriteHeader(http.StatusForbidden)
 				return
 			}
 
-			eMember, err := DB.EventMemberByID(data.Member)
-			if err != nil {
-				Logger.Error("unable to delete event member", zap.Uint("member id", data.Member), zap.Error(err))
-				w.WriteHeader(http.StatusBadRequest)
-				return
-			}
-
-
-			if member.ID != eMember.MemberID {
-				w.WriteHeader(http.StatusForbidden)
-				return
-			}
-
-			DB.DeleteEventMemberByID(data.Member)
+			DB.DeleteEventMemberByID(uint(mid))
 
 			w.WriteHeader(http.StatusOK)
 

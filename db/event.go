@@ -1,7 +1,6 @@
 package db
 
 import (
-	"fmt"
 	"sync"
 	"time"
 
@@ -161,7 +160,7 @@ func (d *DB) EventByID(id int) (*Event, error) {
 	return event, err
 }
 
-func (d *DB) EventMembers(event *Event) ([]*EventMember, error){
+func (d *DB) EventMembers(event *Event) ([]*EventMember, error) {
 	var members []*EventMember
 
 	err := d.Raw("SELECT * FROM event_members WHERE event_id = ?", event.ID).Scan(&members).Error
@@ -169,7 +168,7 @@ func (d *DB) EventMembers(event *Event) ([]*EventMember, error){
 	return members, err
 }
 
-func (d *DB) EventMemberByID(id uint) (*EventMember, error){
+func (d *DB) EventMemberByID(id uint) (*EventMember, error) {
 	member := EventMember{}
 
 	err := d.Raw("SELECT * FROM event_members WHERE id = ? LIMIT 1", id).Scan(&member).Error
