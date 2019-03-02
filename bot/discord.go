@@ -2,8 +2,11 @@ package bot
 
 import (
 	"fmt"
+	"strconv"
 	"strings"
+	"time"
 
+	"github.com/FederationOfFathers/dashboard/db"
 	"github.com/FederationOfFathers/dashboard/messaging"
 	"github.com/bwmarrin/discordgo"
 	"go.uber.org/zap"
@@ -21,6 +24,21 @@ type DiscordCfg struct {
 	StreamChannelId string         `yaml:"streamChannelId"`
 	GuildId         string         `yaml:"guildId"`
 	RoleCfg         DiscordRoleCfg `yaml:"roleConfig"`
+}
+
+type GuildChannels struct {
+	Categories []ChannelCategory
+}
+
+type ChannelCategory struct {
+	ID       string
+	Name     string
+	Channels []*Channel
+}
+
+type Channel struct {
+	ID   string
+	Name string
 }
 
 var discordApi *DiscordAPI
@@ -47,6 +65,73 @@ func StartDiscord(cfg DiscordCfg) *DiscordAPI {
 	go mindLists()
 
 	return discordApi
+
+}
+
+// MindGuild starts routines to monitor Discord things like channels
+func (d *DiscordAPI) MindGuild() {
+	// get channels and save them to the db
+	go d.mindChannelList()
+
+}
+
+func (d *DiscordAPI) mindChannelList() {
+	ticker := time.Tick(1 * time.Minute)
+
+	for {
+		select {
+		case <-ticker:
+			channels := d.guildChannels()
+			if err := saveChannelsToDB(channels); err == nil {
+				// purge old channels if no errors on save
+				DB.PurgeOldEventChannels(-1 * time.Minute)
+			}
+		}
+	}
+
+}
+
+func (d *DiscordAPI) guildChannels() *GuildChannels {
+	guildChannels := &GuildChannels{}
+	channels, err := d.discord.GuildChannels(d.Config.GuildId)
+	if err != nil {
+		Logger.Error("unable to get guild channels", zap.Error(err))
+	}
+
+	var textCh []discordgo.Channel
+	// get the categories
+	for _, ch := range channels {
+		switch ch.Type {
+		case discordgo.ChannelTypeGuildCategory: // create categories
+			category := &ChannelCategory{
+				ID:   ch.ID,
+				Name: ch.Name,
+			}
+			guildChannels.Categories = append(guildChannels.Categories, *category)
+		case discordgo.ChannelTypeGuildText: // store text channels for iteration
+			textCh = append(textCh, *ch)
+		}
+
+	}
+
+	// sort the text channels
+	for _, ch := range textCh {
+		parentID := ch.ParentID
+		if parentID == "" { // skip channels without category
+			continue
+		}
+		for i, cat := range guildChannels.Categories { // find a the parent category and add it
+			if cat.ID == parentID {
+				tCh := &Channel{
+					ID:   ch.ID,
+					Name: ch.Name,
+				}
+				guildChannels.Categories[i].Channels = append(guildChannels.Categories[i].Channels, tCh)
+			}
+		}
+	}
+
+	return guildChannels
 }
 
 func (d *DiscordAPI) teamCommandHandler(s *discordgo.Session, event *discordgo.MessageCreate) {
@@ -172,5 +257,85 @@ func (d DiscordAPI) PostStreamMessage(sm messaging.StreamMessage) error {
 		},
 	}
 	_, err := d.discord.ChannelMessageSendEmbed(d.Config.StreamChannelId, &messageEmbed)
+	return err
+}
+
+func (d *DiscordAPI) PostNewEventMessage(e *db.Event) error {
+	if d.discord == nil {
+		return fmt.Errorf("discord API not connected")
+	}
+	var host string
+	var members []string
+	for _, eMember := range e.Members {
+		m, err := DB.MemberByID(eMember.MemberID)
+		if err != nil {
+			Logger.Error("unable to get member", zap.Int("id", eMember.MemberID), zap.Error(err))
+		}
+		if eMember.Type == db.EventMemberTypeHost {
+			host = m.Name
+		}
+		members = append(members, m.Name)
+	}
+
+	openSpots := e.Need - len(members)
+
+	messageEmbed := discordgo.MessageEmbed{
+		Title:       fmt.Sprintf("%s has created a new event", host),
+		Description: e.Title,
+		Color:       0x007BFF,
+		Fields: []*discordgo.MessageEmbedField{
+			{
+				Name:   "Date",
+				Value:  e.When.Format("1/2, 15:04 PM"),
+				Inline: true,
+			},
+			{
+				Name:   "Players Needed",
+				Value:  strconv.Itoa(e.Need),
+				Inline: true,
+			},
+			{
+				Name:   "Open Spots",
+				Value:  strconv.Itoa(openSpots),
+				Inline: true,
+			},
+			{
+				Name:   fmt.Sprintf("Going (%d)", len(members)),
+				Value:  strings.Join(members, " "),
+				Inline: false,
+			},
+		},
+		Footer: &discordgo.MessageEmbedFooter{
+			Text: "Go to https://ui.fofgaming.com to join",
+		},
+	}
+
+	_, err := d.discord.ChannelMessageSendEmbed(e.EventChannel.ID, &messageEmbed)
+	if err != nil {
+		Logger.Error("unable to send discord message", zap.Error(err), zap.Any("message", messageEmbed))
+	}
+
+	return err
+
+}
+
+func saveChannelsToDB(gc *GuildChannels) error {
+	var err error
+	for _, cat := range gc.Categories {
+		for _, ch := range cat.Channels {
+			dbEventChannel := &db.EventChannel{
+				ID:                  ch.ID,
+				ChannelCategoryName: cat.Name,
+				ChannelName:         ch.Name,
+				UpdatedAt:           time.Now(),
+			}
+
+			if err1 := DB.SaveEventChannel(dbEventChannel); err1 != nil {
+				err = err1
+				Logger.Error("unable to save event channel data", zap.Error(err1))
+			}
+		}
+	}
+
 	return err
 }
