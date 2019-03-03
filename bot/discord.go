@@ -92,7 +92,12 @@ func (d *DiscordAPI) mindChannelList() {
 }
 
 func (d *DiscordAPI) guildChannels() *GuildChannels {
-	guildChannels := &GuildChannels{}
+	guildChannels := &GuildChannels{
+		Categories: []ChannelCategory{
+			{ID: "", Name: ""},
+		},
+	}
+
 	channels, err := d.discord.GuildChannels(d.Config.GuildId)
 	if err != nil {
 		Logger.Error("unable to get guild channels", zap.Error(err))
@@ -117,9 +122,6 @@ func (d *DiscordAPI) guildChannels() *GuildChannels {
 	// sort the text channels
 	for _, ch := range textCh {
 		parentID := ch.ParentID
-		if parentID == "" { // skip channels without category
-			continue
-		}
 		for i, cat := range guildChannels.Categories { // find a the parent category and add it
 			if cat.ID == parentID {
 				tCh := &Channel{
@@ -326,6 +328,7 @@ func saveChannelsToDB(gc *GuildChannels) error {
 			dbEventChannel := &db.EventChannel{
 				ID:                  ch.ID,
 				ChannelCategoryName: cat.Name,
+				ChannelCategoryID:   cat.ID,
 				ChannelName:         ch.Name,
 				UpdatedAt:           time.Now(),
 			}

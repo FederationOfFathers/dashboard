@@ -65,6 +65,7 @@ type EventChannel struct {
 	UpdatedAt           time.Time
 	DeletedAt           *time.Time `sql:"index"`
 	ChannelCategoryName string     `json:"categoryName"`
+	ChannelCategoryID   string     `json:"categoryID"`
 	ChannelName         string     `json:"name"`
 	db                  *DB        `gorm:"-"`
 }
@@ -198,6 +199,7 @@ func (d *DB) SaveEventChannel(e *EventChannel) error {
 	// update
 	existingCh.ChannelName = e.ChannelName
 	existingCh.ChannelCategoryName = e.ChannelCategoryName
+	existingCh.ChannelCategoryID = e.ChannelCategoryID
 
 	return d.Save(&existingCh).Error
 

@@ -18,11 +18,13 @@ func init() {
 			w.Header().Set("X-UID", id)
 			member, _ := DB.MemberByAny(id)
 			admin, _ := bot.IsUserIDAdmin(member.Discord)
+			verified, _ := bot.IsUserIDVerified(member.Discord)
 			dMember, _ := bot.Member(member.Discord)
 			var rval = map[string]interface{}{
 				"user":   member,
 				"member": dMember,
 				"admin":  admin,
+				"verified": verified,
 			}
 			json.NewEncoder(w).Encode(rval)
 		},
