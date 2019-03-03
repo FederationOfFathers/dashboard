@@ -160,7 +160,7 @@ func discordOauthVerify(w http.ResponseWriter, r *http.Request) {
 		}
 
 		// redirect
-		http.Redirect(w, r, "https://ui.fofgaming.com/#main=members", http.StatusTemporaryRedirect)
+		http.Redirect(w, r, "https://ui.fofgaming.com/", http.StatusTemporaryRedirect)
 	}
 
 }
