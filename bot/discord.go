@@ -279,6 +279,8 @@ func (d *DiscordAPI) PostNewEventMessage(e *db.Event) error {
 		members = append(members, m.Name)
 	}
 
+	loc, _ := time.LoadLocation("America/New_York") // show times in EST
+
 	openSpots := e.Need - len(members)
 
 	messageEmbed := discordgo.MessageEmbed{
@@ -288,7 +290,7 @@ func (d *DiscordAPI) PostNewEventMessage(e *db.Event) error {
 		Fields: []*discordgo.MessageEmbedField{
 			{
 				Name:   "Date",
-				Value:  e.When.Format("1/2, 15:04 PM"),
+				Value:  e.When.In(loc).Format("1/2, 15:04 PM MST"),
 				Inline: true,
 			},
 			{
