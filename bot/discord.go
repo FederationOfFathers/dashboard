@@ -56,6 +56,7 @@ func StartDiscord(cfg DiscordCfg) *DiscordAPI {
 	if cfg.RoleCfg.ChannelId != "" {
 		discordApi.StartRoleHandlers()
 	}
+	discordApi.discord.AddHandler(discordApi.teamCommandHandler)
 
 	discordApi.discord.UpdateStatus(0, "Delete All Things Slack")
 
@@ -145,7 +146,7 @@ func (d *DiscordAPI) teamCommandHandler(s *discordgo.Session, event *discordgo.M
 }
 
 func (d DiscordAPI) sendTeamToolLink(m *discordgo.MessageCreate) {
-	d.discord.ChannelMessageSend(m.ChannelID, "https://ui.fofgaming.com")
+	d.discord.ChannelMessageSend(m.ChannelID, "FoF Team Tool -> https://ui.fofgaming.com")
 }
 
 // FindIDByUsername searches the server for a user with the specified username. Returns the ID and username
