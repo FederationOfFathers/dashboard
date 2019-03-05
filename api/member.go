@@ -14,7 +14,7 @@ import (
 
 func init() {
 	// v0 using slack id
-	Router.Path("/api/v1/member/{memberID}").Methods("GET").Handler(authenticated(
+	Router.Path("/api/v0/member/{memberID}").Methods("GET").Handler(authenticated(
 		func(w http.ResponseWriter, r *http.Request) {
 			w.Header().Set("Content-Type", "application/json")
 			member, err := DB.MemberByAny(mux.Vars(r)["memberID"])
@@ -66,15 +66,22 @@ func init() {
 			func(w http.ResponseWriter, r *http.Request) {
 				w.Header().Set("Content-Type", "application/json")
 				defer r.Body.Close()
+
 				memberID := mux.Vars(r)["memberID"]
-				member, err := DB.MemberByAny(memberID)
+				mid, err := strconv.Atoi(memberID)
+				if err != nil {
+					Logger.Error("bad member id", zap.String("memberID", memberID), zap.Error(err))
+					w.WriteHeader(http.StatusBadRequest)
+					return;
+				}
+				member, err := DB.MemberByID(mid)
 				if err != nil {
 					Logger.Error("member lookup", zap.String("memberID", memberID), zap.Error(err))
 					http.NotFound(w, r)
 					return
 				}
-				if member.Slack != memberID {
-					Logger.Error("member mismatch", zap.String("slack", member.Slack), zap.String("memberID", memberID), zap.Error(err))
+				if member.ID != mid {
+					Logger.Error("member mismatch", zap.Int("member", member.ID), zap.String("memberID", memberID), zap.Error(err))
 					http.NotFound(w, r)
 					return
 				}
@@ -93,7 +100,7 @@ func init() {
 				}
 
 				id := getMemberID(r)
-				mid, err := strconv.Atoi(id)
+				amid, err := strconv.Atoi(id)
 				if err != nil {
 					Logger.Error("bad member id in request", zap.String("id", id), zap.Error(err))
 					w.WriteHeader(http.StatusInternalServerError)
@@ -101,11 +108,11 @@ func init() {
 				}
 
 				admin, _ := bot.IsUserIDAdmin(member.Discord)
-				if mid != member.ID && !admin {
+				if amid != member.ID && !admin {
 					http.NotFound(w, r)
 					Logger.Debug(
 						"access control",
-						zap.Int("mid", mid),
+						zap.Int("amid", amid),
 						zap.Bool("admin", admin),
 						zap.String("discord", member.Discord))
 					return
