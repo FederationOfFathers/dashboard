@@ -56,6 +56,7 @@ func StartDiscord(cfg DiscordCfg) *DiscordAPI {
 	if cfg.RoleCfg.ChannelId != "" {
 		discordApi.StartRoleHandlers()
 	}
+	discordApi.discord.AddHandler(discordApi.teamCommandHandler)
 
 	discordApi.discord.UpdateStatus(0, "Delete All Things Slack")
 
@@ -145,7 +146,7 @@ func (d *DiscordAPI) teamCommandHandler(s *discordgo.Session, event *discordgo.M
 }
 
 func (d DiscordAPI) sendTeamToolLink(m *discordgo.MessageCreate) {
-	d.discord.ChannelMessageSend(m.ChannelID, "https://ui.fofgaming.com")
+	d.discord.ChannelMessageSend(m.ChannelID, "FoF Team Tool -> https://ui.fofgaming.com")
 }
 
 // FindIDByUsername searches the server for a user with the specified username. Returns the ID and username
@@ -279,6 +280,8 @@ func (d *DiscordAPI) PostNewEventMessage(e *db.Event) error {
 		members = append(members, m.Name)
 	}
 
+	loc, _ := time.LoadLocation("America/New_York") // show times in EST
+
 	openSpots := e.Need - len(members)
 
 	messageEmbed := discordgo.MessageEmbed{
@@ -288,7 +291,7 @@ func (d *DiscordAPI) PostNewEventMessage(e *db.Event) error {
 		Fields: []*discordgo.MessageEmbedField{
 			{
 				Name:   "Date",
-				Value:  e.When.Format("1/2, 15:04 PM"),
+				Value:  e.When.In(loc).Format("1/2, 15:04 PM MST"),
 				Inline: true,
 			},
 			{
