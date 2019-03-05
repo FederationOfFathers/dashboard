@@ -138,7 +138,6 @@ func (d *DiscordAPI) guildChannels() *GuildChannels {
 }
 
 func (d *DiscordAPI) teamCommandHandler(s *discordgo.Session, event *discordgo.MessageCreate) {
-	Logger.Debug("handle", zap.Any("event", event))
 	switch event.Content {
 	case "!team":
 		d.sendTeamToolLink(event)

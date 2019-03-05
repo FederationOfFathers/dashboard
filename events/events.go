@@ -3,6 +3,7 @@ package events
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/FederationOfFathers/dashboard/db"
 	"os"
 	"sync"
 	"time"
@@ -14,12 +15,44 @@ var Logger *zap.Logger
 var Data = &Events{}
 var SaveFile = "events.json"
 var SaveInterval = time.Minute
+var DB *db.DB
 
 type Events struct {
 	sync.RWMutex
 	saved   bool
 	started bool
 	list    []*Event
+}
+
+// MindEvents
+func MindEvents() {
+
+	go func() {
+		tick := time.Tick(time.Hour * 1)
+
+		select {
+		case <-tick:
+			purgeOldEvents()
+		}
+	}()
+}
+
+
+// purgeOldEvents purged events mor than 2 hours old
+func purgeOldEvents() {
+
+	Logger.Info("purging old events")
+
+	events, err := DB.Events()
+	if err != nil {
+		Logger.Error("event purge failed", zap.Error(err))
+	}
+
+	for _, e := range events {
+		if time.Since(*e.When) > time.Duration(time.Hour * 2) {
+			DB.DeleteEvent(*e)
+		}
+	}
 }
 
 func (e *Events) load() {

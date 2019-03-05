@@ -106,6 +106,7 @@ func main() {
 	streams.DB = DB
 	api.DB = DB
 	bot.DB = DB
+	events.DB = DB
 
 	bridge.DiscordCoreDataUpdated = bot.DiscordCoreDataUpdated
 	bridge.OldEventToolLink = events.OldEventToolLink
@@ -131,7 +132,9 @@ func main() {
 		logger.Info("Not minding streams")
 	}
 
-	events.Start()
+	events.Start() //TODO still needed? old events?
+	events.MindEvents()
+
 	rollbar.Info("starting up")
 	api.Run()
 
