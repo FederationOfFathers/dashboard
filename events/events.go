@@ -30,9 +30,11 @@ func MindEvents() {
 	go func() {
 		tick := time.Tick(time.Hour * 1)
 
-		select {
-		case <-tick:
-			purgeOldEvents()
+		for {
+			select {
+			case <-tick:
+				purgeOldEvents()
+			}
 		}
 	}()
 }
