@@ -141,6 +141,9 @@ func (d *DiscordAPI) guildChannels() *GuildChannels {
 }
 
 func (d *DiscordAPI) teamCommandHandler(s *discordgo.Session, event *discordgo.MessageCreate) {
+	if event.GuildID != d.Config.GuildId {
+		return
+	}
 	switch event.Content {
 	case "!team":
 		d.sendTeamToolLink(event)
