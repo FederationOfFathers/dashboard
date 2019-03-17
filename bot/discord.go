@@ -57,8 +57,11 @@ func StartDiscord(cfg DiscordCfg) *DiscordAPI {
 		discordApi.StartRoleHandlers()
 	}
 	discordApi.discord.AddHandler(discordApi.teamCommandHandler)
+	discordApi.discord.AddHandler(discordApi.tempChannelCommandHandler)
 
-	discordApi.discord.UpdateStatus(0, "Delete All Things Slack")
+	go discordApi.mindTempChannels()
+
+	discordApi.discord.UpdateStatus(0, "ui.fofgaming.com | !team")
 
 	// data cache
 	data.load()
