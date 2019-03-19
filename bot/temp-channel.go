@@ -1,6 +1,7 @@
 package bot
 
 import (
+	"fmt"
 	"github.com/bwmarrin/discordgo"
 	"go.uber.org/zap"
 	"strings"
@@ -10,22 +11,70 @@ import (
 const channelCommand = "!channel"
 //const memberCategoryID = "556671265650507812" //BearKhan
 const memberCategoryID = "556688616911536129" //FTS
+const memberChannelRoleFmt = "mc-%s"
+const memberChannelRoleFmt = "mc_%s"
 
 // !channel channel_name
 func (d *DiscordAPI) tempChannelCommandHandler(s *discordgo.Session, event *discordgo.MessageCreate) {
+	if event.GuildID != d.Config.GuildId {
+		return
+	}
 	fields := strings.Fields(event.Content)
 	if fields[0] != channelCommand {
 		return
 	}
 
+	// create channel
 	channelData := discordgo.GuildChannelCreateData{
 		Name:     fields[1],
 		ParentID: memberCategoryID,
 		Type:     discordgo.ChannelTypeGuildText,
 	}
-	_, err := d.discord.GuildChannelCreateComplex(d.Config.GuildId, channelData)
+	ch, err := d.discord.GuildChannelCreateComplex(d.Config.GuildId, channelData)
 	if err != nil {
 		Logger.Error("unable to create member channel", zap.String("channel_name", fields[1]), zap.Error(err))
+		return
+	}
+
+	//create role
+	mcRole, err := d.discord.GuildRoleCreate(d.Config.GuildId)
+	if err != nil {
+		Logger.Error("unable to create member channel role", zap.Error(err))
+		return
+	}
+	// set role name (discordgo doesn't let you do it when you create it, yet)
+	mcRole, err = d.discord.GuildRoleEdit(d.Config.GuildId, mcRole.ID, fmt.Sprintf(memberChannelRoleFmt, ch.Name), 0xFFFFFF, mcRole.Hoist, mcRole.Permissions, mcRole.Mentionable)
+	if err != nil {
+		Logger.Error("unable to edit role", zap.String("channel", ch.Name), zap.String("roleID", mcRole.ID), zap.Error(err))
+	}
+	Logger.Info("created new role", zap.String("id", mcRole.ID), zap.String("name", mcRole.Name))
+
+	// add overwrite perm with role. see https://discordapp.com/developers/docs/topics/permissions
+	po := []*discordgo.PermissionOverwrite{
+		{
+			ID:    mcRole.ID, // allow the new role to send text
+			Type:  "role",
+			Allow: 0x00000040 + 0x00000800 + 0x00000400 + 0x00004000 + 0x00008000 + 0x00010000 + 0x00040000,
+		},
+		{
+			ID:   d.Config.GuildId, // deny everyone to view
+			Type: "role",
+			Deny: 0x00000400,
+		},
+	}
+
+	if verifiedRole != "" { // it's true now, but sometimes it might not be (dev/testing)
+		po = append(po, &discordgo.PermissionOverwrite{
+			ID:    verifiedRole, //verified read only
+			Type:  "role",
+			Allow: 0x00000400,
+		})
+	}
+	_, err = d.discord.ChannelEditComplex(ch.ID, &discordgo.ChannelEdit{
+		PermissionOverwrites: po,
+	})
+	if err != nil {
+		Logger.Error("Unable to set permissions on channel", zap.String("channel", ch.Name), zap.String("role", mcRole.ID), zap.Error(err))
 	}
 
 }
@@ -74,7 +123,7 @@ func (d *DiscordAPI) mindTempChannels() {
 				}
 
 				// if more than 7 days, delete
-				if time.Since(lastMessageTime) > (time.Hour * 24 * 7) {
+				if time.Since(lastMessageTime) > (time.Hour * 48) {
 					_, err := d.discord.ChannelDelete(ch.ID)
 					if err != nil {
 						Logger.Error("unable to delete member channel", zap.String("channel", ch.ID), zap.Error(err))
