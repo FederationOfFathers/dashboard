@@ -9,11 +9,10 @@ import (
 )
 
 const channelCommand = "!channel"
-//const memberCategoryID = "556671265650507812" //BearKhan
-const memberCategoryID = "556688616911536129" //FTS
 const inviteCommand = "!invite"
 const leaveCommand = "!leave"
-const memberChannelRoleFmt = "mc-%s"
+
+const memberCategoryID = "" //TODO config?
 const memberChannelRoleFmt = "mc_%s"
 
 // !channel channel_name
@@ -86,6 +85,13 @@ func (d *DiscordAPI) tempChannelCommandHandler(s *discordgo.Session, event *disc
 		return
 	}
 
+	// add role to user
+	user := event.Author.ID
+	if err := d.discord.GuildMemberRoleAdd(d.Config.GuildId, user, mcRole.ID); err != nil {
+		Logger.Error("invite - unable to add role", zap.String("user", user), zap.String("role", mcRole.ID), zap.Error(err))
+	}
+
+	// send intro message
 	if _, err := d.discord.ChannelMessageSend(ch.ID, fmt.Sprintf("This channel was created by <@%s>. To add more people to this channel type `!invite @username`.", event.Author.ID)); err != nil {
 		Logger.Error("unable to send intro message", zap.String("channel", ch.ID), zap.Error(err))
 	}
@@ -195,9 +201,22 @@ func (d *DiscordAPI) mindTempChannels() {
 					continue
 				}
 
-				// if more than 7 days, delete
+				// if more than 2 days, delete
 				if time.Since(lastMessageTime) > (time.Hour * 48) {
-					_, err := d.discord.ChannelDelete(ch.ID)
+
+					// find role id by name and delete
+					role, err := d.FindGuildRoleByName(fmt.Sprintf(memberChannelRoleFmt, channel.Name))
+					if err != nil {
+						Logger.Error("unable to find role", zap.Error(err), zap.String("channel", channel.Name ))
+					} else {
+						if err := d.discord.GuildRoleDelete(d.Config.GuildId, role.ID); err != nil {
+							Logger.Error("unable to delete role", zap.Error(err), zap.String("role", role.ID))
+						}
+					}
+
+
+					// channel delete
+					_, err = d.discord.ChannelDelete(ch.ID)
 					if err != nil {
 						Logger.Error("unable to delete member channel", zap.String("channel", ch.ID), zap.Error(err))
 						continue
