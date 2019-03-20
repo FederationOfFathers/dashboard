@@ -11,6 +11,8 @@ import (
 const channelCommand = "!channel"
 //const memberCategoryID = "556671265650507812" //BearKhan
 const memberCategoryID = "556688616911536129" //FTS
+const inviteCommand = "!invite"
+const leaveCommand = "!leave"
 const memberChannelRoleFmt = "mc-%s"
 const memberChannelRoleFmt = "mc_%s"
 

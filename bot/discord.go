@@ -57,7 +57,7 @@ func StartDiscord(cfg DiscordCfg) *DiscordAPI {
 		discordApi.StartRoleHandlers()
 	}
 	discordApi.discord.AddHandler(discordApi.teamCommandHandler)
-	discordApi.discord.AddHandler(discordApi.tempChannelCommandHandler)
+	discordApi.discord.AddHandler(discordApi.verifiedEventsHandler)
 
 	go discordApi.mindTempChannels()
 
@@ -72,6 +72,25 @@ func StartDiscord(cfg DiscordCfg) *DiscordAPI {
 
 }
 
+// verifiedEventsHandler checks if the user is verified before running the handler
+func (d *DiscordAPI) verifiedEventsHandler(s *discordgo.Session, event *discordgo.MessageCreate) {
+	if event.GuildID != d.Config.GuildId {
+		return
+	}
+	fields := strings.Fields(event.Content)
+	if len(fields) <= 1 {
+		return
+	}
+
+	switch fields[0] {
+	case channelCommand:
+		d.tempChannelCommandHandler(s, event)
+	case inviteCommand:
+		d.inviteTempChannelHandler(s, event)
+	case leaveCommand:
+		d.leaveTempChannelHandler(s, event)
+	}
+}
 // MindGuild starts routines to monitor Discord things like channels
 func (d *DiscordAPI) MindGuild() {
 	// get channels and save them to the db
