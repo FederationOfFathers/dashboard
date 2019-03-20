@@ -175,6 +175,21 @@ func (d *DiscordAPI) FindGuildRole(roleID string) (*discordgo.Role, error) {
 	return nil, fmt.Errorf("No matching role found")
 }
 
+func (d *DiscordAPI) FindGuildRoleByName(name string) (*discordgo.Role, error) {
+	roles, err := d.discord.GuildRoles(d.Config.GuildId)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, role := range roles {
+		if role.Name == name {
+			return role, nil
+		}
+	}
+
+	return nil, fmt.Errorf("No matching role found")
+}
+
 // FindIDByUsernameStartingAt searches the server for a user with the specified username starting at the id/snowflake. Returns the ID and username
 func (d *DiscordAPI) FindIDByUsernameStartingAt(username string, snowflake string) (string, string) {
 	members, err := d.discord.GuildMembers(d.Config.GuildId, snowflake, 1000)
@@ -349,4 +364,9 @@ func saveChannelsToDB(gc *GuildChannels) error {
 	}
 
 	return err
+}
+
+
+func userIDFromMention(mention string) string {
+	return mention[2:len(mention)-1]
 }

@@ -20,7 +20,7 @@ func (d *DiscordAPI) tempChannelCommandHandler(s *discordgo.Session, event *disc
 		return
 	}
 	fields := strings.Fields(event.Content)
-	if fields[0] != channelCommand {
+	if len(fields) <= 2 && fields[0] != channelCommand {
 		return
 	}
 
@@ -46,8 +46,9 @@ func (d *DiscordAPI) tempChannelCommandHandler(s *discordgo.Session, event *disc
 	mcRole, err = d.discord.GuildRoleEdit(d.Config.GuildId, mcRole.ID, fmt.Sprintf(memberChannelRoleFmt, ch.Name), 0xFFFFFF, mcRole.Hoist, mcRole.Permissions, mcRole.Mentionable)
 	if err != nil {
 		Logger.Error("unable to edit role", zap.String("channel", ch.Name), zap.String("roleID", mcRole.ID), zap.Error(err))
+	} else {
+		Logger.Info("created new role", zap.String("id", mcRole.ID), zap.String("name", mcRole.Name))
 	}
-	Logger.Info("created new role", zap.String("id", mcRole.ID), zap.String("name", mcRole.Name))
 
 	// add overwrite perm with role. see https://discordapp.com/developers/docs/topics/permissions
 	po := []*discordgo.PermissionOverwrite{
@@ -61,22 +62,92 @@ func (d *DiscordAPI) tempChannelCommandHandler(s *discordgo.Session, event *disc
 			Type: "role",
 			Deny: 0x00000400,
 		},
+		{
+			ID:    d.Config.ClientId,
+			Type:  "member",
+			Allow: 0x00000040 + 0x00000800 + 0x00000400 + 0x00004000 + 0x00008000 + 0x00010000 + 0x00040000,
+		},
 	}
 
-	if verifiedRole != "" { // it's true now, but sometimes it might not be (dev/testing)
+	/*if verifiedRole != "" { // it's true now, but sometimes it might not be (dev/testing)
 		po = append(po, &discordgo.PermissionOverwrite{
 			ID:    verifiedRole, //verified read only
 			Type:  "role",
 			Allow: 0x00000400,
 		})
-	}
+	}*/
 	_, err = d.discord.ChannelEditComplex(ch.ID, &discordgo.ChannelEdit{
 		PermissionOverwrites: po,
 	})
 	if err != nil {
 		Logger.Error("Unable to set permissions on channel", zap.String("channel", ch.Name), zap.String("role", mcRole.ID), zap.Error(err))
+		return
 	}
 
+	if _, err := d.discord.ChannelMessageSend(ch.ID, fmt.Sprintf("This channel was created by <@%s>. To add more people to this channel type `!invite @username`.", event.Author.ID)); err != nil {
+		Logger.Error("unable to send intro message", zap.String("channel", ch.ID), zap.Error(err))
+	}
+
+}
+
+func (d *DiscordAPI) inviteTempChannelHandler(s *discordgo.Session, event *discordgo.MessageCreate) {
+	if event.GuildID != d.Config.GuildId {
+		return
+	}
+	fields := strings.Fields(event.Content)
+	if len(fields) <= 2 && fields[0] != inviteCommand {
+		return
+	}
+
+	// get channel
+	ch, err := d.discord.Channel(event.ChannelID)
+	if err != nil {
+		Logger.Error("invite - unable to find channel", zap.String("channel", event.ChannelID), zap.Error(err))
+		return
+	}
+
+	// get role
+	role, err := d.FindGuildRoleByName(fmt.Sprintf(memberChannelRoleFmt, ch.Name))
+	if err != nil {
+		Logger.Error("invite - unable to find channel role", zap.String("channel_name", ch.Name), zap.Error(err))
+		return
+	}
+
+	// parse user and add role
+	user := userIDFromMention(fields[1])
+	if err := d.discord.GuildMemberRoleAdd(d.Config.GuildId, user, role.ID); err != nil {
+		Logger.Error("invite - unable to add role", zap.String("user", user), zap.String("role", role.ID), zap.Error(err))
+	}
+}
+
+func (d *DiscordAPI) leaveTempChannelHandler(s *discordgo.Session, event *discordgo.MessageCreate) {
+	if event.GuildID != d.Config.GuildId {
+		return
+	}
+	fields := strings.Fields(event.Content)
+	if len(fields) <= 1 && fields[0] != leaveCommand {
+		return
+	}
+
+	// get channel
+	ch, err := d.discord.Channel(event.ChannelID)
+	if err != nil {
+		Logger.Error("leave - unable to find channel", zap.String("channel", event.ChannelID), zap.Error(err))
+		return
+	}
+
+	// get role
+	role, err := d.FindGuildRoleByName(fmt.Sprintf(memberChannelRoleFmt, ch.Name))
+	if err != nil {
+		Logger.Error("leave - unable to find channel role", zap.String("channel_name", ch.Name), zap.Error(err))
+		return
+	}
+
+	// parse user and add role
+	user := event.Author.ID
+	if err := d.discord.GuildMemberRoleRemove(d.Config.GuildId, user, role.ID); err != nil {
+		Logger.Error("leave - unable to remove role", zap.String("user", user), zap.String("role", role.ID), zap.Error(err))
+	}
 }
 
 func (d *DiscordAPI) mindTempChannels() {
