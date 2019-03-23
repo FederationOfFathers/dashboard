@@ -56,9 +56,14 @@ func StartDiscord(cfg DiscordCfg) *DiscordAPI {
 	if cfg.RoleCfg.ChannelId != "" {
 		discordApi.StartRoleHandlers()
 	}
-	discordApi.discord.AddHandler(discordApi.teamCommandHandler)
 
-	discordApi.discord.UpdateStatus(0, "Delete All Things Slack")
+	//add handlers
+	discordApi.discord.AddHandler(discordApi.teamCommandHandler)
+	discordApi.discord.AddHandler(discordApi.verifiedEventsHandler)
+
+	go discordApi.mindTempChannels()
+
+	discordApi.discord.UpdateStatus(0, "ui.fofgaming.com | !team")
 
 	// data cache
 	data.load()
@@ -69,6 +74,25 @@ func StartDiscord(cfg DiscordCfg) *DiscordAPI {
 
 }
 
+// verifiedEventsHandler checks if the user is verified before running the handler
+func (d *DiscordAPI) verifiedEventsHandler(s *discordgo.Session, event *discordgo.MessageCreate) {
+	if event.GuildID != d.Config.GuildId {
+		return
+	}
+	fields := strings.Fields(event.Content)
+	if len(fields) <= 1 {
+		return
+	}
+
+	switch fields[0] {
+	case channelCommand:
+		d.tempChannelCommandHandler(s, event)
+	case inviteCommand:
+		d.inviteTempChannelHandler(s, event)
+	case leaveCommand:
+		d.leaveTempChannelHandler(s, event)
+	}
+}
 // MindGuild starts routines to monitor Discord things like channels
 func (d *DiscordAPI) MindGuild() {
 	// get channels and save them to the db
@@ -138,6 +162,9 @@ func (d *DiscordAPI) guildChannels() *GuildChannels {
 }
 
 func (d *DiscordAPI) teamCommandHandler(s *discordgo.Session, event *discordgo.MessageCreate) {
+	if event.GuildID != d.Config.GuildId {
+		return
+	}
 	switch event.Content {
 	case "!team":
 		d.sendTeamToolLink(event)
@@ -162,6 +189,21 @@ func (d *DiscordAPI) FindGuildRole(roleID string) (*discordgo.Role, error) {
 
 	for _, role := range roles {
 		if role.ID == roleID {
+			return role, nil
+		}
+	}
+
+	return nil, fmt.Errorf("No matching role found")
+}
+
+func (d *DiscordAPI) FindGuildRoleByName(name string) (*discordgo.Role, error) {
+	roles, err := d.discord.GuildRoles(d.Config.GuildId)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, role := range roles {
+		if role.Name == name {
 			return role, nil
 		}
 	}
@@ -343,4 +385,9 @@ func saveChannelsToDB(gc *GuildChannels) error {
 	}
 
 	return err
+}
+
+
+func userIDFromMention(mention string) string {
+	return mention[2:len(mention)-1]
 }
