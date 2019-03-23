@@ -56,6 +56,8 @@ func StartDiscord(cfg DiscordCfg) *DiscordAPI {
 	if cfg.RoleCfg.ChannelId != "" {
 		discordApi.StartRoleHandlers()
 	}
+
+	//add handlers
 	discordApi.discord.AddHandler(discordApi.teamCommandHandler)
 	discordApi.discord.AddHandler(discordApi.verifiedEventsHandler)
 
