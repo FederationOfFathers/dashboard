@@ -12,7 +12,7 @@ const channelCommand = "!channel"
 const inviteCommand = "!invite"
 const leaveCommand = "!leave"
 
-const memberCategoryID = "" //TODO config?
+const memberCategoryID = "440865911910563861" //TODO config?
 const memberChannelRoleFmt = "mc_%s"
 
 // !channel channel_name
