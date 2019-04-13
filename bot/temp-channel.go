@@ -332,6 +332,7 @@ func (d DiscordAPI) handleMemberChannelRole(s *discordgo.Session, event *discord
 	ch, err := d.discord.Channel(channelID)
 	if err != nil {
 		Logger.Error("mc role add: unable to add role", zap.Error(err), zap.String("channel", msg.Content))
+		return
 	}
 
 	// get role
@@ -343,7 +344,8 @@ func (d DiscordAPI) handleMemberChannelRole(s *discordgo.Session, event *discord
 
 	// add role
 	if err := d.discord.GuildMemberRoleAdd(d.Config.GuildId, userID, role.ID); err != nil {
-		Logger.Error("invite - unable to add role", zap.String("user", userID), zap.String("role", role.Name), zap.String("roleID", role.ID), zap.Error(err))
+		Logger.Error("mc role add: unable to add role", zap.String("user", userID), zap.String("role", role.Name), zap.String("roleID", role.ID), zap.Error(err))
+		return
 	}
 
 }
