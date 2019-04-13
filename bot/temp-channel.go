@@ -25,9 +25,24 @@ func (d *DiscordAPI) tempChannelCommandHandler(s *discordgo.Session, event *disc
 		return
 	}
 
+	channelAssignChannel:= d.channelAssignChannel()
+
+	newChannelName := fields[1]
+
+	//check if channel exists
+	memberChannels := d.textChannelsInCategory(memberCategoryID)
+	for _, mc := range memberChannels {
+		if mc.Name == newChannelName {
+			if _, err := d.discord.ChannelMessageSend(event.ChannelID, fmt.Sprintf("The channel <#%s> already exists. Check <#%s> for the list of channels.", mc.ID, channelAssignChannel.ID)); err != nil {
+				Logger.Error("unable to send intro message", zap.String("channel", event.ChannelID), zap.Error(err))
+			}
+			return
+		}
+	}
+
 	// create channel
 	channelData := discordgo.GuildChannelCreateData{
-		Name:     fields[1],
+		Name:     newChannelName,
 		ParentID: memberCategoryID,
 		Type:     discordgo.ChannelTypeGuildText,
 	}
@@ -256,7 +271,6 @@ func (d *DiscordAPI) setChannelAssignMessage() {
 
 	// create new messages
 	for _, xch := range memberChannels {
-		fmt.Printf("adding line for %s", xch.Name)
 		msg, err := d.discord.ChannelMessageSend(assignChannel.ID, fmt.Sprintf("<#%s>", xch.ID))
 		if err != nil {
 			Logger.Error("channel assign message failed", zap.String("channel", xch.ID), zap.Error(err))
@@ -271,6 +285,18 @@ func (d *DiscordAPI) setChannelAssignMessage() {
 
 	}
 
+}
+
+func (d DiscordAPI) channelAssignChannel() *Channel {
+	memberChannels := d.textChannelsInCategory(memberCategoryID)
+
+	for _, ch := range memberChannels {
+		if ch.Name == channelAssignName {
+			return ch
+		}
+	}
+
+	return nil
 }
 
 func (d *DiscordAPI) clearChannelMessages(channelID string) {
