@@ -48,38 +48,7 @@ func (d DiscordAPI) roleAssignmentHandler(s *discordgo.Session, event *discordgo
 		}
 
 		if roleId, ok := roles[emojiId]; ok {
-			// get the user from the server/guild
-			member, err := d.discord.GuildMember(d.Config.GuildId, event.UserID)
-			if err != nil {
-				Logger.Error("Unable to get member", zap.Error(err))
-				return
-			}
-
-			userHadRole := false
-			// if the member has the mapped role, remove it
-			for _, id := range member.Roles {
-				if id == roleId {
-					d.removeRoleFromUser(event.UserID, roleId)
-					userHadRole = true // true, even if an attempt was made and failed
-				}
-			}
-
-			// if the member does not have the mapped role, add it
-			if !userHadRole {
-				d.addRoleToUser(event.UserID, roleId)
-			}
-
-			// DM the user the confirmation
-			role, err := d.FindGuildRole(roleId)
-			if err != nil {
-				Logger.Error("Unable to find role", zap.Error(err))
-			}
-			if userHadRole {
-				d.SendDM(event.UserID, fmt.Sprintf("The %s role has been removed", role.Name))
-			} else {
-				d.SendDM(event.UserID, fmt.Sprintf("You now have the %s role!", role.Name))
-			}
-
+			d.assignRoleToUser(event.UserID, roleId)
 		}
 
 		// remove the users reaction. If the add/remove failed, they can click it again to re-trigger
@@ -98,6 +67,40 @@ func (d DiscordAPI) roleAssignmentHandler(s *discordgo.Session, event *discordgo
 		}
 	}
 
+}
+
+func (d *DiscordAPI) assignRoleToUser(userID, roleID string ) {
+	// get the user from the server/guild
+	member, err := d.discord.GuildMember(d.Config.GuildId, userID)
+	if err != nil {
+		Logger.Error("Unable to get member", zap.Error(err))
+		return
+	}
+
+	userHadRole := false
+	// if the member has the mapped role, remove it
+	for _, id := range member.Roles {
+		if id == roleID {
+			d.removeRoleFromUser(userID, roleID)
+			userHadRole = true // true, even if an attempt was made and failed
+		}
+	}
+
+	// if the member does not have the mapped role, add it
+	if !userHadRole {
+		d.addRoleToUser(userID, roleID)
+	}
+
+	// DM the user the confirmation
+	role, err := d.FindGuildRole(roleID)
+	if err != nil {
+		Logger.Error("Unable to find role", zap.Error(err))
+	}
+	if userHadRole {
+		d.SendDM(userID, fmt.Sprintf("The %s role has been removed", role.Name))
+	} else {
+		d.SendDM(userID, fmt.Sprintf("You now have the %s role!", role.Name))
+	}
 }
 
 // removes all messages entered by this bot in the channel. Uses the ClientID of the bot/app
