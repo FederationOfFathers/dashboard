@@ -58,6 +58,7 @@ func StartDiscord(cfg DiscordCfg) *DiscordAPI {
 	}
 
 	//add handlers
+	discordApi.discord.AddHandler(discordApi.roleAssignmentHandler)
 	discordApi.discord.AddHandler(discordApi.teamCommandHandler)
 	discordApi.discord.AddHandler(discordApi.verifiedEventsHandler)
 
@@ -392,6 +393,10 @@ func saveChannelsToDB(gc *GuildChannels) error {
 
 func userIDFromMention(mention string) string {
 	return strings.Trim(mention[2:len(mention)-1], "!")
+}
+
+func channelIDFromChannelLink(channelLink string) string {
+	return strings.Trim(channelLink[2:len(channelLink)-1], "!")
 }
 
 func (d *DiscordAPI) textChannelsInCategory(categoryID string) []*Channel {

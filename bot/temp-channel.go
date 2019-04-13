@@ -245,7 +245,6 @@ func (d *DiscordAPI) purgeOldTempChannels() {
 func (d *DiscordAPI) setChannelAssignMessage() {
 	// find channel assign channel
 	memberChannels := d.textChannelsInCategory(memberCategoryID)
-	fmt.Printf("uncut memberChannels: %v\n", memberChannels)
 	var assignChannel *Channel
 
 	for i, ch := range memberChannels {
@@ -317,4 +316,34 @@ func (d *DiscordAPI) clearChannelMessages(channelID string) {
 
 		}
 	}
+}
+
+func (d DiscordAPI) handleMemberChannelRole(s *discordgo.Session, event *discordgo.MessageReactionAdd) {
+
+	msg, err := d.discord.ChannelMessage(event.ChannelID, event.MessageID)
+	if err != nil {
+		Logger.Error("Unable to get message", zap.Error(err))
+		return
+	}
+
+	userID := event.UserID
+
+	channelID := channelIDFromChannelLink(msg.Content)
+	ch, err := d.discord.Channel(channelID)
+	if err != nil {
+		Logger.Error("mc role add: unable to add role", zap.Error(err), zap.String("channel", msg.Content))
+	}
+
+	// get role
+	role, err := d.FindGuildRoleByName(fmt.Sprintf(memberChannelRoleFmt, ch.Name))
+	if err != nil {
+		Logger.Error("mc role add: unable to find channel role", zap.String("channel_name", ch.Name), zap.Error(err))
+		return
+	}
+
+	// add role
+	if err := d.discord.GuildMemberRoleAdd(d.Config.GuildId, userID, role.ID); err != nil {
+		Logger.Error("invite - unable to add role", zap.String("user", userID), zap.String("role", role.Name), zap.String("roleID", role.ID), zap.Error(err))
+	}
+
 }

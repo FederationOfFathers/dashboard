@@ -27,8 +27,6 @@ func (d *DiscordAPI) StartRoleHandlers() {
 	d.listRoles()
 	d.clearRoleChannel()
 	d.createRoleMessages()
-	d.discord.AddHandler(d.roleAssignmentHandler)
-	Logger.Info("Role assignment handler started")
 }
 
 func (d DiscordAPI) roleAssignmentHandler(s *discordgo.Session, event *discordgo.MessageReactionAdd) {
@@ -38,6 +36,17 @@ func (d DiscordAPI) roleAssignmentHandler(s *discordgo.Session, event *discordgo
 		return
 	}
 
+	switch event.ChannelID {
+	case d.Config.RoleCfg.ChannelId:
+		d.handleConsoleRoles(s, event)
+	case d.channelAssignChannel().ID:
+		d.handleMemberChannelRole(s, event)
+	}
+
+
+}
+
+func (d DiscordAPI) handleConsoleRoles(s *discordgo.Session, event *discordgo.MessageReactionAdd) {
 	// only handle if the message is one we have configured
 	if roles, ok := d.assignmentMsgs[event.MessageID]; ok {
 
@@ -66,7 +75,6 @@ func (d DiscordAPI) roleAssignmentHandler(s *discordgo.Session, event *discordgo
 				zap.Error(err))
 		}
 	}
-
 }
 
 func (d *DiscordAPI) assignRoleToUser(userID, roleID string ) {
