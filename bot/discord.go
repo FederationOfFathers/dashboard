@@ -63,6 +63,8 @@ func StartDiscord(cfg DiscordCfg) *DiscordAPI {
 
 	go discordApi.mindTempChannels()
 
+	//go discordApi.setChannelAssignMessage()
+
 	discordApi.discord.UpdateStatus(0, "ui.fofgaming.com | !team")
 
 	// data cache
@@ -93,6 +95,7 @@ func (d *DiscordAPI) verifiedEventsHandler(s *discordgo.Session, event *discordg
 		d.leaveTempChannelHandler(s, event)
 	}
 }
+
 // MindGuild starts routines to monitor Discord things like channels
 func (d *DiscordAPI) MindGuild() {
 	// get channels and save them to the db
@@ -388,5 +391,18 @@ func saveChannelsToDB(gc *GuildChannels) error {
 }
 
 func userIDFromMention(mention string) string {
-	return strings.Trim(mention[2:len(mention)-1],"!")
+	return strings.Trim(mention[2:len(mention)-1], "!")
+}
+
+func (d *DiscordAPI) textChannelsInCategory(categoryID string) []*Channel {
+
+	channels := d.guildChannels()
+	// get channels of member channels category
+	for _, category := range channels.Categories {
+		if category.ID == memberCategoryID {
+			return category.Channels
+		}
+	}
+
+	return []*Channel{}
 }
