@@ -387,7 +387,6 @@ func saveChannelsToDB(gc *GuildChannels) error {
 	return err
 }
 
-
 func userIDFromMention(mention string) string {
-	return mention[2:len(mention)-1]
+	return strings.Trim(mention[2:len(mention)-1],"!")
 }
