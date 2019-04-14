@@ -13,9 +13,10 @@ import (
 )
 
 type DiscordAPI struct {
-	Config         DiscordCfg
-	discord        *discordgo.Session
-	assignmentMsgs map[string]map[string]string
+	Config                DiscordCfg
+	discord               *discordgo.Session
+	assignmentMsgs        map[string]map[string]string
+	memberChannelAssignID string
 }
 
 type DiscordCfg struct {
@@ -56,6 +57,8 @@ func StartDiscord(cfg DiscordCfg) *DiscordAPI {
 	if cfg.RoleCfg.ChannelId != "" {
 		discordApi.StartRoleHandlers()
 	}
+
+	discordApi.memberChannelAssignID = discordApi.channelIDByName(channelAssignName, memberCategoryID)
 
 	//add handlers
 	discordApi.discord.AddHandler(discordApi.roleAssignmentHandler)
@@ -410,4 +413,16 @@ func (d *DiscordAPI) textChannelsInCategory(categoryID string) []*Channel {
 	}
 
 	return []*Channel{}
+}
+
+func (d DiscordAPI) channelIDByName(channelName, parentID string) string {
+	memberChannels := d.textChannelsInCategory(parentID)
+
+	for _, ch := range memberChannels {
+		if ch.Name == channelAssignName {
+			return ch.ID
+		}
+	}
+
+	return ""
 }

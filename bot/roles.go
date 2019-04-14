@@ -38,6 +38,7 @@ func (d DiscordAPI) removeRoleFromUser(userId string, roleId string) bool {
 
 }
 
+// deprecated
 func (d *DiscordAPI) listRoles() {
 	roles, err := d.discord.GuildRoles(d.Config.GuildId)
 

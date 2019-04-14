@@ -24,7 +24,6 @@ type DiscordRoleCfg struct {
 }
 
 func (d *DiscordAPI) StartRoleHandlers() {
-	d.listRoles()
 	d.clearRoleChannel()
 	d.createRoleMessages()
 }
@@ -39,7 +38,7 @@ func (d DiscordAPI) roleAssignmentHandler(s *discordgo.Session, event *discordgo
 	switch event.ChannelID {
 	case d.Config.RoleCfg.ChannelId:
 		d.handleConsoleRoles(s, event)
-	case d.channelAssignChannel().ID:
+	case d.memberChannelAssignID:
 		d.handleMemberChannelRole(s, event)
 	}
 

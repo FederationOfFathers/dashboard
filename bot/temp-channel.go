@@ -27,13 +27,11 @@ func (d *DiscordAPI) tempChannelCommandHandler(s *discordgo.Session, event *disc
 		return
 	}
 
-	channelAssignChannel:= d.channelAssignChannel()
-
 	newChannelName := fields[1]
 
 	//check if channel exists
 	if ok, chID := d.checkTextChannelPresenceByName(memberCategoryID, newChannelName); ok {
-		if _, err := d.discord.ChannelMessageSend(event.ChannelID, fmt.Sprintf("The channel <#%s> already exists. Check <#%s> for the list of channels.", chID, channelAssignChannel.ID)); err != nil {
+		if _, err := d.discord.ChannelMessageSend(event.ChannelID, fmt.Sprintf("The channel <#%s> already exists. Check <#%s> for the list of channels.", chID, d.memberChannelAssignID)); err != nil {
 			Logger.Error("unable to send intro message", zap.String("channel", event.ChannelID), zap.Error(err))
 		}
 		return
@@ -62,6 +60,10 @@ func (d *DiscordAPI) tempChannelCommandHandler(s *discordgo.Session, event *disc
 	// send intro message
 	if _, err := d.discord.ChannelMessageSend(ch.ID, fmt.Sprintf("This channel was created by <@%s>. To add more people to this channel type `!invite @username`.", event.Author.ID)); err != nil {
 		Logger.Error("unable to send intro message", zap.String("channel", ch.ID), zap.Error(err))
+	}
+
+	if err := d.addMemberChannelAssigner(ch.ID); err != nil {
+		Logger.Error("unable to create new member channel assignment message", zap.String("channel", newChannelName), zap.Error(err))
 	}
 
 }
@@ -129,6 +131,45 @@ func (d DiscordAPI) newMemberChannelRole(channelName, channelID string) (*discor
 	}
 
 	return mcRole, nil
+}
+
+func (d DiscordAPI) addMemberChannelAssigner(channelID string) error {
+	msg, err := d.discord.ChannelMessageSend(d.memberChannelAssignID, fmt.Sprintf("<#%s>", channelID))
+	if err != nil {
+		return fmt.Errorf("cannot create assignment message %s", err.Error())
+	}
+
+	err = d.discord.MessageReactionAdd(d.memberChannelAssignID, msg.ID, "✅")
+	err = d.discord.MessageReactionAdd(d.memberChannelAssignID, msg.ID, "🛑")
+	if err != nil {
+		return fmt.Errorf("unable to add reactions for channel %s: %s", channelID, err.Error())
+	}
+	return nil
+}
+
+func (d DiscordAPI) removeMemberChannelAssigner(channelID string) error {
+	lastMessageID := ""
+	for {
+		messages, err := d.discord.ChannelMessages(d.memberChannelAssignID, 1, "", lastMessageID, "")
+		if err != nil {
+			return err
+		}
+
+		for _, message := range messages {
+			lastMessageID = message.ID
+			fmt.Println("message: " + lastMessageID)
+			if channelID == channelIDFromChannelLink(message.Content) {
+				err := d.discord.ChannelMessageDelete(d.memberChannelAssignID, message.ID)
+				if err != nil {
+					return fmt.Errorf("unable to delete mc assign message: %s", err.Error())
+				}
+			}
+		}
+		if len(messages) < 100 {
+			break
+		}
+	}
+	return nil
 }
 
 func (d *DiscordAPI) inviteTempChannelHandler(s *discordgo.Session, event *discordgo.MessageCreate) {
@@ -254,6 +295,9 @@ func (d *DiscordAPI) purgeOldTempChannels() {
 				continue
 			} else {
 				Logger.Info("deleted channel", zap.String("channel", ch.ID), zap.String("name", ch.Name))
+				if err := d.removeMemberChannelAssigner(ch.ID); err != nil {
+					Logger.Error("unable to delete channel assign message", zap.Error(err))
+				}
 			}
 
 		}
@@ -288,32 +332,11 @@ func (d *DiscordAPI) setChannelAssignMessage() {
 
 	// create new messages
 	for _, xch := range memberChannels {
-		msg, err := d.discord.ChannelMessageSend(assignChannel.ID, fmt.Sprintf("<#%s>", xch.ID))
-		if err != nil {
-			Logger.Error("channel assign message failed", zap.String("channel", xch.ID), zap.Error(err))
-			return
-		}
-
-		err = d.discord.MessageReactionAdd(assignChannel.ID, msg.ID, "✅")
-		if err != nil {
-			Logger.Error("unable to add reaction", zap.String("message", msg.ID), zap.Error(err))
-			return
-		}
-
-	}
-
-}
-
-func (d DiscordAPI) channelAssignChannel() *Channel {
-	memberChannels := d.textChannelsInCategory(memberCategoryID)
-
-	for _, ch := range memberChannels {
-		if ch.Name == channelAssignName {
-			return ch
+		if err := d.addMemberChannelAssigner(xch.ID); err != nil {
+			Logger.Error("unable to add assigner message", zap.String("channel", xch.Name), zap.Error(err))
 		}
 	}
 
-	return nil
 }
 
 func (d *DiscordAPI) clearChannelMessages(channelID string) {
