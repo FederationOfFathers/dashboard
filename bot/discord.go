@@ -86,10 +86,10 @@ func (d *DiscordAPI) verifiedEventsHandler(s *discordgo.Session, event *discordg
 		return
 	}
 	fields := strings.Fields(event.Content)
-	if len(fields) <= 1 {
+	if len(fields) < 1 {
 		return
 	}
-
+	
 	switch fields[0] {
 	case channelCommand:
 		d.tempChannelCommandHandler(s, event)

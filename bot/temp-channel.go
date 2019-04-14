@@ -230,6 +230,9 @@ func (d *DiscordAPI) leaveTempChannelHandler(s *discordgo.Session, event *discor
 	if err := d.discord.GuildMemberRoleRemove(d.Config.GuildId, user, role.ID); err != nil {
 		Logger.Error("leave - unable to remove role", zap.String("user", user), zap.String("role", role.ID), zap.Error(err))
 	}
+
+	_ = d.discord.ChannelMessageDelete(event.ChannelID, event.Message.ID)
+
 }
 
 func (d *DiscordAPI) mindTempChannels() {
