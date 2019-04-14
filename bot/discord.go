@@ -13,9 +13,10 @@ import (
 )
 
 type DiscordAPI struct {
-	Config         DiscordCfg
-	discord        *discordgo.Session
-	assignmentMsgs map[string]map[string]string
+	Config                DiscordCfg
+	discord               *discordgo.Session
+	assignmentMsgs        map[string]map[string]string
+	memberChannelAssignID string
 }
 
 type DiscordCfg struct {
@@ -57,11 +58,16 @@ func StartDiscord(cfg DiscordCfg) *DiscordAPI {
 		discordApi.StartRoleHandlers()
 	}
 
+	discordApi.memberChannelAssignID = discordApi.channelIDByName(channelAssignName, memberCategoryID)
+
 	//add handlers
+	discordApi.discord.AddHandler(discordApi.roleAssignmentHandler)
 	discordApi.discord.AddHandler(discordApi.teamCommandHandler)
 	discordApi.discord.AddHandler(discordApi.verifiedEventsHandler)
 
 	go discordApi.mindTempChannels()
+
+	//go discordApi.setChannelAssignMessage()
 
 	discordApi.discord.UpdateStatus(0, "ui.fofgaming.com | !team")
 
@@ -80,10 +86,10 @@ func (d *DiscordAPI) verifiedEventsHandler(s *discordgo.Session, event *discordg
 		return
 	}
 	fields := strings.Fields(event.Content)
-	if len(fields) <= 1 {
+	if len(fields) < 1 {
 		return
 	}
-
+	
 	switch fields[0] {
 	case channelCommand:
 		d.tempChannelCommandHandler(s, event)
@@ -93,6 +99,7 @@ func (d *DiscordAPI) verifiedEventsHandler(s *discordgo.Session, event *discordg
 		d.leaveTempChannelHandler(s, event)
 	}
 }
+
 // MindGuild starts routines to monitor Discord things like channels
 func (d *DiscordAPI) MindGuild() {
 	// get channels and save them to the db
@@ -172,7 +179,7 @@ func (d *DiscordAPI) teamCommandHandler(s *discordgo.Session, event *discordgo.M
 }
 
 func (d DiscordAPI) sendTeamToolLink(m *discordgo.MessageCreate) {
-	d.discord.ChannelMessageSend(m.ChannelID, "FoF Team Tool -> https://ui.fofgaming.com")
+	_,_ = d.discord.ChannelMessageSend(m.ChannelID, "FoF Team Tool -> https://ui.fofgaming.com")
 }
 
 // FindIDByUsername searches the server for a user with the specified username. Returns the ID and username
@@ -388,5 +395,34 @@ func saveChannelsToDB(gc *GuildChannels) error {
 }
 
 func userIDFromMention(mention string) string {
-	return strings.Trim(mention[2:len(mention)-1],"!")
+	return strings.Trim(mention[2:len(mention)-1], "!")
+}
+
+func channelIDFromChannelLink(channelLink string) string {
+	return strings.Trim(channelLink[2:len(channelLink)-1], "!")
+}
+
+func (d *DiscordAPI) textChannelsInCategory(categoryID string) []*Channel {
+
+	channels := d.guildChannels()
+	// get channels of member channels category
+	for _, category := range channels.Categories {
+		if category.ID == memberCategoryID {
+			return category.Channels
+		}
+	}
+
+	return []*Channel{}
+}
+
+func (d DiscordAPI) channelIDByName(channelName, parentID string) string {
+	memberChannels := d.textChannelsInCategory(parentID)
+
+	for _, ch := range memberChannels {
+		if ch.Name == channelAssignName {
+			return ch.ID
+		}
+	}
+
+	return ""
 }
