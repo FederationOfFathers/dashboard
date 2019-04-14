@@ -17,9 +17,11 @@ const memberChannelRoleFmt = "mc_%s"
 
 // !channel channel_name
 func (d *DiscordAPI) tempChannelCommandHandler(s *discordgo.Session, event *discordgo.MessageCreate) {
+
 	if event.GuildID != d.Config.GuildId {
 		return
 	}
+
 	fields := strings.Fields(event.Content)
 	if len(fields) <= 2 && fields[0] != channelCommand {
 		return
@@ -30,38 +32,73 @@ func (d *DiscordAPI) tempChannelCommandHandler(s *discordgo.Session, event *disc
 	newChannelName := fields[1]
 
 	//check if channel exists
-	memberChannels := d.textChannelsInCategory(memberCategoryID)
-	for _, mc := range memberChannels {
-		if mc.Name == newChannelName {
-			if _, err := d.discord.ChannelMessageSend(event.ChannelID, fmt.Sprintf("The channel <#%s> already exists. Check <#%s> for the list of channels.", mc.ID, channelAssignChannel.ID)); err != nil {
-				Logger.Error("unable to send intro message", zap.String("channel", event.ChannelID), zap.Error(err))
-			}
-			return
+	if ok, chID := d.checkTextChannelPresenceByName(memberCategoryID, newChannelName); ok {
+		if _, err := d.discord.ChannelMessageSend(event.ChannelID, fmt.Sprintf("The channel <#%s> already exists. Check <#%s> for the list of channels.", chID, channelAssignChannel.ID)); err != nil {
+			Logger.Error("unable to send intro message", zap.String("channel", event.ChannelID), zap.Error(err))
 		}
+		return
 	}
 
 	// create channel
-	channelData := discordgo.GuildChannelCreateData{
-		Name:     newChannelName,
-		ParentID: memberCategoryID,
-		Type:     discordgo.ChannelTypeGuildText,
-	}
-	ch, err := d.discord.GuildChannelCreateComplex(d.Config.GuildId, channelData)
+	ch, err := d.newMemberChannel(newChannelName)
 	if err != nil {
-		Logger.Error("unable to create member channel", zap.String("channel_name", fields[1]), zap.Error(err))
+		Logger.Error("unable to create member channel", zap.String("channel_name", newChannelName), zap.Error(err))
 		return
 	}
 
 	//create role
+	mcRole, err := d.newMemberChannelRole(newChannelName, ch.ID)
+	if err != nil {
+		Logger.Error("unable to create role for channel", zap.String("channel", newChannelName), zap.String("id", ch.ID), zap.Error(err))
+	}
+
+
+	// add role to user
+	user := event.Author.ID
+	if err := d.discord.GuildMemberRoleAdd(d.Config.GuildId, user, mcRole.ID); err != nil {
+		Logger.Error("invite - unable to add role", zap.String("user", user), zap.String("role", mcRole.ID), zap.Error(err))
+	}
+
+	// send intro message
+	if _, err := d.discord.ChannelMessageSend(ch.ID, fmt.Sprintf("This channel was created by <@%s>. To add more people to this channel type `!invite @username`.", event.Author.ID)); err != nil {
+		Logger.Error("unable to send intro message", zap.String("channel", ch.ID), zap.Error(err))
+	}
+
+}
+
+func (d DiscordAPI) newMemberChannel(channelName string) (*discordgo.Channel, error) {
+	channelData := discordgo.GuildChannelCreateData{
+		Name:     channelName,
+		ParentID: memberCategoryID,
+		Type:     discordgo.ChannelTypeGuildText,
+	}
+	return d.discord.GuildChannelCreateComplex(d.Config.GuildId, channelData)
+}
+
+// checkTextChannelPresenceByName checks if a channel exists in the given category and returns true and the id of the channel if it exists
+func (d DiscordAPI) checkTextChannelPresenceByName(categoryID, channelName string) (bool, string) {
+	memberChannels := d.textChannelsInCategory(categoryID)
+	for _, mc := range memberChannels {
+		if mc.Name == channelName {
+			return true, mc.ID
+		}
+	}
+
+	return false, ""
+}
+
+// newMemberChannelRole creates a new channel role and applies the appropriate permissions to the channel
+func (d DiscordAPI) newMemberChannelRole(channelName, channelID string) (*discordgo.Role, error) {
+	//create role
 	mcRole, err := d.discord.GuildRoleCreate(d.Config.GuildId)
 	if err != nil {
-		Logger.Error("unable to create member channel role", zap.Error(err))
-		return
+		return nil, fmt.Errorf("unable to create member channel role" + err.Error())
 	}
+
 	// set role name (discordgo doesn't let you do it when you create it, yet)
-	mcRole, err = d.discord.GuildRoleEdit(d.Config.GuildId, mcRole.ID, fmt.Sprintf(memberChannelRoleFmt, ch.Name), 0xFFFFFF, mcRole.Hoist, mcRole.Permissions, mcRole.Mentionable)
+	mcRole, err = d.discord.GuildRoleEdit(d.Config.GuildId, mcRole.ID, fmt.Sprintf(memberChannelRoleFmt, channelName), 0xFFFFFF, mcRole.Hoist, mcRole.Permissions, mcRole.Mentionable) //TODO change color?
 	if err != nil {
-		Logger.Error("unable to edit role", zap.String("channel", ch.Name), zap.String("roleID", mcRole.ID), zap.Error(err))
+		return nil, fmt.Errorf("unable to edit role %s: %s", mcRole.ID, err.Error())
 	} else {
 		Logger.Info("created new role", zap.String("id", mcRole.ID), zap.String("name", mcRole.Name))
 	}
@@ -85,32 +122,13 @@ func (d *DiscordAPI) tempChannelCommandHandler(s *discordgo.Session, event *disc
 		},
 	}
 
-	/*if verifiedRole != "" { // it's true now, but sometimes it might not be (dev/testing)
-		po = append(po, &discordgo.PermissionOverwrite{
-			ID:    verifiedRole, //verified read only
-			Type:  "role",
-			Allow: 0x00000400,
-		})
-	}*/
-	_, err = d.discord.ChannelEditComplex(ch.ID, &discordgo.ChannelEdit{
-		PermissionOverwrites: po,
-	})
+	// apply permissions
+	_, err = d.discord.ChannelEditComplex(channelID, &discordgo.ChannelEdit{PermissionOverwrites: po})
 	if err != nil {
-		Logger.Error("Unable to set permissions on channel", zap.String("channel", ch.Name), zap.String("role", mcRole.ID), zap.Error(err))
-		return
+		return nil, fmt.Errorf("unable to set permissions for channel role %s: %s", channelName, err.Error())
 	}
 
-	// add role to user
-	user := event.Author.ID
-	if err := d.discord.GuildMemberRoleAdd(d.Config.GuildId, user, mcRole.ID); err != nil {
-		Logger.Error("invite - unable to add role", zap.String("user", user), zap.String("role", mcRole.ID), zap.Error(err))
-	}
-
-	// send intro message
-	if _, err := d.discord.ChannelMessageSend(ch.ID, fmt.Sprintf("This channel was created by <@%s>. To add more people to this channel type `!invite @username`.", event.Author.ID)); err != nil {
-		Logger.Error("unable to send intro message", zap.String("channel", ch.ID), zap.Error(err))
-	}
-
+	return mcRole, nil
 }
 
 func (d *DiscordAPI) inviteTempChannelHandler(s *discordgo.Session, event *discordgo.MessageCreate) {
