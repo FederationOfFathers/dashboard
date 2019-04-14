@@ -14,6 +14,9 @@ const leaveCommand = "!leave"
 
 const memberCategoryID = "440865911910563861" //TODO config?
 const memberChannelRoleFmt = "mc_%s"
+const channelAssignName = "channel-assign"
+const joinMemberChannelEmoji = "✅"
+const leaveMemberChannelEmoji = "🛑"
 
 // !channel channel_name
 func (d *DiscordAPI) tempChannelCommandHandler(s *discordgo.Session, event *discordgo.MessageCreate) {
@@ -139,11 +142,14 @@ func (d DiscordAPI) addMemberChannelAssigner(channelID string) error {
 		return fmt.Errorf("cannot create assignment message %s", err.Error())
 	}
 
-	err = d.discord.MessageReactionAdd(d.memberChannelAssignID, msg.ID, "✅")
-	err = d.discord.MessageReactionAdd(d.memberChannelAssignID, msg.ID, "🛑")
-	if err != nil {
-		return fmt.Errorf("unable to add reactions for channel %s: %s", channelID, err.Error())
-	}
+	go func() {
+		err = d.discord.MessageReactionAdd(d.memberChannelAssignID, msg.ID, joinMemberChannelEmoji)
+		err = d.discord.MessageReactionAdd(d.memberChannelAssignID, msg.ID, leaveMemberChannelEmoji)
+		if err != nil {
+			Logger.Error("unable to add reactions for channel", zap.String("channel", channelID), zap.Error(err))
+		}
+	}()
+
 	return nil
 }
 
@@ -386,10 +392,68 @@ func (d DiscordAPI) handleMemberChannelRole(s *discordgo.Session, event *discord
 		return
 	}
 
-	// add role
-	if err := d.discord.GuildMemberRoleAdd(d.Config.GuildId, userID, role.ID); err != nil {
-		Logger.Error("mc role add: unable to add role", zap.String("user", userID), zap.String("role", role.Name), zap.String("roleID", role.ID), zap.Error(err))
+	switch event.Emoji.Name {
+	case joinMemberChannelEmoji:
+		// add role
+		if err := d.discord.GuildMemberRoleAdd(d.Config.GuildId, userID, role.ID); err != nil {
+			Logger.Error("mc role add: unable to add role", zap.String("user", userID), zap.String("role", role.Name), zap.String("roleID", role.ID), zap.Error(err))
+			return
+		}
+		d.removeReaction(event.ChannelID, event.MessageID, joinMemberChannelEmoji, event.UserID)
+	case leaveMemberChannelEmoji:
+		// remove role
+		if err := d.discord.GuildMemberRoleRemove(d.Config.GuildId, userID, role.ID); err != nil {
+			Logger.Error("mc role add: unable to add role", zap.String("user", userID), zap.String("role", role.Name), zap.String("roleID", role.ID), zap.Error(err))
+			return
+		}
+		d.removeReaction(event.ChannelID, event.MessageID, leaveMemberChannelEmoji, event.UserID)
+	}
+
+}
+
+func (d DiscordAPI) removeReaction(channelID, messageID, emojiID, userID string) {
+	// remove the users reaction. If the add/remove failed, they can click it again to re-trigger
+	err := d.discord.MessageReactionRemove(
+		channelID,
+		messageID,
+		emojiID,
+		userID,
+	)
+
+	if err != nil {
+		Logger.Error("could not remove reaction from message",
+			zap.String("user", userID),
+			zap.String("emoji", emojiID),
+			zap.Error(err))
+	}
+}
+
+func (d DiscordAPI) handleMemberChannelRoleRemoval(s *discordgo.Session, event *discordgo.MessageReactionRemove) {
+	msg, err := d.discord.ChannelMessage(event.ChannelID, event.MessageID)
+	if err != nil {
+		Logger.Error("Unable to get message", zap.Error(err))
 		return
 	}
 
+	userID := event.UserID
+
+	channelID := channelIDFromChannelLink(msg.Content)
+	ch, err := d.discord.Channel(channelID)
+	if err != nil {
+		Logger.Error("mc role remove: unable to add role", zap.Error(err), zap.String("channel", msg.Content))
+		return
+	}
+
+	// get role
+	role, err := d.FindGuildRoleByName(fmt.Sprintf(memberChannelRoleFmt, ch.Name))
+	if err != nil {
+		Logger.Error("mc role remove: unable to find channel role", zap.String("channel_name", ch.Name), zap.Error(err))
+		return
+	}
+
+	// remove role
+	if err := d.discord.GuildMemberRoleRemove(d.Config.GuildId, userID, role.ID); err != nil {
+		Logger.Error("mc role remove: unable to add role", zap.String("user", userID), zap.String("role", role.Name), zap.String("roleID", role.ID), zap.Error(err))
+		return
+	}
 }

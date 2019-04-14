@@ -42,7 +42,6 @@ func (d DiscordAPI) roleAssignmentHandler(s *discordgo.Session, event *discordgo
 		d.handleMemberChannelRole(s, event)
 	}
 
-
 }
 
 func (d DiscordAPI) handleConsoleRoles(s *discordgo.Session, event *discordgo.MessageReactionAdd) {

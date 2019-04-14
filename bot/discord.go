@@ -179,7 +179,7 @@ func (d *DiscordAPI) teamCommandHandler(s *discordgo.Session, event *discordgo.M
 }
 
 func (d DiscordAPI) sendTeamToolLink(m *discordgo.MessageCreate) {
-	d.discord.ChannelMessageSend(m.ChannelID, "FoF Team Tool -> https://ui.fofgaming.com")
+	_,_ = d.discord.ChannelMessageSend(m.ChannelID, "FoF Team Tool -> https://ui.fofgaming.com")
 }
 
 // FindIDByUsername searches the server for a user with the specified username. Returns the ID and username
