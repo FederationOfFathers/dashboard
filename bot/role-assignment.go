@@ -24,11 +24,8 @@ type DiscordRoleCfg struct {
 }
 
 func (d *DiscordAPI) StartRoleHandlers() {
-	d.listRoles()
 	d.clearRoleChannel()
 	d.createRoleMessages()
-	d.discord.AddHandler(d.roleAssignmentHandler)
-	Logger.Info("Role assignment handler started")
 }
 
 func (d DiscordAPI) roleAssignmentHandler(s *discordgo.Session, event *discordgo.MessageReactionAdd) {
@@ -38,6 +35,16 @@ func (d DiscordAPI) roleAssignmentHandler(s *discordgo.Session, event *discordgo
 		return
 	}
 
+	switch event.ChannelID {
+	case d.Config.RoleCfg.ChannelId:
+		d.handleConsoleRoles(s, event)
+	case d.memberChannelAssignID:
+		d.handleMemberChannelRole(s, event)
+	}
+
+}
+
+func (d DiscordAPI) handleConsoleRoles(s *discordgo.Session, event *discordgo.MessageReactionAdd) {
 	// only handle if the message is one we have configured
 	if roles, ok := d.assignmentMsgs[event.MessageID]; ok {
 
@@ -48,38 +55,7 @@ func (d DiscordAPI) roleAssignmentHandler(s *discordgo.Session, event *discordgo
 		}
 
 		if roleId, ok := roles[emojiId]; ok {
-			// get the user from the server/guild
-			member, err := d.discord.GuildMember(d.Config.GuildId, event.UserID)
-			if err != nil {
-				Logger.Error("Unable to get member", zap.Error(err))
-				return
-			}
-
-			userHadRole := false
-			// if the member has the mapped role, remove it
-			for _, id := range member.Roles {
-				if id == roleId {
-					d.removeRoleFromUser(event.UserID, roleId)
-					userHadRole = true // true, even if an attempt was made and failed
-				}
-			}
-
-			// if the member does not have the mapped role, add it
-			if !userHadRole {
-				d.addRoleToUser(event.UserID, roleId)
-			}
-
-			// DM the user the confirmation
-			role, err := d.FindGuildRole(roleId)
-			if err != nil {
-				Logger.Error("Unable to find role", zap.Error(err))
-			}
-			if userHadRole {
-				d.SendDM(event.UserID, fmt.Sprintf("The %s role has been removed", role.Name))
-			} else {
-				d.SendDM(event.UserID, fmt.Sprintf("You now have the %s role!", role.Name))
-			}
-
+			d.assignRoleToUser(event.UserID, roleId)
 		}
 
 		// remove the users reaction. If the add/remove failed, they can click it again to re-trigger
@@ -97,7 +73,40 @@ func (d DiscordAPI) roleAssignmentHandler(s *discordgo.Session, event *discordgo
 				zap.Error(err))
 		}
 	}
+}
 
+func (d *DiscordAPI) assignRoleToUser(userID, roleID string ) {
+	// get the user from the server/guild
+	member, err := d.discord.GuildMember(d.Config.GuildId, userID)
+	if err != nil {
+		Logger.Error("Unable to get member", zap.Error(err))
+		return
+	}
+
+	userHadRole := false
+	// if the member has the mapped role, remove it
+	for _, id := range member.Roles {
+		if id == roleID {
+			d.removeRoleFromUser(userID, roleID)
+			userHadRole = true // true, even if an attempt was made and failed
+		}
+	}
+
+	// if the member does not have the mapped role, add it
+	if !userHadRole {
+		d.addRoleToUser(userID, roleID)
+	}
+
+	// DM the user the confirmation
+	role, err := d.FindGuildRole(roleID)
+	if err != nil {
+		Logger.Error("Unable to find role", zap.Error(err))
+	}
+	if userHadRole {
+		d.SendDM(userID, fmt.Sprintf("The %s role has been removed", role.Name))
+	} else {
+		d.SendDM(userID, fmt.Sprintf("You now have the %s role!", role.Name))
+	}
 }
 
 // removes all messages entered by this bot in the channel. Uses the ClientID of the bot/app
@@ -157,41 +166,4 @@ func (d *DiscordAPI) createRoleMessages() {
 	}
 }
 
-func (d DiscordAPI) addRoleToUser(userId string, roleId string) {
-	err := d.discord.GuildMemberRoleAdd(d.Config.GuildId, userId, roleId)
-	if err != nil {
-		Logger.Error("could not add role",
-			zap.String("userId", userId),
-			zap.String("roleId", roleId),
-			zap.Error(err))
-	} else {
-		Logger.Info("added role to user",
-			zap.String("userId", userId),
-			zap.String("roleId", roleId),
-		)
-	}
-}
 
-func (d DiscordAPI) removeRoleFromUser(userId string, roleId string) {
-	err := d.discord.GuildMemberRoleRemove(d.Config.GuildId, userId, roleId)
-	if err != nil {
-		Logger.Error("could not remove role", zap.Error(err))
-	} else {
-		Logger.Info("removed role from user",
-			zap.String("userId", userId),
-			zap.String("roleId", roleId),
-		)
-	}
-}
-func (d *DiscordAPI) listRoles() {
-	roles, err := d.discord.GuildRoles(d.Config.GuildId)
-
-	if err != nil {
-		Logger.Error("Could not get roles", zap.Error(err))
-		return
-	}
-
-	for i, role := range roles {
-		Logger.Info(fmt.Sprintf("Role %d", i), zap.Any("role", role))
-	}
-}
