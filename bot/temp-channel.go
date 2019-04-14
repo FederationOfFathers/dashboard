@@ -61,7 +61,7 @@ func (d *DiscordAPI) tempChannelCommandHandler(s *discordgo.Session, event *disc
 	}
 
 	// send intro message
-	if _, err := d.discord.ChannelMessageSend(ch.ID, fmt.Sprintf("This channel was created by <@%s>. To add more people to this channel type `!invite @username`.", event.Author.ID)); err != nil {
+	if _, err := d.discord.ChannelMessageSend(ch.ID, fmt.Sprintf("This channel was created by <@%s>.\nTo add more people to this channel type `!invite @username`.\nType `!leave` in this channel to be removed.", event.Author.ID)); err != nil {
 		Logger.Error("unable to send intro message", zap.String("channel", ch.ID), zap.Error(err))
 	}
 
@@ -338,6 +338,18 @@ func (d *DiscordAPI) setChannelAssignMessage() {
 
 	// remove all channel messages //todo need to redo
 	d.clearChannelMessages(assignChannel.ID)
+
+	introMessage := "Welcome to member channels.\n" + "" +
+					"* To join a channel click the ✅ below a channel.\n" +
+					"* Click the 🛑 to leave the channel.\n" +
+					"* To create a new channel, type `!channel <channel_name>` with no spaces in the channel name. This can be done in any channel with FoF Bot, like <#%s>\n" +
+					"* Channels are auto deleted after 48 hours of inactivity\n" +
+					"---------------------------------------------------------------------------"
+
+	d.discord.ChannelMessageSend(
+		d.memberChannelAssignID,
+		fmt.Sprintf(introMessage, d.Config.GuildId),
+	)
 
 	// create new messages
 	for _, xch := range memberChannels {
