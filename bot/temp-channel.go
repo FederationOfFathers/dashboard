@@ -30,7 +30,7 @@ func (d *DiscordAPI) tempChannelCommandHandler(s *discordgo.Session, event *disc
 		return
 	}
 
-	newChannelName := fields[1]
+	newChannelName := strings.ToLower(fields[1])
 
 	//check if channel exists
 	if ok, chID := d.checkTextChannelPresenceByName(memberCategoryID, newChannelName); ok {
