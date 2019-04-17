@@ -269,6 +269,11 @@ func (d *DiscordAPI) purgeOldTempChannels() {
 			continue
 		}
 
+		// skip the channel assign channel
+		if ch.Name == channelAssignName {
+			continue
+		}
+
 		// get last message in channel
 		lastMessage, err := d.discord.ChannelMessage(ch.ID, ch.LastMessageID)
 		if err != nil {
