@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/bwmarrin/discordgo"
 	"go.uber.org/zap"
+	"sort"
 	"strings"
 	"time"
 )
@@ -128,7 +129,7 @@ func (d DiscordAPI) newMemberChannelRole(channelName, channelID string) (*discor
 	}
 
 	// apply permissions
-	_, err = d.discord.ChannelEditComplex(channelID, &discordgo.ChannelEdit{PermissionOverwrites: po})
+	_, err = d.discord.ChannelEditComplex(channelID, &discordgo.ChannelEdit{PermissionOverwrites: po, Position: 9})
 	if err != nil {
 		return nil, fmt.Errorf("unable to set permissions for channel role %s: %s", channelName, err.Error())
 	}
@@ -255,6 +256,9 @@ func (d *DiscordAPI) mindTempChannels() {
 func (d *DiscordAPI) purgeOldTempChannels() {
 
 	memberChannels := d.textChannelsInCategory(memberCategoryID)
+	sort.Slice(memberChannels, func(i, j int) bool {
+		return memberChannels[i].Name < memberChannels[j].Name
+	})
 
 	for _, channel := range memberChannels {
 		// get channel data
@@ -338,6 +342,7 @@ func (d *DiscordAPI) setChannelAssignMessage() {
 
 	if assignChannel == nil || assignChannel.ID == ""{
 		Logger.Warn("unable to locate channel-assign channel")
+
 		return
 	}
 
