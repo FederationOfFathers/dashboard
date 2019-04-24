@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/bwmarrin/discordgo"
 	"go.uber.org/zap"
+	"sort"
 	"strings"
 	"time"
 )
@@ -30,7 +31,7 @@ func (d *DiscordAPI) tempChannelCommandHandler(s *discordgo.Session, event *disc
 		return
 	}
 
-	newChannelName := fields[1]
+	newChannelName := strings.ToLower(fields[1])
 
 	//check if channel exists
 	if ok, chID := d.checkTextChannelPresenceByName(memberCategoryID, newChannelName); ok {
@@ -121,14 +122,14 @@ func (d DiscordAPI) newMemberChannelRole(channelName, channelID string) (*discor
 			Deny: 0x00000400,
 		},
 		{
-			ID:    d.Config.ClientId,
+			ID:    d.Config.ClientId, // bot permissions
 			Type:  "member",
-			Allow: 0x00000040 + 0x00000800 + 0x00000400 + 0x00004000 + 0x00008000 + 0x00010000 + 0x00040000,
+			Allow: 0x00000040 + 0x00000800 + 0x00000400 + 0x00004000 + 0x00008000 + 0x00010000 + 0x00040000 + 0x00000010,
 		},
 	}
 
 	// apply permissions
-	_, err = d.discord.ChannelEditComplex(channelID, &discordgo.ChannelEdit{PermissionOverwrites: po})
+	_, err = d.discord.ChannelEditComplex(channelID, &discordgo.ChannelEdit{PermissionOverwrites: po, Position: 9})
 	if err != nil {
 		return nil, fmt.Errorf("unable to set permissions for channel role %s: %s", channelName, err.Error())
 	}
@@ -255,6 +256,9 @@ func (d *DiscordAPI) mindTempChannels() {
 func (d *DiscordAPI) purgeOldTempChannels() {
 
 	memberChannels := d.textChannelsInCategory(memberCategoryID)
+	sort.Slice(memberChannels, func(i, j int) bool {
+		return memberChannels[i].Name < memberChannels[j].Name
+	})
 
 	for _, channel := range memberChannels {
 		// get channel data
@@ -266,6 +270,11 @@ func (d *DiscordAPI) purgeOldTempChannels() {
 
 		// skip non text channels
 		if ch.Type != discordgo.ChannelTypeGuildText {
+			continue
+		}
+
+		// skip the channel assign channel
+		if ch.Name == channelAssignName {
 			continue
 		}
 
@@ -306,6 +315,7 @@ func (d *DiscordAPI) purgeOldTempChannels() {
 				Logger.Info("deleted channel", zap.String("channel", ch.ID), zap.String("name", ch.Name))
 				if err := d.removeMemberChannelAssigner(ch.ID); err != nil {
 					Logger.Error("unable to delete channel assign message", zap.Error(err))
+					continue
 				}
 			}
 
@@ -333,6 +343,7 @@ func (d *DiscordAPI) setChannelAssignMessage() {
 
 	if assignChannel == nil || assignChannel.ID == ""{
 		Logger.Warn("unable to locate channel-assign channel")
+
 		return
 	}
 
