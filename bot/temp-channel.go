@@ -122,9 +122,9 @@ func (d DiscordAPI) newMemberChannelRole(channelName, channelID string) (*discor
 			Deny: 0x00000400,
 		},
 		{
-			ID:    d.Config.ClientId,
+			ID:    d.Config.ClientId, // bot permissions
 			Type:  "member",
-			Allow: 0x00000040 + 0x00000800 + 0x00000400 + 0x00004000 + 0x00008000 + 0x00010000 + 0x00040000,
+			Allow: 0x00000040 + 0x00000800 + 0x00000400 + 0x00004000 + 0x00008000 + 0x00010000 + 0x00040000 + 0x00000010,
 		},
 	}
 
@@ -315,6 +315,7 @@ func (d *DiscordAPI) purgeOldTempChannels() {
 				Logger.Info("deleted channel", zap.String("channel", ch.ID), zap.String("name", ch.Name))
 				if err := d.removeMemberChannelAssigner(ch.ID); err != nil {
 					Logger.Error("unable to delete channel assign message", zap.Error(err))
+					continue
 				}
 			}
 
