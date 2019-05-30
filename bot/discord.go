@@ -2,7 +2,6 @@ package bot
 
 import (
 	"fmt"
-	"strconv"
 	"strings"
 	"time"
 
@@ -89,7 +88,7 @@ func (d *DiscordAPI) verifiedEventsHandler(s *discordgo.Session, event *discordg
 	if len(fields) < 1 {
 		return
 	}
-	
+
 	switch fields[0] {
 	case channelCommand:
 		d.tempChannelCommandHandler(s, event)
@@ -179,7 +178,7 @@ func (d *DiscordAPI) teamCommandHandler(s *discordgo.Session, event *discordgo.M
 }
 
 func (d DiscordAPI) sendTeamToolLink(m *discordgo.MessageCreate) {
-	_,_ = d.discord.ChannelMessageSend(m.ChannelID, "FoF Team Tool -> https://ui.fofgaming.com")
+	_, _ = d.discord.ChannelMessageSend(m.ChannelID, "FoF Team Tool -> https://ui.fofgaming.com")
 }
 
 // FindIDByUsername searches the server for a user with the specified username. Returns the ID and username
@@ -311,65 +310,59 @@ func (d DiscordAPI) PostStreamMessage(sm messaging.StreamMessage) error {
 	return err
 }
 
+// PostNewEventMessage
 func (d *DiscordAPI) PostNewEventMessage(e *db.Event) error {
+
+	host := e.Host()
+	if host == "" {
+		host = "Someone"
+	}
+
+	return d.postEventMessage(e, fmt.Sprintf("🌟 %s has created a new event", host))
+
+}
+
+// PostJoinEventMessage sends a new message to Discord when a user joins an event
+func (d *DiscordAPI) PostJoinEventMessage(e *db.Event, member string) error {
+
+	return d.postEventMessage(e, fmt.Sprintf("🔹 %s has joined an event", member))
+
+}
+
+func (d *DiscordAPI) postEventMessage(e *db.Event, title string) error {
 	if d.discord == nil {
 		return fmt.Errorf("discord API not connected")
 	}
-	var host string
 	var members []string
 	for _, eMember := range e.Members {
 		m, err := DB.MemberByID(eMember.MemberID)
 		if err != nil {
 			Logger.Error("unable to get member", zap.Int("id", eMember.MemberID), zap.Error(err))
 		}
-		if eMember.Type == db.EventMemberTypeHost {
-			host = m.Name
-		}
 		members = append(members, m.Name)
 	}
 
 	loc, _ := time.LoadLocation("America/New_York") // show times in EST
 
-	openSpots := e.Need - len(members)
-
 	messageEmbed := discordgo.MessageEmbed{
-		Title:       fmt.Sprintf("%s has created a new event", host),
-		Description: e.Title,
+		Title:       title,
+		Description: fmt.Sprintf("[***%s*** [%s]](https://ui.fofgaming.com)\ngo to [https://ui.fofgaming.com](https://ui.fofgaming.com) to join, find more events, or create your own", e.Title, e.When.In(loc).Format("1/2, 3:04 PM MST")),
 		Color:       0x007BFF,
 		Fields: []*discordgo.MessageEmbedField{
 			{
-				Name:   "Date",
-				Value:  e.When.In(loc).Format("1/2, 15:04 PM MST"),
-				Inline: true,
-			},
-			{
-				Name:   "Players Needed",
-				Value:  strconv.Itoa(e.Need),
-				Inline: true,
-			},
-			{
-				Name:   "Open Spots",
-				Value:  strconv.Itoa(openSpots),
-				Inline: true,
-			},
-			{
-				Name:   fmt.Sprintf("Going (%d)", len(members)),
-				Value:  strings.Join(members, " "),
+				Name:   fmt.Sprintf("Members (%d/%d)", len(e.Members), e.Need),
+				Value:  strings.Join(members, ", "),
 				Inline: false,
 			},
 		},
-		Footer: &discordgo.MessageEmbedFooter{
-			Text: "Go to https://ui.fofgaming.com to join",
-		},
 	}
 
-	_, err := d.discord.ChannelMessageSendEmbed(e.EventChannel.ID, &messageEmbed)
+	_, err := d.discord.ChannelMessageSendEmbed(e.EventChannelID, &messageEmbed)
 	if err != nil {
-		Logger.Error("unable to send discord message", zap.Error(err), zap.Any("message", messageEmbed))
+		Logger.Error("unable to send discord message", zap.Error(err), zap.Any("message", messageEmbed), zap.Any("event", e))
 	}
 
 	return err
-
 }
 
 func saveChannelsToDB(gc *GuildChannels) error {
