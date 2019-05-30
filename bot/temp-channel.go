@@ -54,7 +54,6 @@ func (d *DiscordAPI) tempChannelCommandHandler(s *discordgo.Session, event *disc
 		Logger.Error("unable to create role for channel", zap.String("channel", newChannelName), zap.String("id", ch.ID), zap.Error(err))
 	}
 
-
 	// add role to user
 	user := event.Author.ID
 	if err := d.discord.GuildMemberRoleAdd(d.Config.GuildId, user, mcRole.ID); err != nil {
@@ -143,13 +142,11 @@ func (d DiscordAPI) addMemberChannelAssigner(channelID string) error {
 		return fmt.Errorf("cannot create assignment message %s", err.Error())
 	}
 
-	go func() {
-		err = d.discord.MessageReactionAdd(d.memberChannelAssignID, msg.ID, joinMemberChannelEmoji)
-		err = d.discord.MessageReactionAdd(d.memberChannelAssignID, msg.ID, leaveMemberChannelEmoji)
-		if err != nil {
-			Logger.Error("unable to add reactions for channel", zap.String("channel", channelID), zap.Error(err))
-		}
-	}()
+	err = d.discord.MessageReactionAdd(d.memberChannelAssignID, msg.ID, joinMemberChannelEmoji)
+	err = d.discord.MessageReactionAdd(d.memberChannelAssignID, msg.ID, leaveMemberChannelEmoji)
+	if err != nil {
+		Logger.Error("unable to add reactions for channel", zap.String("channel", channelID), zap.Error(err))
+	}
 
 	return nil
 }
@@ -298,13 +295,12 @@ func (d *DiscordAPI) purgeOldTempChannels() {
 			// find role id by name and delete
 			role, err := d.FindGuildRoleByName(fmt.Sprintf(memberChannelRoleFmt, channel.Name))
 			if err != nil {
-				Logger.Error("unable to find role", zap.Error(err), zap.String("channel", channel.Name ))
+				Logger.Error("unable to find role", zap.Error(err), zap.String("channel", channel.Name))
 			} else {
 				if err := d.discord.GuildRoleDelete(d.Config.GuildId, role.ID); err != nil {
 					Logger.Error("unable to delete role", zap.Error(err), zap.String("role", role.ID))
 				}
 			}
-
 
 			// channel delete
 			_, err = d.discord.ChannelDelete(ch.ID)
@@ -339,11 +335,13 @@ func (d *DiscordAPI) setChannelAssignMessage() {
 		}
 	}
 
+	// sort member channels
+	sort.Slice(memberChannels, func(i, j int) bool { return memberChannels[i].Name < memberChannels[j].Name })
+
 	fmt.Printf("memberChannels: %v\n", memberChannels)
 
-	if assignChannel == nil || assignChannel.ID == ""{
+	if assignChannel == nil || assignChannel.ID == "" {
 		Logger.Warn("unable to locate channel-assign channel")
-
 		return
 	}
 
@@ -351,11 +349,11 @@ func (d *DiscordAPI) setChannelAssignMessage() {
 	d.clearChannelMessages(assignChannel.ID)
 
 	introMessage := "Welcome to member channels.\n" + "" +
-					"* To join a channel click the ✅ below a channel.\n" +
-					"* Click the 🛑 to leave the channel.\n" +
-					"* To create a new channel, type `!channel <channel_name>` with no spaces in the channel name. This can be done in any channel with FoF Bot, like <#%s>\n" +
-					"* Channels are auto deleted after 48 hours of inactivity\n" +
-					"---------------------------------------------------------------------------"
+		"* To join a channel click the ✅ below a channel.\n" +
+		"* Click the 🛑 to leave the channel.\n" +
+		"* To create a new channel, type `!channel <channel_name>` with no spaces in the channel name. This can be done in any channel with FoF Bot, like <#%s>\n" +
+		"* Channels are auto deleted after 48 hours of inactivity\n" +
+		"---------------------------------------------------------------------------"
 
 	d.discord.ChannelMessageSend(
 		d.memberChannelAssignID,

@@ -48,7 +48,7 @@ type Event struct {
 	EventChannelID string       `gorm:"type:varchar(191);not null"`
 	GUID           string       `gorm:"type:varchar(191);not null;default:'';unique_index"`
 	Need           int
-	Members        []EventMember
+	Members        []*EventMember
 }
 
 type EventMember struct {
@@ -225,4 +225,19 @@ func (d *DB) PurgeOldEventChannels(t time.Duration) { //TODO fix this
 	now := time.Now()
 	now = now.Add(t)
 	d.Unscoped().Where("updated_at < ?", now).Delete(&EventChannel{})
+}
+
+func (e *Event) Host() string {
+	for _, eMember := range e.Members {
+		m, err := e.db.MemberByID(eMember.MemberID)
+		if err != nil {
+			Logger.Error("unable to get member", zap.Int("id", eMember.MemberID), zap.Error(err))
+			continue
+		}
+		if eMember.Type == EventMemberTypeHost {
+			return m.Name
+		}
+	}
+
+	return ""
 }
