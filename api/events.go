@@ -36,7 +36,7 @@ type Event struct {
 	When    *time.Time
 	Where   string
 	Title   string
-	Members []db.EventMember
+	Members []*db.EventMember
 	Need    int
 }
 type EventsResponse struct {
@@ -139,7 +139,7 @@ func init() {
 			event.Title = data.Title
 			event.Description = data.Description
 			event.Need = data.Need
-			event.Members = []db.EventMember{
+			event.Members = []*db.EventMember{
 				{MemberID: member.ID, Type: db.EventMemberTypeHost}, // creator is automatically the host
 			}
 			if t := time.Unix(int64(timestamp), 0); true {
@@ -200,11 +200,19 @@ func init() {
 				return
 			}
 
-			event.Members = append(event.Members, db.EventMember{MemberID: member.ID, Type: data.Type})
+			// get the event members, and add the new member
+			event.Members, err = DB.EventMembers(event)
+			if err != nil {
+				Logger.Error("could not load event members", zap.Any("event", event), zap.Error(err))
+			}
+			event.Members = append(event.Members, &db.EventMember{MemberID: member.ID, Type: data.Type})
+
 			if err := event.Save(); err != nil {
 				Logger.Error("unable to save event", zap.Any("event", event), zap.Error(err))
 				w.WriteHeader(http.StatusInternalServerError)
 			}
+
+			go messaging.SendJoinEventMessage(event, member)
 
 			w.WriteHeader(http.StatusOK)
 

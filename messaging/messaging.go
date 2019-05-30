@@ -35,6 +35,7 @@ func AddMsgAPI(msgApi MsgAPI) {
 type MsgAPI interface {
 	PostStreamMessage(sm StreamMessage) error
 	PostNewEventMessage(e *db.Event) error
+	PostJoinEventMessage(e *db.Event, member string) error
 	//PostMessageToChannel(channel string, message string)
 }
 
@@ -77,7 +78,16 @@ func SendNewEventMessage(e *db.Event) {
 	for _, msgApi := range msgApis {
 		err := msgApi.PostNewEventMessage(e)
 		if err != nil {
-			Logger.Error("unable to send event notice", zap.Any("event", e))
+			Logger.Error("unable to send event notice", zap.Any("event", e), zap.Error(err))
+		}
+	}
+}
+
+func SendJoinEventMessage(e *db.Event, member *db.Member) {
+	for _, msgApi := range msgApis {
+		err := msgApi.PostJoinEventMessage(e, member.Name)
+		if err != nil {
+			Logger.Error("unable to send event join message", zap.Any("event", e), zap.String("member", member.Discord), zap.Error(err))
 		}
 	}
 }
