@@ -257,6 +257,8 @@ func (d *DiscordAPI) purgeOldTempChannels() {
 		return memberChannels[i].Name < memberChannels[j].Name
 	})
 
+	channelsRemoved := 0
+
 	for _, channel := range memberChannels {
 		// get channel data
 		ch, err := d.discord.Channel(channel.ID)
@@ -305,17 +307,19 @@ func (d *DiscordAPI) purgeOldTempChannels() {
 			// channel delete
 			_, err = d.discord.ChannelDelete(ch.ID)
 			if err != nil {
-				Logger.Error("unable to delete member channel", zap.String("channel", ch.ID), zap.Error(err))
+				Logger.Error("unable to delete member channel", zap.String("channelName", ch.Name), zap.String("channelID", ch.ID), zap.Error(err))
 				continue
 			} else {
 				Logger.Info("deleted channel", zap.String("channel", ch.ID), zap.String("name", ch.Name))
-				if err := d.removeMemberChannelAssigner(ch.ID); err != nil {
-					Logger.Error("unable to delete channel assign message", zap.Error(err))
-					continue
-				}
+				channelsRemoved++
 			}
 
 		}
+	}
+
+	// reset channel assign message on deletion
+	if channelsRemoved > 0 {
+		d.setChannelAssignMessage()
 	}
 }
 
