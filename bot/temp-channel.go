@@ -406,14 +406,14 @@ func (d DiscordAPI) handleMemberChannelRole(s *discordgo.Session, event *discord
 	channelID := channelIDFromChannelLink(msg.Content)
 	ch, err := d.discord.Channel(channelID)
 	if err != nil {
-		Logger.Error("mc role add: unable to add role", zap.Error(err), zap.String("channel", msg.Content))
+		Logger.Error("unable to get mc channel info", zap.Error(err), zap.String("channel", msg.Content))
 		return
 	}
 
 	// get role
 	role, err := d.FindGuildRoleByName(fmt.Sprintf(memberChannelRoleFmt, ch.Name))
 	if err != nil {
-		Logger.Error("mc role add: unable to find channel role", zap.String("channel_name", ch.Name), zap.Error(err))
+		Logger.Error("unable to find channel role", zap.String("channel_name", ch.Name), zap.Error(err))
 		return
 	}
 
@@ -421,18 +421,18 @@ func (d DiscordAPI) handleMemberChannelRole(s *discordgo.Session, event *discord
 	case joinMemberChannelEmoji:
 		// add role
 		if err := d.discord.GuildMemberRoleAdd(d.Config.GuildId, userID, role.ID); err != nil {
-			Logger.Error("mc role add: unable to add role", zap.String("user", userID), zap.String("role", role.Name), zap.String("roleID", role.ID), zap.Error(err))
+			Logger.Error("unable to add role", zap.String("user", userID), zap.String("role", role.Name), zap.String("roleID", role.ID), zap.Error(err))
 			return
 		}
-		d.removeReaction(event.ChannelID, event.MessageID, joinMemberChannelEmoji, event.UserID)
 	case leaveMemberChannelEmoji:
 		// remove role
 		if err := d.discord.GuildMemberRoleRemove(d.Config.GuildId, userID, role.ID); err != nil {
-			Logger.Error("mc role add: unable to add role", zap.String("user", userID), zap.String("role", role.Name), zap.String("roleID", role.ID), zap.Error(err))
+			Logger.Error("unable to remove role", zap.String("user", userID), zap.String("role", role.Name), zap.String("roleID", role.ID), zap.Error(err))
 			return
 		}
-		d.removeReaction(event.ChannelID, event.MessageID, leaveMemberChannelEmoji, event.UserID)
 	}
+
+	d.removeReaction(event.ChannelID, event.MessageID, event.Emoji.Name, event.UserID)
 
 }
 
