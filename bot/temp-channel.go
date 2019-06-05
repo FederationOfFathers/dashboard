@@ -49,7 +49,7 @@ func (d *DiscordAPI) tempChannelCommandHandler(s *discordgo.Session, event *disc
 	}
 
 	//create role
-	mcRole, err := d.newMemberChannelRole(newChannelName, ch.ID)
+	mcRole, err := d.newMemberChannelRole(ch.Name, ch.ID)
 	if err != nil {
 		Logger.Error("unable to create role for channel", zap.String("channel", newChannelName), zap.String("id", ch.ID), zap.Error(err))
 	}
@@ -65,9 +65,7 @@ func (d *DiscordAPI) tempChannelCommandHandler(s *discordgo.Session, event *disc
 		Logger.Error("unable to send intro message", zap.String("channel", ch.ID), zap.Error(err))
 	}
 
-	if err := d.addMemberChannelAssigner(ch.ID); err != nil {
-		Logger.Error("unable to create new member channel assignment message", zap.String("channel", newChannelName), zap.Error(err))
-	}
+	d.setChannelAssignMessage()
 
 }
 
