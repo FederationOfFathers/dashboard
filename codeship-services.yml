@@ -1,5 +1,6 @@
 app:
   build:
     image: quay.io/fofgaming/dashboard
+    image_tag: {{.Branch}}
     dockerfile: Dockerfile
   encrypted_dockercfg_path: dockercfg.encrypted
