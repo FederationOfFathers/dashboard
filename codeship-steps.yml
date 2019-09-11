@@ -1,0 +1,5 @@
+- service: app
+  type: push
+  image_name: quay.io/fofgaming/dashboard
+  registry: quay.io
+  encrypted_dockercfg_path: dockercfg.encrypted
