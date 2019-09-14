@@ -47,7 +47,7 @@ func init() {
 	logger = logger.Named("main")
 
 	// ROLLBAR
-	rollbarCore := rollzap.NewRollbarCore(zapcore.InfoLevel)
+	rollbarCore := rollzap.NewRollbarCore(zapcore.WarnLevel)
 	if err := unmarshalConfig("cfg-rollbar.yml", &rollbarCfg); err != nil {
 		logger.Error("Unable to unmarshal rollbar config", zap.Error(err))
 	} else if rollbarCfg.Token != "" {
