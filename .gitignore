@@ -34,4 +34,3 @@ _testmain.go
 *.test
 *.prof
 .idea
-codeship.aes
