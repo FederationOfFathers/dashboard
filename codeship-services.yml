@@ -1,0 +1,5 @@
+app:
+  build:
+    image: quay.io/fofgaming/dashboard
+    dockerfile: Dockerfile
+  encrypted_dockercfg_path: dockercfg.encrypted

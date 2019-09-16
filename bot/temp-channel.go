@@ -2,11 +2,12 @@ package bot
 
 import (
 	"fmt"
-	"github.com/bwmarrin/discordgo"
-	"go.uber.org/zap"
 	"sort"
 	"strings"
 	"time"
+
+	"github.com/bwmarrin/discordgo"
+	"go.uber.org/zap"
 )
 
 const channelCommand = "!channel"
@@ -18,6 +19,7 @@ const memberChannelRoleFmt = "mc_%s"
 const channelAssignName = "channel-assign"
 const joinMemberChannelEmoji = "✅"
 const leaveMemberChannelEmoji = "🛑"
+const channelMaxIdleTime = time.Hour * 120 // TTL for a channel without new messages
 
 // !channel channel_name
 func (d *DiscordAPI) tempChannelCommandHandler(s *discordgo.Session, event *discordgo.MessageCreate) {
@@ -61,7 +63,7 @@ func (d *DiscordAPI) tempChannelCommandHandler(s *discordgo.Session, event *disc
 	}
 
 	// send intro message
-	if _, err := d.discord.ChannelMessageSend(ch.ID, fmt.Sprintf("This channel was created by <@%s>.\nTo add more people to this channel type `!invite @username`.\nType `!leave` in this channel to be removed.", event.Author.ID)); err != nil {
+	if _, err := d.discord.ChannelMessageSend(ch.ID, fmt.Sprintf("This channel was created by <@%s>.\nType `!leave` in this channel to be removed.", event.Author.ID)); err != nil {
 		Logger.Error("unable to send intro message", zap.String("channel", ch.ID), zap.Error(err))
 	}
 
@@ -290,7 +292,7 @@ func (d *DiscordAPI) purgeOldTempChannels() {
 		}
 
 		// if more than 2 days, delete
-		if time.Since(lastMessageTime) > (time.Hour * 48) {
+		if time.Since(lastMessageTime) > channelMaxIdleTime {
 
 			// find role id by name and delete
 			role, err := d.FindGuildRoleByName(fmt.Sprintf(memberChannelRoleFmt, channel.Name))
@@ -353,8 +355,8 @@ func (d *DiscordAPI) setChannelAssignMessage() {
 	introMessage := "Welcome to member channels.\n" + "" +
 		"* To join a channel click the ✅ below a channel.\n" +
 		"* Click the 🛑 to leave the channel.\n" +
-		"* To create a new channel, type `!channel <channel_name>` with no spaces in the channel name. This can be done in any channel with FoF Bot, like <#%s>\n" +
-		"* Channels are auto deleted after 48 hours of inactivity\n" +
+		"* To create a new channel, type `!channel channel_name` with no spaces in the channel name. This can be done in any channel with FoF Bot, like <#%s>\n" +
+		"* Channels are auto deleted after ~5 days of inactivity\n" +
 		"---------------------------------------------------------------------------"
 
 	d.discord.ChannelMessageSend(
