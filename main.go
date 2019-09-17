@@ -2,6 +2,7 @@
 package main
 
 import (
+	"fmt"
 	"os"
 
 	"io/ioutil"
@@ -124,9 +125,17 @@ func main() {
 
 	streams.Init(streamChannel)
 	if mindStreams {
-		logger.Info("Minding streams", zap.String("channel", streamChannel))
-		streams.MustTwitch(twitchClientID)
-		streams.Mind()
+		go func() {
+			defer func() {
+				if r := recover(); r != nil {
+					logger.Error("Unable to mind streams", zap.String("reocvered", fmt.Sprintf("%v", r)))
+				}
+			}()
+			logger.Info("Minding streams", zap.String("channel", streamChannel))
+			streams.MustTwitch(twitchClientID)
+			streams.Mind()
+		}()
+
 	} else {
 		streams.MindList()
 		logger.Info("Not minding streams")
