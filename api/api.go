@@ -11,6 +11,8 @@ import (
 	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
 	"github.com/gorilla/securecookie"
+	"github.com/honeycombio/beeline-go"
+	"github.com/honeycombio/beeline-go/wrappers/hnynethttp"
 	"go.uber.org/zap"
 )
 
@@ -31,34 +33,36 @@ func Run() {
 		"error starting API http server",
 		zap.String("listenOn", ListenOn),
 		zap.Error(http.ListenAndServe(ListenOn,
-			handlers.ProxyHeaders(
-				handlers.CompressHandler(
-					handlers.CombinedLoggingHandler(os.Stdout,
-						handlers.CORS(
-							handlers.AllowCredentials(),
-							handlers.AllowedHeaders([]string{
-								"Content-Type",
-								"Authorization",
-								"X-Requested-With",
-							}),
-							handlers.AllowedMethods([]string{
-								"GET",
-								"HEAD",
-								"PUT",
-								"POST",
-								"DELETE",
-							}),
-							handlers.AllowedOrigins([]string{
-								"http://ui.fofgaming.com",
-								"https://ui.fofgaming.com",
-								"http://dev.fofgaming.com",
-								"https://dev.fofgaming.com",
-								"http://127.0.0.1:3000",
-								"http://localhost:3000",
-								"http://127.0.0.1",
-								"http://localhost",
-							}),
-						)(Router),
+			hnynethttp.WrapHandler(
+				handlers.ProxyHeaders(
+					handlers.CompressHandler(
+						handlers.CombinedLoggingHandler(os.Stdout,
+							handlers.CORS(
+								handlers.AllowCredentials(),
+								handlers.AllowedHeaders([]string{
+									"Content-Type",
+									"Authorization",
+									"X-Requested-With",
+								}),
+								handlers.AllowedMethods([]string{
+									"GET",
+									"HEAD",
+									"PUT",
+									"POST",
+									"DELETE",
+								}),
+								handlers.AllowedOrigins([]string{
+									"http://ui.fofgaming.com",
+									"https://ui.fofgaming.com",
+									"http://dev.fofgaming.com",
+									"https://dev.fofgaming.com",
+									"http://127.0.0.1:3000",
+									"http://localhost:3000",
+									"http://127.0.0.1",
+									"http://localhost",
+								}),
+							)(Router),
+						),
 					),
 				),
 			),

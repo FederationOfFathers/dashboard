@@ -20,6 +20,7 @@ import (
 	"github.com/FederationOfFathers/dashboard/streams"
 	"github.com/apokalyptik/cfg"
 	"github.com/bearcherian/rollzap"
+	"github.com/honeycombio/beeline-go"
 	rollbar "github.com/rollbar/rollbar-go"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
@@ -37,6 +38,7 @@ var DB *db.DB
 var mysqlURI string
 var streamChannel = "-fof-dashboard"
 var mindStreams bool
+var honeycombToken string
 
 func init() {
 
@@ -96,10 +98,21 @@ func init() {
 
 	tcfg := cfg.New("cfg-twitch")
 	tcfg.StringVar(&twitchClientID, "clientID", "", "Twitch OAuth key")
+
+	hcfg := cfg.New("cfg-honeycomb")
+	hcfg.StringVar(&honeycombToken, "token", honeycombToken, "Token for Honeycomb project reporting")
 }
 
 func main() {
 	cfg.Parse()
+
+	if honeycombToken != "" {
+		logger.Info("setting up honeycomb")
+		beeline.Init(beeline.Config{
+			WriteKey: honeycombToken,
+			Dataset:  "dashboard",
+		})
+	}
 
 	store.Mind()
 
