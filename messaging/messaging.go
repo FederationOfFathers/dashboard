@@ -6,7 +6,6 @@ import (
 
 	"github.com/FederationOfFathers/dashboard/clients/mixer"
 	"github.com/FederationOfFathers/dashboard/db"
-	"github.com/knspriggs/go-twitch"
 	"go.uber.org/zap"
 )
 
@@ -39,23 +38,7 @@ type MsgAPI interface {
 	//PostMessageToChannel(channel string, message string)
 }
 
-func SendTwitchStreamMessage(t twitch.StreamType) {
-	var playing = t.Channel.Game
-	if playing == "" {
-		playing = "something"
-	}
-	sm := StreamMessage{
-		Platform:         "Twitch",
-		PlatformLogo:     "https://slack-imgs.com/?c=1&o1=wi16.he16.si.ip&url=https%3A%2F%2Fwww.twitch.tv%2Ffavicon.ico",
-		PlatformColor:    "#6441A4",
-		PlatformColorInt: 6570404,
-		Username:         t.Channel.DisplayName,
-		UserLogo:         t.Channel.Logo,
-		URL:              t.Channel.URL,
-		Game:             playing,
-		Description:      t.Channel.Status,
-		Timestamp:        time.Now().Format("01/02/2006 15:04 MST"),
-	}
+func SendTwitchStreamMessage(sm StreamMessage) {
 	postStreamMessageToAllApis(sm)
 }
 func SendMixerStreamMessage(m mixer.Mixer) {

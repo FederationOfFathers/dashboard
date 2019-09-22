@@ -145,7 +145,7 @@ func main() {
 				}
 			}()
 			logger.Info("Minding streams", zap.String("channel", streamChannel))
-			streams.MustTwitch(twitchClientID)
+			streams.Twitch(twitchClientID)
 			streams.Mind()
 		}()
 

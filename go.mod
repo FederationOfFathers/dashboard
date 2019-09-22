@@ -20,7 +20,6 @@ require (
 	github.com/felixge/httpsnoop v1.0.1 // indirect
 	github.com/go-sql-driver/mysql v1.3.0 // indirect
 	github.com/google/go-cmp v0.3.1 // indirect
-	github.com/google/go-querystring v0.0.0-20170111101155-53e6ce116135 // indirect
 	github.com/google/uuid v1.1.1 // indirect
 	github.com/gorilla/context v0.0.0-20160226214623-1ea25387ff6f // indirect
 	github.com/gorilla/handlers v1.3.0
@@ -33,12 +32,12 @@ require (
 	github.com/jinzhu/now v1.0.1 // indirect
 	github.com/klauspost/compress v1.8.4 // indirect
 	github.com/klauspost/cpuid v1.2.1 // indirect
-	github.com/knspriggs/go-twitch v0.0.0-20161228022109-960df600bf2c
 	github.com/kr/pretty v0.1.0 // indirect
 	github.com/lib/pq v1.2.0 // indirect
 	github.com/lusis/go-slackbot v0.0.0-20180109053408-401027ccfef5 // indirect
 	github.com/lusis/slack-test v0.0.0-20190426140909-c40012f20018 // indirect
 	github.com/mattn/go-sqlite3 v1.11.0 // indirect
+	github.com/nicklaw5/helix v0.5.2
 	github.com/nlopes/slack v0.0.0-20180905213137-8cf10c586222
 	github.com/nu7hatch/gouuid v0.0.0-20131221200532-179d4d0c4d8d
 	github.com/pborman/uuid v0.0.0-20170612153648-e790cca94e6c
