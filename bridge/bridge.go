@@ -30,11 +30,12 @@ func updateSeen() {
 	begin := time.Now()
 	var newSeen = map[string]time.Time{}
 	rsp, err := http.Get("http://fofgaming.com:8890/seen.json")
-	defer rsp.Body.Close()
 	if err != nil {
 		Logger.Error("fetching", zap.Error(err))
 		return
 	}
+	defer rsp.Body.Close()
+
 	err = json.NewDecoder(rsp.Body).Decode(&newSeen)
 	if err != nil {
 		Logger.Error("decoding", zap.Error(err))
