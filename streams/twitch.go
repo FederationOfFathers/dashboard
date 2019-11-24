@@ -40,7 +40,7 @@ func mindTwitch() {
 			twlog.Debug("not a twitch stream", zap.Int("id", stream.ID), zap.Int("member_id", stream.MemberID))
 			continue
 		}
-		twlog.Debug("minding twitch stream", zap.String("twithc id", stream.Twitch))
+		twlog.Debug("minding twitch stream", zap.String("Twitch id", stream.Twitch))
 		updateTwitch(stream)
 	}
 	twlog.Debug("end minding")
@@ -51,7 +51,7 @@ func updateTwitch(s *db.Stream) {
 	var foundStream = false
 
 	res, err := client.GetStreams(&helix.StreamsParams{
-		UserIDs: []string{s.Twitch},
+		UserLogins: []string{s.Twitch},
 	})
 	if err != nil {
 		if err.Error() != "json: cannot unmarshal number into Go value of type string" {
