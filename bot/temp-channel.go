@@ -24,20 +24,25 @@ const channelMaxIdleTime = time.Hour * 120 // TTL for a channel without new mess
 // !channel channel_name
 func (d *DiscordAPI) tempChannelCommandHandler(s *discordgo.Session, event *discordgo.MessageCreate) {
 
+	// check that we're listening to the right guild
 	if event.GuildID != d.Config.GuildId {
 		return
 	}
 
+	// make sure we have the right format for the command
+	// TODO we could provide an error message to the user :shrug:
 	fields := strings.Fields(event.Content)
 	if len(fields) <= 2 && fields[0] != channelCommand {
 		return
 	}
 
+	// the channel name is the first field. anything after the space is dropped
 	newChannelName := strings.ToLower(fields[1])
 
-	//check if channel exists
+	//check if channel already exists
 	if ok, chID := d.checkTextChannelPresenceByName(memberCategoryID, newChannelName); ok {
-		if _, err := d.discord.ChannelMessageSend(event.ChannelID, fmt.Sprintf("The channel <#%s> already exists. Check <#%s> for the list of channels.", chID, d.memberChannelAssignID)); err != nil {
+		message := fmt.Sprintf("The channel <#%s> already exists. Check <#%s> for the list of channels.", chID, d.memberChannelAssignID)
+		if _, err := d.discord.ChannelMessageSend(event.ChannelID, message); err != nil {
 			Logger.Error("unable to send intro message", zap.String("channel", event.ChannelID), zap.Error(err))
 		}
 		return
@@ -53,7 +58,17 @@ func (d *DiscordAPI) tempChannelCommandHandler(s *discordgo.Session, event *disc
 	//create role
 	mcRole, err := d.newMemberChannelRole(ch.Name, ch.ID)
 	if err != nil {
-		Logger.Error("unable to create role for channel", zap.String("channel", newChannelName), zap.String("id", ch.ID), zap.Error(err))
+		Logger.Error("unable to create role for temp channel", zap.String("channel", newChannelName), zap.String("id", ch.ID), zap.Error(err))
+		return
+	}
+
+	// update channel permissions
+	if err := d.updateMemberChannelPermissions(ch.Name, ch.ID, mcRole.ID); err != nil {
+		Logger.Error("unable to apply channel permissions",
+			zap.String("channelName", ch.Name),
+			zap.String("channelID", ch.ID),
+			zap.String("roleID", mcRole.ID),
+			zap.Error(err))
 	}
 
 	// add role to user
@@ -71,12 +86,26 @@ func (d *DiscordAPI) tempChannelCommandHandler(s *discordgo.Session, event *disc
 
 }
 
+// newMemberChannel creates a new member channel with default permissions denying everyone and allowing the bot
 func (d DiscordAPI) newMemberChannel(channelName string) (*discordgo.Channel, error) {
 	channelData := discordgo.GuildChannelCreateData{
 		Name:     channelName,
 		ParentID: memberCategoryID,
 		Type:     discordgo.ChannelTypeGuildText,
+		PermissionOverwrites: []*discordgo.PermissionOverwrite{
+			{
+				ID:   d.Config.GuildId, // deny everyone to view
+				Type: "role",
+				Deny: 0x00000400,
+			},
+			{
+				ID:    d.Config.ClientId, // bot permissions
+				Type:  "member",
+				Allow: 0x00000010 + 0x00000040 + 0x00000800 + 0x00000400 + 0x00004000 + 0x00008000 + 0x00010000 + 0x00040000,
+			},
+		},
 	}
+
 	return d.discord.GuildChannelCreateComplex(d.Config.GuildId, channelData)
 }
 
@@ -92,26 +121,12 @@ func (d DiscordAPI) checkTextChannelPresenceByName(categoryID, channelName strin
 	return false, ""
 }
 
-// newMemberChannelRole creates a new channel role and applies the appropriate permissions to the channel
-func (d DiscordAPI) newMemberChannelRole(channelName, channelID string) (*discordgo.Role, error) {
-	//create role
-	mcRole, err := d.discord.GuildRoleCreate(d.Config.GuildId)
-	if err != nil {
-		return nil, fmt.Errorf("unable to create member channel role" + err.Error())
-	}
-
-	// set role name (discordgo doesn't let you do it when you create it, yet)
-	mcRole, err = d.discord.GuildRoleEdit(d.Config.GuildId, mcRole.ID, fmt.Sprintf(memberChannelRoleFmt, channelName), 0xFFFFFF, mcRole.Hoist, mcRole.Permissions, mcRole.Mentionable) //TODO change color?
-	if err != nil {
-		return nil, fmt.Errorf("unable to edit role %s: %s", mcRole.ID, err.Error())
-	} else {
-		Logger.Info("created new role", zap.String("id", mcRole.ID), zap.String("name", mcRole.Name))
-	}
+func (d DiscordAPI) updateMemberChannelPermissions(channelName, channelID, channelRoleID string) error {
 
 	// add overwrite perm with role. see https://discordapp.com/developers/docs/topics/permissions
 	po := []*discordgo.PermissionOverwrite{
 		{
-			ID:    mcRole.ID, // allow the new role to send text
+			ID:    channelRoleID, // allow the new role to send text
 			Type:  "role",
 			Allow: 0x00000040 + 0x00000800 + 0x00000400 + 0x00004000 + 0x00008000 + 0x00010000 + 0x00040000,
 		},
@@ -128,9 +143,29 @@ func (d DiscordAPI) newMemberChannelRole(channelName, channelID string) (*discor
 	}
 
 	// apply permissions
-	_, err = d.discord.ChannelEditComplex(channelID, &discordgo.ChannelEdit{PermissionOverwrites: po, Position: 9})
+	_, err := d.discord.ChannelEditComplex(channelID, &discordgo.ChannelEdit{PermissionOverwrites: po, Position: 9})
 	if err != nil {
-		return nil, fmt.Errorf("unable to set permissions for channel role %s: %s", channelName, err.Error())
+		return fmt.Errorf("unable to set permissions for channel role %s: %s", channelName, err.Error())
+	}
+
+	return nil
+
+}
+
+// newMemberChannelRole creates a new channel role and applies the appropriate permissions to the channel
+func (d DiscordAPI) newMemberChannelRole(channelName, channelID string) (*discordgo.Role, error) {
+	//create role
+	mcRole, err := d.discord.GuildRoleCreate(d.Config.GuildId)
+	if err != nil {
+		return nil, fmt.Errorf("unable to create member channel role" + err.Error())
+	}
+
+	// set role name (discordgo doesn't let you do it when you create it, yet)
+	mcRole, err = d.discord.GuildRoleEdit(d.Config.GuildId, mcRole.ID, fmt.Sprintf(memberChannelRoleFmt, channelName), 0xFFFFFF, mcRole.Hoist, mcRole.Permissions, mcRole.Mentionable) //TODO change color?
+	if err != nil {
+		return nil, fmt.Errorf("unable to edit role %s: %s", mcRole.ID, err.Error())
+	} else {
+		Logger.Info("created new role", zap.String("id", mcRole.ID), zap.String("name", mcRole.Name))
 	}
 
 	return mcRole, nil
@@ -345,7 +380,7 @@ func (d *DiscordAPI) setChannelAssignMessage() {
 	fmt.Printf("memberChannels: %v\n", memberChannels)
 
 	if assignChannel == nil || assignChannel.ID == "" {
-		Logger.Warn("unable to locate channel-assign channel")
+		Logger.Warn("unable to locate channel-assign channel", zap.String("channelID", assignChannel.ID))
 		return
 	}
 
