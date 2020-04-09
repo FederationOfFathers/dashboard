@@ -80,6 +80,8 @@ github.com/mattn/go-sqlite3 v1.11.0 h1:LDdKkqtYlom37fkvqs8rMPFKAMe8+SgjbwZ6ex1/A
 github.com/mattn/go-sqlite3 v1.11.0/go.mod h1:FPy6KqzDD04eiIsT53CuJW3U88zkxoIYsOqkbpncsNc=
 github.com/nicklaw5/helix v0.5.2 h1:hHADgjBTjAXI2k1HH5rDXw1/8umkeWJViFaZc5I8ydQ=
 github.com/nicklaw5/helix v0.5.2/go.mod h1:nRcok4VLg8ONQYW/iXBZ24wcfiJjTlDbhgk0ZatOrUY=
+github.com/nicklaw5/helix v0.5.8 h1:RG1vV/XDI6Kc0V/KvoUzRb3Q/7rmAQvVuisfxxYg1ZY=
+github.com/nicklaw5/helix v0.5.8/go.mod h1:nRcok4VLg8ONQYW/iXBZ24wcfiJjTlDbhgk0ZatOrUY=
 github.com/nlopes/slack v0.0.0-20180905213137-8cf10c586222 h1:JkYXciz3sQY/EVnZ1g9rS9HoKePa9R8rUgJVX9WdSUk=
 github.com/nlopes/slack v0.0.0-20180905213137-8cf10c586222/go.mod h1:jVI4BBK3lSktibKahxBF74txcK2vyvkza1z/+rRnVAM=
 github.com/nu7hatch/gouuid v0.0.0-20131221200532-179d4d0c4d8d h1:VhgPp6v9qf9Agr/56bj7Y/xa04UccTW04VP0Qed4vnQ=
