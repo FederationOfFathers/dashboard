@@ -23,7 +23,7 @@ require (
 	github.com/google/uuid v1.1.1 // indirect
 	github.com/gorilla/context v0.0.0-20160226214623-1ea25387ff6f // indirect
 	github.com/gorilla/handlers v1.3.0
-	github.com/gorilla/mux v1.6.0
+	github.com/gorilla/mux v1.7.4
 	github.com/gorilla/securecookie v0.0.0-20160422134519-667fe4e3466a
 	github.com/honeycombio/beeline-go v0.4.5
 	github.com/honeycombio/libhoney-go v1.12.1 // indirect
