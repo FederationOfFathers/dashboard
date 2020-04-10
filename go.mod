@@ -40,7 +40,7 @@ require (
 	github.com/nu7hatch/gouuid v0.0.0-20131221200532-179d4d0c4d8d
 	github.com/pborman/uuid v0.0.0-20170612153648-e790cca94e6c
 	github.com/robfig/cron v1.0.0
-	github.com/rollbar/rollbar-go v1.0.2
+	github.com/rollbar/rollbar-go v1.2.0
 	github.com/speps/go-hashids v1.0.0
 	github.com/vmihailenco/msgpack v4.0.4+incompatible // indirect
 	go.uber.org/zap v1.14.1
