@@ -43,7 +43,7 @@ require (
 	github.com/rollbar/rollbar-go v1.0.2
 	github.com/speps/go-hashids v1.0.0
 	github.com/vmihailenco/msgpack v4.0.4+incompatible // indirect
-	go.uber.org/zap v1.14.1
+	go.uber.org/zap v1.15.0
 	golang.org/x/oauth2 v0.0.0-20190130055435-99b60b757ec1
 	gopkg.in/alexcesaro/statsd.v2 v2.0.0 // indirect
 	gopkg.in/check.v1 v1.0.0-20190902080502-41f04d3bba15 // indirect
