@@ -50,6 +50,7 @@ func updateTwitch(s *db.Stream) {
 	var client = twitchClient
 	var foundStream = false
 
+	// retrieve the stream by username
 	res, err := client.GetStreams(&helix.StreamsParams{
 		UserLogins: []string{s.Twitch},
 	})
@@ -71,6 +72,7 @@ func updateTwitch(s *db.Stream) {
 
 	if !foundStream {
 		var save bool
+		// clear out existing stream ID
 		if s.TwitchStreamID != "" {
 			s.TwitchStreamID = ""
 			save = true
@@ -84,7 +86,9 @@ func updateTwitch(s *db.Stream) {
 			save = true
 		}
 		if save {
-			s.Save()
+			if err := s.Save(); err != nil {
+				twlog.Error("could not save twitch stream", zap.Error(err))
+			}
 		}
 		return
 	}
@@ -97,7 +101,7 @@ func updateTwitch(s *db.Stream) {
 	}
 
 	var isRecent bool = time.Now().Unix()-s.TwitchStart <= 1800
-	streamID := fmt.Sprintf("%d", stream.ID)
+	streamID := fmt.Sprintf("%s", stream.ID)
 	postStreamMessage := true
 	if streamID == s.TwitchStreamID && s.TwitchGame == stream.GameID {
 		twlog.Debug("still streaming...", zap.String("twitch_user", s.Twitch), zap.String("game_id", stream.GameID))
@@ -129,7 +133,9 @@ func updateTwitch(s *db.Stream) {
 	}
 
 	s.TwitchGame = stream.GameID
-	s.Save()
+	if err := s.Save(); err != nil {
+		twlog.Error("unable to save stream data", zap.Any("stream", s), zap.Error(err))
+	}
 }
 
 func sendTwitchMessage(stream helix.Stream, game helix.Game) {

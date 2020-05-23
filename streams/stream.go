@@ -12,15 +12,8 @@ import (
 var Streams = []*db.Stream{}
 var lock sync.Mutex
 var Logger *zap.Logger
-var channel string
 
 var DB *db.DB
-
-func Init(notifySlackChannel string) error {
-	channel = notifySlackChannel
-	updated()
-	return nil
-}
 
 func updated() {
 	if s, err := DB.Streams(); err != nil {
@@ -34,38 +27,24 @@ func Mind() {
 	go mind()
 }
 
-func MindList() {
-	go func() {
-		uptimer := time.Tick(1 * time.Minute)
-		for {
-			select {
-			case <-uptimer:
-				updated()
-			}
+// starts the minder that checks and updates stream messages every minute
+func mind() {
+	updateAndMind()
+	minuteTicker := time.Tick(1 * time.Minute)
+	for {
+		select {
+		case <-minuteTicker:
+			updateAndMind()
 		}
-	}()
+	}
 }
 
-func mind() {
+// keeping all the updates together in order to avoid reading while writing
+func updateAndMind() {
+	updated()
 	mindYoutube()
 	mindTwitch()
 	mindMixer()
-	uptimer := time.Tick(1 * time.Minute)
-	twtimer := time.Tick(1 * time.Minute)
-	yttimer := time.Tick(1 * time.Minute)
-	bptimer := time.Tick(1 * time.Minute)
-	for {
-		select {
-		case <-uptimer:
-			updated()
-		case <-twtimer:
-			mindTwitch()
-		case <-yttimer:
-			mindYoutube()
-		case <-bptimer:
-			mindMixer()
-		}
-	}
 }
 
 func Owner(s *db.Stream) (*db.Member, error) {
@@ -106,7 +85,7 @@ func Add(kind, identifier, userID string) error {
 		updated()
 		return err
 	}
-	return fmt.Errorf("unknown kind!")
+	return fmt.Errorf("unknown kind '%s'", kind)
 }
 
 func Remove(memberID int, kind string) error {
