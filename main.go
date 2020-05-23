@@ -136,7 +136,6 @@ func main() {
 		messaging.AddMsgAPI(discordApi)
 	}
 
-	streams.Init(streamChannel)
 	if mindStreams {
 		go func() {
 			defer func() {
@@ -145,12 +144,13 @@ func main() {
 				}
 			}()
 			logger.Info("Minding streams", zap.String("channel", streamChannel))
-			streams.Twitch(twitchClientID)
+			if err := streams.Twitch(twitchClientID);err != nil {
+				logger.Error("unable to init Twitch client", zap.Error(err))
+			}
 			streams.Mind()
 		}()
 
 	} else {
-		streams.MindList()
 		logger.Info("Not minding streams")
 	}
 
