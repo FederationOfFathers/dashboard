@@ -49,7 +49,7 @@ func updateSeen() {
 	}
 }
 
-func init() {
+func Init() {
 	go updateSeen()
 	go func() {
 		t := time.Tick(time.Second * 30)

@@ -70,6 +70,9 @@ func init() {
 	bridge.Logger = logger.Named("bridge")
 	messaging.Logger = logger.Named("messaging")
 
+	// start the seen updater
+	bridge.Init()
+
 	scfg := cfg.New("cfg-slack")
 	scfg.StringVar(&slackAPIKey, "apiKey", slackAPIKey, "Slack API Key (env: SLACK_APIKEY)")
 	scfg.StringVar(&slackMessagingKey, "messagingKey", slackMessagingKey, "Slack Messaging API Key (env: SLACK_MESSAGINGAPIKEY)")
