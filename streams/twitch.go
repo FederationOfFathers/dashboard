@@ -68,7 +68,7 @@ func updateTwitch(s *db.Stream) {
 	case 1:
 		foundStream = true
 	case 0:
-		twlog.Debug("No active streams", zap.String("key", s.Twitch))
+		twlog.Info("No active streams", zap.String("key", s.Twitch))
 	default:
 		twlog.Error("Too many active streams", zap.String("key", s.Twitch))
 	}
