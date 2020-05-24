@@ -40,15 +40,10 @@ func ensureClientAccess() error {
 			return  err
 		}
 		twitchToken.token = token.Data.AccessToken
-		twitchToken.expires = time.Now().Add(time.Second * time.Duration(token.Data.ExpiresIn)
+		twitchToken.expires = time.Now().Add(time.Second * time.Duration(token.Data.ExpiresIn))
 		twitchClient.SetAppAccessToken(token.Data.AccessToken)
 	}
-}
-
-func MustTwitch(oauth string) {
-	if err := Twitch(oauth); err != nil {
-		panic(err)
-	}
+	return nil
 }
 
 type twitchStream helix.Stream
