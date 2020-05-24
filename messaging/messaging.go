@@ -76,6 +76,7 @@ func SendJoinEventMessage(e *db.Event, member *db.Member) {
 }
 
 func postStreamMessageToAllApis(sm StreamMessage) {
+	Logger.Info("sending stream message", zap.String("username", sm.Username), zap.String("platform", sm.Platform))
 	for _, msgApi := range msgApis {
 		err := msgApi.PostStreamMessage(sm)
 		if err != nil {

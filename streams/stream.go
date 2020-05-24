@@ -19,6 +19,7 @@ func updated() {
 	if s, err := DB.Streams(); err != nil {
 		Logger.Error("Error updating streams", zap.Error(err))
 	} else {
+		Logger.Info("streams updated", zap.Int("streams", len(s)))
 		Streams = s
 	}
 }
