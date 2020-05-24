@@ -35,6 +35,7 @@ type twitchStream helix.Stream
 func mindTwitch() {
 	twlog = Logger.Named("twitch")
 	twlog.Debug("begin minding")
+	var streamsCount int
 	for _, stream := range Streams {
 		if stream.Twitch == "" {
 			twlog.Debug("not a twitch stream", zap.Int("id", stream.ID), zap.Int("member_id", stream.MemberID))
@@ -42,7 +43,9 @@ func mindTwitch() {
 		}
 		twlog.Debug("minding twitch stream", zap.String("Twitch id", stream.Twitch))
 		updateTwitch(stream)
+		streamsCount++
 	}
+	twlog.Info("twitch streams updated", zap.Int("numStreams", streamsCount))
 	twlog.Debug("end minding")
 }
 
@@ -56,7 +59,7 @@ func updateTwitch(s *db.Stream) {
 	})
 	if err != nil {
 		if err.Error() != "json: cannot unmarshal number into Go value of type string" {
-			twlog.Error("error fetching stream", zap.String("key", s.Twitch), zap.Error(err))
+			twlog.Error("error fetching twitch stream", zap.String("key", s.Twitch), zap.Error(err))
 		}
 		return
 	}
@@ -65,7 +68,7 @@ func updateTwitch(s *db.Stream) {
 	case 1:
 		foundStream = true
 	case 0:
-		twlog.Debug("No active streams", zap.String("key", s.Twitch))
+		twlog.Info("No active streams", zap.String("key", s.Twitch))
 	default:
 		twlog.Error("Too many active streams", zap.String("key", s.Twitch))
 	}
@@ -129,6 +132,7 @@ func updateTwitch(s *db.Stream) {
 	}
 
 	if postStreamMessage {
+		twlog.Info("posting twistream message")
 		sendTwitchMessage(stream, game)
 	}
 
