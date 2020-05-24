@@ -28,6 +28,7 @@ import (
 )
 
 var twitchClientID = ""
+var twitchClientSecret = ""
 var slackAPIKey = "xox...."
 var slackMessagingKey = ""
 var discordCfg = bot.DiscordCfg{}
@@ -100,7 +101,8 @@ func init() {
 	dcfg.StringVar(&store.DBPath, "path", store.DBPath, "Path to the database file")
 
 	tcfg := cfg.New("cfg-twitch")
-	tcfg.StringVar(&twitchClientID, "clientID", "", "Twitch OAuth key")
+	tcfg.StringVar(&twitchClientID, "clientID", "", "Twitch Client ID")
+	tcfg.StringVar(&twitchClientSecret, "clientSecret", "", "Twitch Client Secret")
 
 	hcfg := cfg.New("cfg-honeycomb")
 	hcfg.StringVar(&honeycombToken, "token", honeycombToken, "Token for Honeycomb project reporting")
@@ -147,7 +149,7 @@ func main() {
 				}
 			}()
 			logger.Info("Minding streams", zap.String("channel", streamChannel))
-			if err := streams.Twitch(twitchClientID);err != nil {
+			if err := streams.Twitch(twitchClientID, twitchClientSecret);err != nil {
 				logger.Error("unable to init Twitch client", zap.Error(err))
 			}
 			streams.Mind()

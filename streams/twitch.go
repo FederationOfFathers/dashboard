@@ -15,19 +15,35 @@ var TwitchOAuthKey string
 
 var twitchClient *helix.Client
 
-func Twitch(clientID string) error {
+type token struct {
+	token string
+	expires time.Time
+}
+
+var twitchToken token
+
+func Twitch(clientID string, clientSecret string) error {
 	var err error
 	twitchClient, err = helix.NewClient(&helix.Options{
 		ClientID: clientID,
+		ClientSecret: clientSecret,
 	})
 	return err
 
 }
 
-func MustTwitch(oauth string) {
-	if err := Twitch(oauth); err != nil {
-		panic(err)
+func ensureClientAccess() error {
+	if twitchToken.expires.Unix() <= time.Now().Unix() {
+		twlog.Info("refreshing expired Twitch token")
+		token, err := twitchClient.GetAppAccessToken()
+		if err != nil {
+			return  err
+		}
+		twitchToken.token = token.Data.AccessToken
+		twitchToken.expires = time.Now().Add(time.Second * time.Duration(token.Data.ExpiresIn))
+		twitchClient.SetAppAccessToken(token.Data.AccessToken)
 	}
+	return nil
 }
 
 type twitchStream helix.Stream
@@ -51,6 +67,10 @@ func mindTwitch() {
 
 func updateTwitch(s *db.Stream) {
 	var client = twitchClient
+	if err := ensureClientAccess(); err != nil {
+		twlog.Error("unable to verify twitch client app token", zap.Error(err))
+		return
+	}
 	var foundStream = false
 
 	// retrieve the stream by username
@@ -61,6 +81,11 @@ func updateTwitch(s *db.Stream) {
 		if err.Error() != "json: cannot unmarshal number into Go value of type string" {
 			twlog.Error("error fetching twitch stream", zap.String("key", s.Twitch), zap.Error(err))
 		}
+		return
+	}
+
+	if res.ErrorStatus != 0 {
+		twlog.Error("twitch response returned an error", zap.Int("errorStatus", res.ErrorStatus), zap.String("error", fmt.Sprintf("%s: %s", res.Error, res.ErrorMessage)))
 		return
 	}
 
