@@ -61,7 +61,7 @@ func mindTwitch() {
 		updateTwitch(stream)
 		streamsCount++
 	}
-	twlog.Info("twitch streams updated", zap.Int("numStreams", streamsCount))
+	twlog.Debug("twitch streams updated", zap.Int("numStreams", streamsCount))
 	twlog.Debug("end minding")
 }
 
@@ -93,7 +93,7 @@ func updateTwitch(s *db.Stream) {
 	case 1:
 		foundStream = true
 	case 0:
-		twlog.Info("No active streams", zap.String("key", s.Twitch))
+		twlog.Debug("No active streams", zap.String("key", s.Twitch))
 	default:
 		twlog.Error("Too many active streams", zap.String("key", s.Twitch))
 	}
