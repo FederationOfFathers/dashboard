@@ -34,7 +34,7 @@ func Twitch(clientID string, clientSecret string) error {
 
 func ensureClientAccess() error {
 	if twitchToken.expires.Unix() <= time.Now().Unix() {
-		twlog.Info("refreshing expired twitch token")
+		twlog.Info("refreshing expired Twitch token")
 		token, err := twitchClient.GetAppAccessToken()
 		if err != nil {
 			return  err
