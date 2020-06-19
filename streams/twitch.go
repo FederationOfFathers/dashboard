@@ -151,9 +151,8 @@ func updateTwitch(s *db.Stream) {
 	})
 	if gerr != nil {
 		twlog.Error("could not get game data", zap.Error(err), zap.String("gameID", stream.GameID), zap.String("twitchUser", stream.UserName))
-	} else {
+	} else if len(gamesResponse.Data.Games) > 0 {
 		game = gamesResponse.Data.Games[0]
-
 	}
 
 	if postStreamMessage {
