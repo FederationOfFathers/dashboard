@@ -109,6 +109,13 @@ func init() {
 }
 
 func main() {
+
+	// panic recovery/reporting/logging
+	defer func(){
+		if err := recover(); err != nil {
+			logger.With(zap.Any("error", err)).Error("APPLICATION PANIC")
+		}
+	}()
 	cfg.Parse()
 
 	if honeycombToken != "" {
