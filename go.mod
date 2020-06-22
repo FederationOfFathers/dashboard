@@ -7,7 +7,7 @@ require (
 	github.com/apokalyptik/cfg v0.0.0-20160401174707-703f89116901
 	github.com/bearcherian/rollzap v1.0.2
 	github.com/boltdb/bolt v1.3.1
-	github.com/bwmarrin/discordgo v0.20.2
+	github.com/bwmarrin/discordgo v0.21.1
 	github.com/denisenkom/go-mssqldb v0.0.0-20190915052044-aa4949efa320 // indirect
 	github.com/dineshappavoo/basex v0.0.0-20160618072718-f35bafba529c
 	github.com/erikstmartin/go-testdb v0.0.0-20160219214506-8d10e4a1bae5 // indirect
