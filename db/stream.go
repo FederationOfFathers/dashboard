@@ -13,10 +13,6 @@ type Stream struct {
 	Youtube        string    `gorm:"type:varchar(191);not null;default:'';index"`
 	YoutubeStart   int64     `gorm:"type:bigint;not null;default:0"`
 	YoutubeStop    int64     `gorm:"type:bigint;not null;default:0"`
-	Beam           string    `gorm:"type:varchar(191);not null;default:'';index"`
-	BeamGame       string    `form:"type:varchar(191);not null;default:''"`
-	BeamStart      int64     `gorm:"type:bigint;not null;default:0"`
-	BeamStop       int64     `gorm:"type:bigint;not null;default:0"`
 	CreatedAt      time.Time `sql:"DEFAULT:current_timestamp"`
 	UpdatedAt      time.Time ``
 	db             *DB       `gorm:"-"`
@@ -46,7 +42,7 @@ func (d *DB) StreamByMemberID(memberID int) (*Stream, error) {
 
 func (d *DB) Streams() ([]*Stream, error) {
 	var s []*Stream
-	err := d.Find(&s, "beam != ? OR twitch != ? OR youtube != ?", "", "", "").Error
+	err := d.Find(&s, "twitch != ? OR youtube != ?", "", "", "").Error
 	for _, i := range s {
 		i.db = d
 	}

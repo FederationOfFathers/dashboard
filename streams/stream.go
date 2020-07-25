@@ -45,7 +45,6 @@ func updateAndMind() {
 	updated()
 	mindYoutube()
 	mindTwitch()
-	mindMixer()
 }
 
 func Owner(s *db.Stream) (*db.Member, error) {
@@ -61,15 +60,6 @@ func Add(kind, identifier, userID string) error {
 	case "twitch":
 		err := DB.Exec(
 			"INSERT INTO `streams` (`member_id`,`twitch`) VALUES (?,?) ON DUPLICATE KEY UPDATE `twitch`=?",
-			member.ID,
-			identifier,
-			identifier,
-		).Error
-		updated()
-		return err
-	case "beam":
-		err := DB.Exec(
-			"INSERT INTO `streams` (`member_id`,`beam`) VALUES (?,?) ON DUPLICATE KEY UPDATE `beam`=?",
 			member.ID,
 			identifier,
 			identifier,
@@ -93,10 +83,6 @@ func Remove(memberID int, kind string) error {
 	switch kind {
 	case "twitch":
 		err := DB.Exec("UPDATE `streams` SET `twitch` = '' WHERE `id` = ?", memberID).Error
-		updated()
-		return err
-	case "beam":
-		err := DB.Exec("UPDATE `streams` SET `beam` = '' WHERE `id` = ?", memberID).Error
 		updated()
 		return err
 	case "youtube":
