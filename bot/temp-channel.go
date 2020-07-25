@@ -380,7 +380,7 @@ func (d *DiscordAPI) setChannelAssignMessage() {
 	fmt.Printf("memberChannels: %v\n", memberChannels)
 
 	if assignChannel == nil || assignChannel.ID == "" {
-		Logger.Warn("unable to locate channel-assign channel", zap.String("channelID", assignChannel.ID))
+		Logger.Warn("unable to locate channel-assign channel", zap.Any("channel", assignChannel))
 		return
 	}
 
