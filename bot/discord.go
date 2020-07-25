@@ -282,31 +282,43 @@ func (d DiscordAPI) PostStreamMessage(sm messaging.StreamMessage) error {
 		return fmt.Errorf("stream channel id not configured")
 	}
 	author := discordgo.MessageEmbedAuthor{
-		Name: fmt.Sprintf("%s is live!", sm.Username),
+		Name:    fmt.Sprintf("%s is live!", sm.Username),
+		IconURL: sm.UserLogo,
 	}
-	thumbnail := discordgo.MessageEmbedThumbnail{
-		URL: sm.UserLogo,
-	}
+
 	footer := discordgo.MessageEmbedFooter{
 		Text:    fmt.Sprintf("%s | %s", sm.Platform, sm.Timestamp),
 		IconURL: sm.PlatformLogo,
 	}
 	messageEmbed := discordgo.MessageEmbed{
-		Description: fmt.Sprintf("%s is streaming %s at %s", sm.Username, sm.Game, sm.URL),
+		Description: sm.Description,
 		Color:       sm.PlatformColorInt,
 		URL:         sm.URL,
 		Author:      &author,
-		Thumbnail:   &thumbnail,
-		Footer:      &footer,
+		Image: &discordgo.MessageEmbedImage{
+			URL:    sm.ThumbnailURL,
+			Width:  320,
+			Height: 180,
+		},
+		Footer: &footer,
 		Fields: []*discordgo.MessageEmbedField{
 			{
 				Name:   "Game",
-				Value:  fmt.Sprintf("%s - %s", sm.Game, sm.Description),
+				Value:  sm.Game,
+				Inline: false,
+			},
+			{
+				Name:   "Stream URL",
+				Value:  sm.URL,
 				Inline: false,
 			},
 		},
 	}
-	_, err := d.discord.ChannelMessageSendEmbed(d.Config.StreamChannelId, &messageEmbed)
+
+	_, err := d.discord.ChannelMessageSendComplex(d.Config.StreamChannelId, &discordgo.MessageSend{
+		Content: fmt.Sprintf("%s is streaming **%s**\n%s", sm.Username, sm.Game, sm.URL),
+		Embed: &messageEmbed,
+	})
 	return err
 }
 
