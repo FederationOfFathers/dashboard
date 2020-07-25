@@ -42,7 +42,7 @@ func (d *DB) StreamByMemberID(memberID int) (*Stream, error) {
 
 func (d *DB) Streams() ([]*Stream, error) {
 	var s []*Stream
-	err := d.Find(&s, "twitch != ? OR youtube != ?", "", "", "").Error
+	err := d.Find(&s, "twitch != ? OR youtube != ?", "", "").Error
 	for _, i := range s {
 		i.db = d
 	}
