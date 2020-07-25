@@ -2,6 +2,7 @@ package streams
 
 import (
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/FederationOfFathers/dashboard/db"
@@ -16,7 +17,7 @@ var TwitchOAuthKey string
 var twitchClient *helix.Client
 
 type token struct {
-	token string
+	token   string
 	expires time.Time
 }
 
@@ -25,7 +26,7 @@ var twitchToken token
 func Twitch(clientID string, clientSecret string) error {
 	var err error
 	twitchClient, err = helix.NewClient(&helix.Options{
-		ClientID: clientID,
+		ClientID:     clientID,
 		ClientSecret: clientSecret,
 	})
 	return err
@@ -37,7 +38,7 @@ func ensureClientAccess() error {
 		twlog.Info("refreshing expired Twitch token")
 		token, err := twitchClient.GetAppAccessToken()
 		if err != nil {
-			return  err
+			return err
 		}
 		twitchToken.token = token.Data.AccessToken
 		twitchToken.expires = time.Now().Add(time.Second * time.Duration(token.Data.ExpiresIn))
@@ -51,35 +52,51 @@ type twitchStream helix.Stream
 func mindTwitch() {
 	twlog = Logger.Named("twitch")
 	twlog.Debug("begin minding")
-	var streamsCount int
-	for _, stream := range Streams {
-		if stream.Twitch == "" {
-			twlog.Debug("not a twitch stream", zap.Int("id", stream.ID), zap.Int("member_id", stream.MemberID))
-			continue
-		}
-		twlog.Debug("minding twitch stream", zap.String("Twitch id", stream.Twitch))
-		updateTwitch(stream)
-		streamsCount++
-	}
-	twlog.Debug("twitch streams updated", zap.Int("numStreams", streamsCount))
+
+	updateTwitch(Streams)
+
+	twlog.Debug("twitch streams updated") //, zap.Int("numStreams", streamsCount))
 	twlog.Debug("end minding")
 }
 
-func updateTwitch(s *db.Stream) {
+func updateTwitch(streams []*db.Stream) {
 	var client = twitchClient
 	if err := ensureClientAccess(); err != nil {
 		twlog.Error("unable to verify twitch client app token", zap.Error(err))
 		return
 	}
-	var foundStream = false
 
-	// retrieve the stream by username
+	var userLogins []string
+	var indexedStreams = make(map[string]*db.Stream, len(streams))
+	for _, s := range streams {
+		if s.Twitch != "" {
+			userLogins = append(userLogins, s.Twitch)
+			indexedStreams[strings.ToLower(s.Twitch)] = s
+		}
+	}
+
+	// if there are no Twitch users, then nothing left to do
+	if len(userLogins) == 0 {
+		return
+	}
+
+	// get users info and index to a map. continue on failures
+	var indexedUsers = make(map[string]helix.User, len(userLogins))
+	if usersRes, err := client.GetUsers(&helix.UsersParams{Logins: userLogins}); err != nil {
+		twlog.Error("get users call failed", zap.Error(err), zap.Strings("users", userLogins))
+	} else {
+		for _, u := range usersRes.Data.Users {
+			indexedUsers[u.ID] = u
+		}
+	}
+
+	// retrieve the streams by username
 	res, err := client.GetStreams(&helix.StreamsParams{
-		UserLogins: []string{s.Twitch},
+		UserLogins: userLogins,
 	})
 	if err != nil {
 		if err.Error() != "json: cannot unmarshal number into Go value of type string" {
-			twlog.Error("error fetching twitch stream", zap.String("key", s.Twitch), zap.Error(err))
+			twlog.Error("error fetching twitch stream", zap.Strings("userLogins", userLogins), zap.Error(err))
 		}
 		return
 	}
@@ -89,16 +106,59 @@ func updateTwitch(s *db.Stream) {
 		return
 	}
 
-	switch len(res.Data.Streams) {
-	case 1:
-		foundStream = true
-	case 0:
-		twlog.Debug("No active streams", zap.String("key", s.Twitch))
-	default:
-		twlog.Error("Too many active streams", zap.String("key", s.Twitch))
+	for _, stream := range res.Data.Streams {
+		// get the db value and remove it from the indexed map
+		s := indexedStreams[strings.ToLower(stream.UserName)]
+		delete(indexedStreams, strings.ToLower(stream.UserName))
+
+		var isRecent bool = time.Now().Unix()-s.TwitchStart <= 1800
+		streamID := fmt.Sprintf("%s", stream.ID)
+		postStreamMessage := true
+
+		if streamID == s.TwitchStreamID && s.TwitchGame == stream.GameID {
+			// if the stream has the same ID and the same game, then leave it as is
+			twlog.Debug("still streaming...", zap.String("twitch_user", s.Twitch), zap.String("game_id", stream.GameID))
+			continue
+		} else if isRecent && s.TwitchGame == stream.GameID {
+			// if the game ID hasn't changed update, but don't sent a message
+			twlog.Debug("new ID, but still streaming...", zap.String("twitch_user", s.Twitch), zap.String("game_id", stream.GameID))
+			postStreamMessage = false
+		}
+
+		s.TwitchStreamID = streamID
+		s.TwitchStart = time.Now().Unix()
+		if s.TwitchStop > s.TwitchStart {
+			s.TwitchStop = s.TwitchStart - 1
+		}
+
+		var game helix.Game
+		gamesResponse, gerr := client.GetGames(&helix.GamesParams{
+			IDs: []string{stream.GameID},
+		})
+		if gerr != nil {
+			twlog.Error("could not get game data", zap.Error(err), zap.String("gameID", stream.GameID), zap.String("twitchUser", stream.UserName))
+		} else if len(gamesResponse.Data.Games) > 0 {
+			game = gamesResponse.Data.Games[0]
+		}
+
+		if postStreamMessage {
+			twlog.Info("posting twistream message")
+			var u helix.User
+			if user, ok := indexedUsers[stream.UserID]; ok {
+				u = user
+			}
+			sendTwitchMessage(stream, game, u)
+		}
+
+		s.TwitchGame = stream.GameID
+		if err := s.Save(); err != nil {
+			twlog.Error("unable to save stream data", zap.Any("stream", s), zap.Error(err))
+		}
+
 	}
 
-	if !foundStream {
+	// update remaining streams as not streaming
+	for _, s := range indexedStreams {
 		var save bool
 		// clear out existing stream ID
 		if s.TwitchStreamID != "" {
@@ -118,55 +178,19 @@ func updateTwitch(s *db.Stream) {
 				twlog.Error("could not save twitch stream", zap.Error(err))
 			}
 		}
-		return
 	}
 
-	stream := res.Data.Streams[0]
-
-	if stream.ID == "" {
-		twlog.Error("Invalid stream ID", zap.String("key", s.Twitch))
-		return
-	}
-
-	var isRecent bool = time.Now().Unix()-s.TwitchStart <= 1800
-	streamID := fmt.Sprintf("%s", stream.ID)
-	postStreamMessage := true
-	if streamID == s.TwitchStreamID && s.TwitchGame == stream.GameID {
-		twlog.Debug("still streaming...", zap.String("twitch_user", s.Twitch), zap.String("game_id", stream.GameID))
-		return
-	} else if isRecent && s.TwitchGame == stream.GameID {
-		twlog.Debug("new ID, but still streaming...", zap.String("twitch_user", s.Twitch), zap.String("game_id", stream.GameID))
-		postStreamMessage = false
-	}
-
-	s.TwitchStreamID = streamID
-	s.TwitchStart = time.Now().Unix()
-	if s.TwitchStop > s.TwitchStart {
-		s.TwitchStop = s.TwitchStart - 1
-	}
-
-	var game helix.Game
-	gamesResponse, gerr := client.GetGames(&helix.GamesParams{
-		IDs: []string{stream.GameID},
-	})
-	if gerr != nil {
-		twlog.Error("could not get game data", zap.Error(err), zap.String("gameID", stream.GameID), zap.String("twitchUser", stream.UserName))
-	} else if len(gamesResponse.Data.Games) > 0 {
-		game = gamesResponse.Data.Games[0]
-	}
-
-	if postStreamMessage {
-		twlog.Info("posting twistream message")
-		sendTwitchMessage(stream, game)
-	}
-
-	s.TwitchGame = stream.GameID
-	if err := s.Save(); err != nil {
-		twlog.Error("unable to save stream data", zap.Any("stream", s), zap.Error(err))
-	}
 }
 
-func sendTwitchMessage(stream helix.Stream, game helix.Game) {
+func sendTwitchMessage(stream helix.Stream, game helix.Game, user helix.User) {
+
+	var userLogo string
+	if user.ID != "" {
+		userLogo = user.ProfileImageURL
+	}
+
+	thumbnailUrl := strings.Replace(stream.ThumbnailURL, "{width}", "320", 1)
+	thumbnailUrl = strings.Replace(thumbnailUrl, "{height}", "180", 1)
 
 	messaging.SendTwitchStreamMessage(messaging.StreamMessage{
 		Platform:         "Twitch",
@@ -174,11 +198,12 @@ func sendTwitchMessage(stream helix.Stream, game helix.Game) {
 		PlatformColor:    "#6441A4",
 		PlatformColorInt: 6570404,
 		Username:         stream.UserName,
-		UserLogo:         stream.ThumbnailURL,
+		UserLogo:         userLogo,
 		URL:              fmt.Sprintf("https://twitch.tv/%s", stream.UserName),
 		Game:             game.Name,
 		Description:      stream.Title,
 		Timestamp:        time.Now().Format("01/02/2006 15:04 MST"),
+		ThumbnailURL:     thumbnailUrl,
 	})
 
 }
