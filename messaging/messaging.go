@@ -2,11 +2,10 @@ package messaging
 
 import (
 	"reflect"
-	"time"
 
-	"github.com/FederationOfFathers/dashboard/clients/mixer"
-	"github.com/FederationOfFathers/dashboard/db"
 	"go.uber.org/zap"
+
+	"github.com/FederationOfFathers/dashboard/db"
 )
 
 var msgApis []MsgAPI
@@ -23,6 +22,7 @@ type StreamMessage struct {
 	Game             string
 	Description      string
 	Timestamp        string
+	ThumbnailURL     string
 }
 
 // Add Messaging APIs that will be used to send messages
@@ -39,21 +39,6 @@ type MsgAPI interface {
 }
 
 func SendTwitchStreamMessage(sm StreamMessage) {
-	postStreamMessageToAllApis(sm)
-}
-func SendMixerStreamMessage(m mixer.Mixer) {
-	sm := StreamMessage{
-		Platform:         "Mixer",
-		PlatformLogo:     "https://mixer.com/_latest/assets/favicons/favicon-16x16.png",
-		PlatformColor:    "#1FBAED",
-		PlatformColorInt: 2079469,
-		Username:         m.BeamUsername,
-		UserLogo:         m.AvatarUrl,
-		URL:              m.GetChannelUrl(),
-		Game:             m.Game,
-		Description:      m.Title,
-		Timestamp:        time.Now().Format("01/02/2006 15:04 MST"),
-	}
 	postStreamMessageToAllApis(sm)
 }
 
