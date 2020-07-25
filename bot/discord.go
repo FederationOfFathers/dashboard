@@ -292,7 +292,7 @@ func (d DiscordAPI) PostStreamMessage(sm messaging.StreamMessage) error {
 		IconURL: sm.PlatformLogo,
 	}
 	messageEmbed := discordgo.MessageEmbed{
-		Description: sm.URL,
+		Description: fmt.Sprintf("%s is streaming %s at %s", sm.Username, sm.Game, sm.URL),
 		Color:       sm.PlatformColorInt,
 		URL:         sm.URL,
 		Author:      &author,
