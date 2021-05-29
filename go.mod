@@ -28,5 +28,5 @@ require (
 	go.uber.org/zap v1.17.0
 	golang.org/x/oauth2 v0.0.0-20190130055435-99b60b757ec1
 	gopkg.in/djherbis/stow.v2 v2.2.0
-	gopkg.in/yaml.v2 v2.3.0
+	gopkg.in/yaml.v2 v2.4.0
 )
