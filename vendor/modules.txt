@@ -7,7 +7,7 @@ github.com/bearcherian/rollzap
 # github.com/boltdb/bolt v1.3.1
 ## explicit
 github.com/boltdb/bolt
-# github.com/bwmarrin/discordgo v0.20.2
+# github.com/bwmarrin/discordgo v0.23.0
 ## explicit
 github.com/bwmarrin/discordgo
 # github.com/denisenkom/go-mssqldb v0.0.0-20190915052044-aa4949efa320
