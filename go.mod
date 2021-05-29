@@ -10,7 +10,7 @@ require (
 	github.com/denisenkom/go-mssqldb v0.0.0-20190915052044-aa4949efa320 // indirect
 	github.com/dineshappavoo/basex v0.0.0-20160618072718-f35bafba529c
 	github.com/erikstmartin/go-testdb v0.0.0-20160219214506-8d10e4a1bae5 // indirect
-	github.com/gorilla/handlers v1.4.2
+	github.com/gorilla/handlers v1.5.1
 	github.com/gorilla/mux v1.8.0
 	github.com/gorilla/securecookie v0.0.0-20160422134519-667fe4e3466a
 	github.com/honeycombio/beeline-go v1.1.1
