@@ -1,4 +1,4 @@
-FROM golang:1.12-alpine AS build
+FROM golang:1.16-alpine AS build
 ENV GO111MODULE=on CGO_ENABLED=0 GOFLAGS=-mod=vendor
 RUN apk update && apk add git
 WORKDIR /app
