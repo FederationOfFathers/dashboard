@@ -6,9 +6,12 @@ import "time"
 type Stream struct {
 	ID           string    `json:"id"`
 	UserID       string    `json:"user_id"`
+	UserLogin    string    `json:"user_login"`
 	UserName     string    `json:"user_name"`
 	GameID       string    `json:"game_id"`
+	GameName     string    `json:"game_name"`
 	TagIDs       []string  `json:"tag_ids"`
+	IsMature     bool      `json:"is_mature"`
 	Type         string    `json:"type"`
 	Title        string    `json:"title"`
 	ViewerCount  int       `json:"viewer_count"`
@@ -41,7 +44,8 @@ type StreamsParams struct {
 	UserLogins []string `query:"user_login"` // limit 100
 }
 
-// GetStreams ...
+// GetStreams returns a list of live channels based on the search parameters.
+// To query offline channels, use SearchChannels.
 func (c *Client) GetStreams(params *StreamsParams) (*StreamsResponse, error) {
 	resp, err := c.get("/streams", &ManyStreams{}, params)
 	if err != nil {
@@ -56,88 +60,32 @@ func (c *Client) GetStreams(params *StreamsParams) (*StreamsResponse, error) {
 	return streams, nil
 }
 
-// HearthstoneHero ...
-type HearthstoneHero struct {
-	Class string `json:"class"`
-	Name  string `json:"name"`
-	Type  string `json:"type"`
+// FollowedStreamsParams ...
+type FollowedStreamsParams struct {
+	After      string   `query:"after"`
+	Before     string   `query:"before"`
+	First      int      `query:"first,20"`   // Limit 100
+	UserID     string   `query:"user_id"`
 }
 
-// HearthstonePlayerData ...
-type HearthstonePlayerData struct {
-	Hero HearthstoneHero `json:"hero"`
-}
-
-// HearthstoneMetadata ...
-type HearthstoneMetadata struct {
-	Broadcaster HearthstonePlayerData `json:"broadcaster"`
-	Opponent    HearthstonePlayerData `json:"opponent"`
-}
-
-// OverwatchHero ...
-type OverwatchHero struct {
-	Ability string `json:"ability"`
-	Name    string `json:"name"`
-	Role    string `json:"role"`
-}
-
-// OverwatchBroadcaster ...
-type OverwatchBroadcaster struct {
-	Hero OverwatchHero `json:"hero"`
-}
-
-// OverwatchMetadata ...
-type OverwatchMetadata struct {
-	Broadcaster OverwatchBroadcaster `json:"broadcaster"`
-}
-
-// StreamMetadata ...
-type StreamMetadata struct {
-	UserID      string              `json:"user_id"`
-	UserName    string              `json:"user_name"`
-	GameID      string              `json:"game_id"`
-	Hearthstone HearthstoneMetadata `json:"hearthstone"`
-	Overwatch   OverwatchMetadata   `json:"overwatch"`
-}
-
-// ManyStreamsMetadata ...
-type ManyStreamsMetadata struct {
-	Streams    []StreamMetadata `json:"data"`
-	Pagination Pagination       `json:"pagination"`
-}
-
-// StreamsMetadataResponse ...
-type StreamsMetadataResponse struct {
-	ResponseCommon
-	Data ManyStreamsMetadata
-}
-
-// GetStreamsMetadataRateLimit returns the "Ratelimit-Helixstreamsmetadata-Limit"
-// header as an int.
-func (sr *StreamsMetadataResponse) GetStreamsMetadataRateLimit() int {
-	return sr.convertHeaderToInt(sr.Header.Get("Ratelimit-Helixstreamsmetadata-Limit"))
-}
-
-// GetStreamsMetadataRateLimitRemaining returns the "Ratelimit-Helixstreamsmetadata-Remaining"
-// header as an int.
-func (sr *StreamsMetadataResponse) GetStreamsMetadataRateLimitRemaining() int {
-	return sr.convertHeaderToInt(sr.Header.Get("Ratelimit-Helixstreamsmetadata-Remaining"))
-}
-
-// StreamsMetadataParams ...
-type StreamsMetadataParams StreamsParams
-
-// GetStreamsMetadata ...
-func (c *Client) GetStreamsMetadata(params *StreamsMetadataParams) (*StreamsMetadataResponse, error) {
-	resp, err := c.get("/streams/metadata", &ManyStreamsMetadata{}, params)
+// GetFollowedStream : Gets information about active streams belonging to channels
+// that the authenticated user follows. Streams are returned sorted by number of
+// current viewers, in descending order. Across multiple pages of results, there
+// may be duplicate or missing streams, as viewers join and leave streams.
+//
+// Required scope: user:read:follows
+func (c *Client) GetFollowedStream(params *FollowedStreamsParams) (*StreamsResponse, error) {
+	resp, err := c.get("/streams/followed", &ManyStreams{}, params)
 	if err != nil {
 		return nil, err
 	}
 
-	streams := &StreamsMetadataResponse{}
+	streams := &StreamsResponse{}
 	resp.HydrateResponseCommon(&streams.ResponseCommon)
-	streams.Data.Streams = resp.Data.(*ManyStreamsMetadata).Streams
-	streams.Data.Pagination = resp.Data.(*ManyStreamsMetadata).Pagination
+	streams.Data.Streams = resp.Data.(*ManyStreams).Streams
+	streams.Data.Pagination = resp.Data.(*ManyStreams).Pagination
 
 	return streams, nil
 }
+
+
