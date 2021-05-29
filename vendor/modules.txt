@@ -89,7 +89,7 @@ github.com/pkg/errors
 # github.com/robfig/cron v1.0.0
 ## explicit
 github.com/robfig/cron
-# github.com/rollbar/rollbar-go v1.0.2
+# github.com/rollbar/rollbar-go v1.4.0
 ## explicit
 github.com/rollbar/rollbar-go
 # github.com/speps/go-hashids v1.0.0
@@ -112,11 +112,11 @@ go.opentelemetry.io/otel/internal/baggage
 go.opentelemetry.io/otel/propagation
 # go.opentelemetry.io/otel/trace v0.19.0
 go.opentelemetry.io/otel/trace
-# go.uber.org/atomic v1.6.0
+# go.uber.org/atomic v1.7.0
 go.uber.org/atomic
-# go.uber.org/multierr v1.5.0
+# go.uber.org/multierr v1.6.0
 go.uber.org/multierr
-# go.uber.org/zap v1.14.1
+# go.uber.org/zap v1.17.0
 ## explicit
 go.uber.org/zap
 go.uber.org/zap/buffer
