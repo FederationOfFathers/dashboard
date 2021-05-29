@@ -18,7 +18,7 @@ require (
 	github.com/jinzhu/inflection v0.0.0-20170102125226-1c35d901db3d // indirect
 	github.com/jinzhu/now v1.0.1 // indirect
 	github.com/lusis/slack-test v0.0.0-20190426140909-c40012f20018 // indirect
-	github.com/nicklaw5/helix v0.5.9
+	github.com/nicklaw5/helix v0.7.0
 	github.com/nlopes/slack v0.0.0-20180905213137-8cf10c586222
 	github.com/nu7hatch/gouuid v0.0.0-20131221200532-179d4d0c4d8d
 	github.com/pborman/uuid v0.0.0-20170612153648-e790cca94e6c
