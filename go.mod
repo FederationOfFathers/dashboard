@@ -22,7 +22,7 @@ require (
 	github.com/nlopes/slack v0.0.0-20180905213137-8cf10c586222
 	github.com/nu7hatch/gouuid v0.0.0-20131221200532-179d4d0c4d8d
 	github.com/pborman/uuid v0.0.0-20170612153648-e790cca94e6c
-	github.com/robfig/cron v1.0.0
+	github.com/robfig/cron v1.2.0
 	github.com/rollbar/rollbar-go v1.4.0
 	github.com/speps/go-hashids v1.0.0
 	go.uber.org/zap v1.17.0
