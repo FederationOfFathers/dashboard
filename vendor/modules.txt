@@ -23,11 +23,11 @@ github.com/facebookgo/clock
 github.com/facebookgo/limitgroup
 # github.com/facebookgo/muster v0.0.0-20150708232844-fd3d7953fd52
 github.com/facebookgo/muster
-# github.com/felixge/httpsnoop v1.0.1
+# github.com/felixge/httpsnoop v1.0.2
 github.com/felixge/httpsnoop
 # github.com/go-sql-driver/mysql v1.6.0
 github.com/go-sql-driver/mysql
-# github.com/golang/protobuf v1.4.2
+# github.com/golang/protobuf v1.5.0
 github.com/golang/protobuf/proto
 # github.com/gorilla/handlers v1.5.1
 ## explicit
@@ -40,7 +40,7 @@ github.com/gorilla/mux
 github.com/gorilla/securecookie
 # github.com/gorilla/websocket v1.4.0
 github.com/gorilla/websocket
-# github.com/honeycombio/beeline-go v1.1.1
+# github.com/honeycombio/beeline-go v1.1.2
 ## explicit
 github.com/honeycombio/beeline-go
 github.com/honeycombio/beeline-go/client
@@ -102,15 +102,15 @@ github.com/vmihailenco/msgpack/v4/codes
 github.com/vmihailenco/tagparser
 github.com/vmihailenco/tagparser/internal
 github.com/vmihailenco/tagparser/internal/parser
-# go.opentelemetry.io/contrib/propagators v0.19.0
+# go.opentelemetry.io/contrib/propagators v0.20.0
 go.opentelemetry.io/contrib/propagators/b3
-# go.opentelemetry.io/otel v0.19.0
+# go.opentelemetry.io/otel v0.20.0
 go.opentelemetry.io/otel/attribute
 go.opentelemetry.io/otel/codes
 go.opentelemetry.io/otel/internal
 go.opentelemetry.io/otel/internal/baggage
 go.opentelemetry.io/otel/propagation
-# go.opentelemetry.io/otel/trace v0.19.0
+# go.opentelemetry.io/otel/trace v0.20.0
 go.opentelemetry.io/otel/trace
 # go.uber.org/atomic v1.7.0
 go.uber.org/atomic
@@ -154,9 +154,9 @@ google.golang.org/appengine/internal/modules
 google.golang.org/appengine/internal/remote_api
 google.golang.org/appengine/internal/urlfetch
 google.golang.org/appengine/urlfetch
-# google.golang.org/grpc v1.36.1
+# google.golang.org/grpc v1.38.0
 google.golang.org/grpc/metadata
-# google.golang.org/protobuf v1.25.0
+# google.golang.org/protobuf v1.26.0
 google.golang.org/protobuf/encoding/prototext
 google.golang.org/protobuf/encoding/protowire
 google.golang.org/protobuf/internal/descfmt
@@ -167,22 +167,23 @@ google.golang.org/protobuf/internal/encoding/messageset
 google.golang.org/protobuf/internal/encoding/tag
 google.golang.org/protobuf/internal/encoding/text
 google.golang.org/protobuf/internal/errors
-google.golang.org/protobuf/internal/fieldsort
 google.golang.org/protobuf/internal/filedesc
 google.golang.org/protobuf/internal/filetype
 google.golang.org/protobuf/internal/flags
 google.golang.org/protobuf/internal/genid
 google.golang.org/protobuf/internal/impl
-google.golang.org/protobuf/internal/mapsort
+google.golang.org/protobuf/internal/order
 google.golang.org/protobuf/internal/pragma
 google.golang.org/protobuf/internal/set
 google.golang.org/protobuf/internal/strs
 google.golang.org/protobuf/internal/version
 google.golang.org/protobuf/proto
+google.golang.org/protobuf/reflect/protodesc
 google.golang.org/protobuf/reflect/protoreflect
 google.golang.org/protobuf/reflect/protoregistry
 google.golang.org/protobuf/runtime/protoiface
 google.golang.org/protobuf/runtime/protoimpl
+google.golang.org/protobuf/types/descriptorpb
 # gopkg.in/alexcesaro/statsd.v2 v2.0.0
 gopkg.in/alexcesaro/statsd.v2
 # gopkg.in/djherbis/stow.v2 v2.2.0
