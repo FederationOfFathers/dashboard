@@ -1,11 +1,13 @@
 package bridge
 
 import (
+	"context"
 	"encoding/json"
 	"net/http"
 	"sync"
 	"time"
 
+	"github.com/honeycombio/beeline-go"
 	"github.com/nlopes/slack"
 	"go.uber.org/zap"
 )
@@ -27,6 +29,9 @@ var SendMessage func(string, string)
 var PostMessage func(string, string, slack.PostMessageParameters) error
 
 func updateSeen() {
+	_, span := beeline.StartSpan(context.Background(), "updateSeen")
+	defer span.Send()
+
 	begin := time.Now()
 	var newSeen = map[string]time.Time{}
 	rsp, err := http.Get("http://fofgaming.com:8890/seen.json")
