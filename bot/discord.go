@@ -1,6 +1,7 @@
 package bot
 
 import (
+	"context"
 	"fmt"
 	"strings"
 	"time"
@@ -8,6 +9,7 @@ import (
 	"github.com/FederationOfFathers/dashboard/db"
 	"github.com/FederationOfFathers/dashboard/messaging"
 	"github.com/bwmarrin/discordgo"
+	"github.com/honeycombio/beeline-go"
 	"go.uber.org/zap"
 )
 
@@ -101,23 +103,28 @@ func (d *DiscordAPI) verifiedEventsHandler(s *discordgo.Session, event *discordg
 
 // MindGuild starts routines to monitor Discord things like channels
 func (d *DiscordAPI) MindGuild() {
-	// get channels and save them to the db
-	go d.mindChannelList()
+	go func() {
+
+		d.mindChannelList()
+		ticker := time.NewTicker(1 * time.Minute)
+		for range ticker.C {
+			// get channels and save them to the db
+			d.mindChannelList()
+		}
+
+	}()
 
 }
 
 func (d *DiscordAPI) mindChannelList() {
-	ticker := time.Tick(1 * time.Minute)
 
-	for {
-		select {
-		case <-ticker:
-			channels := d.guildChannels()
-			if err := saveChannelsToDB(channels); err == nil {
-				// purge old channels if no errors on save
-				DB.PurgeOldEventChannels(-1 * time.Minute)
-			}
-		}
+	_, span := beeline.StartSpan(context.Background(), "discord.MindChannelList")
+	defer span.Send()
+
+	channels := d.guildChannels()
+	if err := saveChannelsToDB(channels); err == nil {
+		// purge old channels if no errors on save
+		DB.PurgeOldEventChannels(-1 * time.Minute)
 	}
 
 }
@@ -317,7 +324,7 @@ func (d DiscordAPI) PostStreamMessage(sm messaging.StreamMessage) error {
 
 	_, err := d.discord.ChannelMessageSendComplex(d.Config.StreamChannelId, &discordgo.MessageSend{
 		Content: fmt.Sprintf("%s is streaming **%s**\n%s", sm.Username, sm.Game, sm.URL),
-		Embed: &messageEmbed,
+		Embed:   &messageEmbed,
 	})
 	return err
 }
