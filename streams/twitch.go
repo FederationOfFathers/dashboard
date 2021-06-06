@@ -1,12 +1,14 @@
 package streams
 
 import (
+	"context"
 	"fmt"
 	"strings"
 	"time"
 
 	"github.com/FederationOfFathers/dashboard/db"
 	"github.com/FederationOfFathers/dashboard/messaging"
+	"github.com/honeycombio/beeline-go"
 	"github.com/nicklaw5/helix"
 	"go.uber.org/zap"
 )
@@ -50,16 +52,18 @@ func ensureClientAccess() error {
 type twitchStream helix.Stream
 
 func mindTwitch() {
+	ctx, span := beeline.StartSpan(context.Background(), "mindTwitch")
+	defer span.Send()
 	twlog = Logger.Named("twitch")
 	twlog.Debug("begin minding")
 
-	updateTwitch(Streams)
+	updateTwitch(ctx, Streams)
 
 	twlog.Debug("twitch streams updated") //, zap.Int("numStreams", streamsCount))
 	twlog.Debug("end minding")
 }
 
-func updateTwitch(streams []*db.Stream) {
+func updateTwitch(ctx context.Context, streams []*db.Stream) {
 	var client = twitchClient
 	if err := ensureClientAccess(); err != nil {
 		twlog.Error("unable to verify twitch client app token", zap.Error(err))
