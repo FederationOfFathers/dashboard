@@ -40,6 +40,7 @@ var mysqlURI string
 var streamChannel = "-fof-dashboard"
 var mindStreams bool
 var honeycombToken string
+var honeycombDataset string = "unknown"
 
 func init() {
 
@@ -106,12 +107,13 @@ func init() {
 
 	hcfg := cfg.New("cfg-honeycomb")
 	hcfg.StringVar(&honeycombToken, "token", honeycombToken, "Token for Honeycomb project reporting")
+	hcfg.StringVar(&honeycombDataset, "dataset", honeycombDataset, "Dataset for Honeycomb project reporting")
 }
 
 func main() {
 
 	// panic recovery/reporting/logging
-	defer func(){
+	defer func() {
 		if err := recover(); err != nil {
 			logger.With(zap.Any("error", err)).Error("APPLICATION PANIC")
 		}
@@ -121,8 +123,9 @@ func main() {
 	if honeycombToken != "" {
 		logger.Info("setting up honeycomb")
 		beeline.Init(beeline.Config{
-			WriteKey: honeycombToken,
-			Dataset:  "dashboard",
+			WriteKey:    honeycombToken,
+			Dataset:     honeycombDataset,
+			ServiceName: "dashboard",
 		})
 	}
 
@@ -156,7 +159,7 @@ func main() {
 				}
 			}()
 			logger.Info("Minding streams", zap.String("channel", streamChannel))
-			if err := streams.Twitch(twitchClientID, twitchClientSecret);err != nil {
+			if err := streams.Twitch(twitchClientID, twitchClientSecret); err != nil {
 				logger.Error("unable to init Twitch client", zap.Error(err))
 			}
 			streams.Mind()
