@@ -42,7 +42,6 @@ type Options struct {
 	UserAccessToken string
 	UserAgent       string
 	RedirectURI     string
-	Scopes          []string
 	HTTPClient      HTTPClient
 	RateLimitFunc   RateLimitFunc
 	APIBaseURL      string
@@ -107,8 +106,8 @@ type Pagination struct {
 	Cursor string `json:"cursor"`
 }
 
-// NewClient returns a new Twicth Helix API client. It returns an
-// if clientID is an empty string. It is concurrecy safe.
+// NewClient returns a new Twitch Helix API client. It returns an
+// if clientID is an empty string. It is concurrency safe.
 func NewClient(options *Options) (*Client, error) {
 	if options.ClientID == "" {
 		return nil, errors.New("A client ID was not provided but is required")
@@ -139,6 +138,14 @@ func (c *Client) post(path string, respData, reqData interface{}) (*Response, er
 
 func (c *Client) put(path string, respData, reqData interface{}) (*Response, error) {
 	return c.sendRequest(http.MethodPut, path, respData, reqData, false)
+}
+
+func (c *Client) delete(path string, respData, reqData interface{}) (*Response, error) {
+	return c.sendRequest(http.MethodDelete, path, respData, reqData, false)
+}
+
+func (c *Client) patchAsJSON(path string, respData, reqData interface{}) (*Response, error) {
+	return c.sendRequest(http.MethodPatch, path, respData, reqData, true)
 }
 
 func (c *Client) postAsJSON(path string, respData, reqData interface{}) (*Response, error) {
@@ -292,6 +299,13 @@ func (c *Client) newJSONRequest(method, url string, data interface{}) (*http.Req
 		return nil, err
 	}
 
+	query, err := buildQueryString(req, data)
+	if err != nil {
+		return nil, err
+	}
+
+	req.URL.RawQuery = query
+
 	req.Header.Set("Content-Type", "application/json")
 
 	return req, nil
@@ -405,11 +419,21 @@ func setResponseStatusCode(v interface{}, fieldName string, code int) {
 	field.SetInt(int64(code))
 }
 
+// GetAppAccessToken returns the current app access token.
+func (c *Client) GetAppAccessToken() string {
+	return c.opts.AppAccessToken
+}
+
 // SetAppAccessToken ...
 func (c *Client) SetAppAccessToken(accessToken string) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	c.opts.AppAccessToken = accessToken
+}
+
+// GetUserAccessToken returns the current user access token.
+func (c *Client) GetUserAccessToken() string {
+	return c.opts.UserAccessToken
 }
 
 // SetUserAccessToken ...
@@ -424,13 +448,6 @@ func (c *Client) SetUserAgent(userAgent string) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	c.opts.UserAgent = userAgent
-}
-
-// SetScopes ...
-func (c *Client) SetScopes(scopes []string) {
-	c.mu.Lock()
-	defer c.mu.Unlock()
-	c.opts.Scopes = scopes
 }
 
 // SetRedirectURI ...

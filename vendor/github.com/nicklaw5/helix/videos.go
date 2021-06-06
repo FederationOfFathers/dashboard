@@ -2,20 +2,29 @@ package helix
 
 // Video ...
 type Video struct {
-	ID           string `json:"id"`
-	UserID       string `json:"user_id"`
-	UserName     string `json:"user_name"`
-	Title        string `json:"title"`
-	Description  string `json:"description"`
-	CreatedAt    string `json:"created_at"`
-	PublishedAt  string `json:"published_at"`
-	URL          string `json:"url"`
-	ThumbnailURL string `json:"thumbnail_url"`
-	Viewable     string `json:"viewable"`
-	ViewCount    int    `json:"view_count"`
-	Language     string `json:"language"`
-	Type         string `json:"type"`
-	Duration     string `json:"duration"`
+	ID            string              `json:"id"`
+	UserID        string              `json:"user_id"`
+	UserLogin     string              `json:"user_login"`
+	UserName      string              `json:"user_name"`
+	StreamID      string              `json:"stream_id"`
+	Title         string              `json:"title"`
+	Description   string              `json:"description"`
+	CreatedAt     string              `json:"created_at"`
+	PublishedAt   string              `json:"published_at"`
+	URL           string              `json:"url"`
+	ThumbnailURL  string              `json:"thumbnail_url"`
+	Viewable      string              `json:"viewable"`
+	ViewCount     int                 `json:"view_count"`
+	Language      string              `json:"language"`
+	Type          string              `json:"type"`
+	Duration      string              `json:"duration"`
+	MutedSegments []VideoMutedSegment `json:"muted_segments"`
+}
+
+// VideoMutedSegment ...
+type VideoMutedSegment struct {
+	Duration int `json:"duration"`
+	Offest   int `json:"offset"`
 }
 
 // ManyVideos ...
@@ -40,10 +49,20 @@ type VideosParams struct {
 	Type     string `query:"type,all"`   // "all" (default), "upload", "archive", and "highlight"
 }
 
+// DeleteVideosParams ...
+type DeleteVideosParams struct {
+	IDs    []string `query:"id"` // Limit 5
+}
+
 // VideosResponse ...
 type VideosResponse struct {
 	ResponseCommon
 	Data ManyVideos
+}
+
+// DeleteVideosResponse ...
+type DeleteVideosResponse struct {
+	ResponseCommon
 }
 
 // GetVideos gets video information by video ID (one or more), user ID (one only),
@@ -58,6 +77,20 @@ func (c *Client) GetVideos(params *VideosParams) (*VideosResponse, error) {
 	resp.HydrateResponseCommon(&videos.ResponseCommon)
 	videos.Data.Videos = resp.Data.(*ManyVideos).Videos
 	videos.Data.Pagination = resp.Data.(*ManyVideos).Pagination
+
+	return videos, nil
+}
+
+// DeleteVideos delete one or more videos (max 5)
+// Required scope: channel:manage:videos
+func (c *Client) DeleteVideos(params *DeleteVideosParams) (*DeleteVideosResponse, error) {
+	resp, err := c.delete("/videos", &DeleteVideosResponse{}, params)
+	if err != nil {
+		return nil, err
+	}
+
+	videos := &DeleteVideosResponse{}
+	resp.HydrateResponseCommon(&videos.ResponseCommon)
 
 	return videos, nil
 }

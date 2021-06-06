@@ -10,7 +10,7 @@ require (
 	github.com/denisenkom/go-mssqldb v0.0.0-20190915052044-aa4949efa320 // indirect
 	github.com/dineshappavoo/basex v0.0.0-20160618072718-f35bafba529c
 	github.com/erikstmartin/go-testdb v0.0.0-20160219214506-8d10e4a1bae5 // indirect
-	github.com/gorilla/handlers v1.4.2
+	github.com/gorilla/handlers v1.5.1
 	github.com/gorilla/mux v1.8.0
 	github.com/gorilla/securecookie v0.0.0-20160422134519-667fe4e3466a
 	github.com/honeycombio/beeline-go v1.1.1
@@ -18,15 +18,15 @@ require (
 	github.com/jinzhu/inflection v0.0.0-20170102125226-1c35d901db3d // indirect
 	github.com/jinzhu/now v1.0.1 // indirect
 	github.com/lusis/slack-test v0.0.0-20190426140909-c40012f20018 // indirect
-	github.com/nicklaw5/helix v0.5.9
+	github.com/nicklaw5/helix v1.17.0
 	github.com/nlopes/slack v0.0.0-20180905213137-8cf10c586222
 	github.com/nu7hatch/gouuid v0.0.0-20131221200532-179d4d0c4d8d
 	github.com/pborman/uuid v0.0.0-20170612153648-e790cca94e6c
-	github.com/robfig/cron v1.0.0
+	github.com/robfig/cron v1.2.0
 	github.com/rollbar/rollbar-go v1.4.0
 	github.com/speps/go-hashids v1.0.0
 	go.uber.org/zap v1.17.0
 	golang.org/x/oauth2 v0.0.0-20190130055435-99b60b757ec1
 	gopkg.in/djherbis/stow.v2 v2.2.0
-	gopkg.in/yaml.v2 v2.3.0
+	gopkg.in/yaml.v2 v2.4.0
 )

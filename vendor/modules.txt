@@ -29,7 +29,7 @@ github.com/felixge/httpsnoop
 github.com/go-sql-driver/mysql
 # github.com/golang/protobuf v1.4.2
 github.com/golang/protobuf/proto
-# github.com/gorilla/handlers v1.4.2
+# github.com/gorilla/handlers v1.5.1
 ## explicit
 github.com/gorilla/handlers
 # github.com/gorilla/mux v1.8.0
@@ -71,7 +71,7 @@ github.com/klauspost/compress/zstd
 github.com/klauspost/compress/zstd/internal/xxhash
 # github.com/lusis/slack-test v0.0.0-20190426140909-c40012f20018
 ## explicit
-# github.com/nicklaw5/helix v0.5.9
+# github.com/nicklaw5/helix v1.17.0
 ## explicit
 github.com/nicklaw5/helix
 # github.com/nlopes/slack v0.0.0-20180905213137-8cf10c586222
@@ -86,7 +86,7 @@ github.com/nu7hatch/gouuid
 github.com/pborman/uuid
 # github.com/pkg/errors v0.9.1
 github.com/pkg/errors
-# github.com/robfig/cron v1.0.0
+# github.com/robfig/cron v1.2.0
 ## explicit
 github.com/robfig/cron
 # github.com/rollbar/rollbar-go v1.4.0
@@ -188,6 +188,6 @@ gopkg.in/alexcesaro/statsd.v2
 # gopkg.in/djherbis/stow.v2 v2.2.0
 ## explicit
 gopkg.in/djherbis/stow.v2
-# gopkg.in/yaml.v2 v2.3.0
+# gopkg.in/yaml.v2 v2.4.0
 ## explicit
 gopkg.in/yaml.v2

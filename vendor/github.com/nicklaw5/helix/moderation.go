@@ -4,6 +4,7 @@ package helix
 // ExpiresAt must be parsed manually since an empty string means perma ban
 type Ban struct {
 	UserID    string `json:"user_id"`
+	UserLogin string `json:"user_login"`
 	UserName  string `json:"user_name"`
 	ExpiresAt Time   `json:"expires_at"`
 }
@@ -20,7 +21,7 @@ type BannedUsersResponse struct {
 	Data ManyBans
 }
 
-// BannedUsersResponse
+// BannedUsersParams ...
 // BroadcasterID must match the auth tokens user_id
 type BannedUsersParams struct {
 	BroadcasterID string `query:"broadcaster_id"`
@@ -40,6 +41,7 @@ func (c *Client) GetBannedUsers(params *BannedUsersParams) (*BannedUsersResponse
 
 	bans := &BannedUsersResponse{}
 	resp.HydrateResponseCommon(&bans.ResponseCommon)
+	bans.Data.Bans = resp.Data.(*ManyBans).Bans
 	bans.Data.Pagination = resp.Data.(*ManyBans).Pagination
 
 	return bans, nil
