@@ -82,7 +82,8 @@ const (
 	EventSubTypeChannelUpdate                             = "channel.update"
 	EventSubTypeChannelFollow                             = "channel.follow"
 	EventSubTypeChannelSubscription                       = "channel.subscribe"
-	EventSubTypeChannelUnsubscribe                        = "channel.unsubscribe" /* beta */
+	EventSubTypeChannelSubscriptionEnd                    = "channel.subscription.end"
+	EventSubTypeChannelSubscriptionGift                   = "channel.subscription.gift" /* beta */
 	EventSubTypeChannelCheer                              = "channel.cheer"
 	EventSubTypeChannelRaid                               = "channel.raid"
 	EventSubTypeChannelBan                                = "channel.ban"
@@ -139,6 +140,19 @@ type EventSubChannelSubscribeEvent struct {
 	BroadcasterUserName  string `json:"broadcaster_user_name"`
 	Tier                 string `json:"tier"`
 	IsGift               bool   `json:"is_gift"`
+}
+
+// EventSubChannelSubscriptionGiftEvent
+type EventSubChannelSubscriptionGiftEvent struct {
+	UserID               string `json:"user_id"`
+	UserLogin            string `json:"user_login"`
+	UserName             string `json:"user_name"`
+	BroadcasterUserID    string `json:"broadcaster_user_id"`
+	BroadcasterUserLogin string `json:"broadcaster_user_login"`
+	BroadcasterUserName  string `json:"broadcaster_user_name"`
+	Total                int    `json:"total"`
+	Tier                 string `json:"tier"`
+	CumulativeTotal      int    `json:"cumulative_total"`
 }
 
 // Data for a channel cheer notification
@@ -208,16 +222,16 @@ type EventSubChannelRaidEvent struct {
 
 // Data for a channel poll begin event
 type EventSubChannelPollBeginEvent struct {
-	ID                      string                      `json:"id"`
-	BroadcasterUserID       string                      `json:"broadcaster_user_id"`
-	BroadcasterUserLogin    string                      `json:"broadcaster_user_login"`
-	BroadcasterUserName     string                      `json:"broadcaster_user_name"`
-	Title                   string                      `json:"title"`
-	Choices                 []PollChoice                `json:"choices"`
-	BitsVoting              EventSubBitVoting           `json:"bits_voting"`
-	ChannelPointsVoting     EventSubChannelPointsVoting `json:"channel_points_voting"`
-	StartedAt               Time                        `json:"started_at"`
-	EndsAt                  Time                        `json:"ends_at"`
+	ID                   string                      `json:"id"`
+	BroadcasterUserID    string                      `json:"broadcaster_user_id"`
+	BroadcasterUserLogin string                      `json:"broadcaster_user_login"`
+	BroadcasterUserName  string                      `json:"broadcaster_user_name"`
+	Title                string                      `json:"title"`
+	Choices              []PollChoice                `json:"choices"`
+	BitsVoting           EventSubBitVoting           `json:"bits_voting"`
+	ChannelPointsVoting  EventSubChannelPointsVoting `json:"channel_points_voting"`
+	StartedAt            Time                        `json:"started_at"`
+	EndsAt               Time                        `json:"ends_at"`
 }
 
 // Data for a channel poll progress event, it's the same as the channel poll begin event
@@ -225,17 +239,17 @@ type EventSubChannelPollProgressEvent = EventSubChannelPollBeginEvent
 
 // Data for a channel poll end event
 type EventSubChannelPollEndEvent struct {
-	ID                      string                      `json:"id"`
-	BroadcasterUserID       string                      `json:"broadcaster_user_id"`
-	BroadcasterUserLogin    string                      `json:"broadcaster_user_login"`
-	BroadcasterUserName     string                      `json:"broadcaster_user_name"`
-	Title                   string                      `json:"title"`
-	Choices                 []PollChoice                `json:"choices"`
-	BitsVoting              EventSubBitVoting           `json:"bits_voting"`
-	ChannelPointsVoting     EventSubChannelPointsVoting `json:"channel_points_voting"`
-	Status                  string                      `json:"status"`
-	StartedAt               Time                        `json:"started_at"`
-	EndedAt                 Time                        `json:"ended_at"`
+	ID                   string                      `json:"id"`
+	BroadcasterUserID    string                      `json:"broadcaster_user_id"`
+	BroadcasterUserLogin string                      `json:"broadcaster_user_login"`
+	BroadcasterUserName  string                      `json:"broadcaster_user_name"`
+	Title                string                      `json:"title"`
+	Choices              []PollChoice                `json:"choices"`
+	BitsVoting           EventSubBitVoting           `json:"bits_voting"`
+	ChannelPointsVoting  EventSubChannelPointsVoting `json:"channel_points_voting"`
+	Status               string                      `json:"status"`
+	StartedAt            Time                        `json:"started_at"`
+	EndedAt              Time                        `json:"ended_at"`
 }
 
 // EventSubBitVoting ...
@@ -246,7 +260,6 @@ type EventSubBitVoting struct {
 
 // ChannelPointsVoting ...
 type EventSubChannelPointsVoting = EventSubBitVoting
-
 
 // Data for a channel points custom reward notification
 type EventSubChannelPointsCustomRewardEvent struct {
@@ -287,7 +300,7 @@ type EventSubChannelPointsCustomRewardRedemptionEvent struct {
 	RedeemedAt           Time           `json:"redeemed_at"`
 }
 
-// Data for a channel channel prediction begin event
+// Data for a channel prediction begin event
 type EventSubChannelPredictionBeginEvent struct {
 	ID                   string            `json:"id"`
 	BroadcasterUserID    string            `json:"broadcaster_user_id"`
@@ -296,13 +309,13 @@ type EventSubChannelPredictionBeginEvent struct {
 	Title                string            `json:"title"`
 	Outcomes             []EventSubOutcome `json:"outcomes"`
 	StartedAt            Time              `json:"started_at"`
-	LocksAt              Time              `json:"outcomes"`
+	LockedAt             Time              `json:"locked_at"`
 }
 
-// Data for a channel channel prediction progress event
+// Data for a channel prediction progress event
 type EventSubChannelPredictionProgressEvent = EventSubChannelPredictionBeginEvent
 
-// Data for a channel channel prediction lock event
+// Data for a channel prediction lock event
 type EventSubChannelPredictionLockEvent struct {
 	ID                   string            `json:"id"`
 	BroadcasterUserID    string            `json:"broadcaster_user_id"`
@@ -316,7 +329,7 @@ type EventSubChannelPredictionLockEvent struct {
 	LockedAt             Time              `json:"locked_at"`
 }
 
-// Data for a channel channel prediction end event
+// Data for a channel prediction end event
 type EventSubChannelPredictionEndEvent struct {
 	ID                   string            `json:"id"`
 	BroadcasterUserID    string            `json:"broadcaster_user_id"`
@@ -340,7 +353,7 @@ type EventSubExtensionBitsTransactionCreateEvent struct {
 	UserID               string          `json:"user_id"`
 	UserLogin            string          `json:"user_login"`
 	UserName             string          `json:"user_name"`
-	product              EventSubProduct `json:"product"`
+	Product              EventSubProduct `json:"product"`
 }
 
 // Data for a hype train begin notification
@@ -491,10 +504,10 @@ func (c *Client) GetEventSubSubscriptions(params *EventSubSubscriptionsParams) (
 
 	eventSubs := &EventSubSubscriptionsResponse{}
 	resp.HydrateResponseCommon(&eventSubs.ResponseCommon)
-	eventSubs.Data.TotalCost             = resp.Data.(*ManyEventSubSubscriptions).TotalCost
-	eventSubs.Data.MaxTotalCost          = resp.Data.(*ManyEventSubSubscriptions).MaxTotalCost
+	eventSubs.Data.TotalCost = resp.Data.(*ManyEventSubSubscriptions).TotalCost
+	eventSubs.Data.MaxTotalCost = resp.Data.(*ManyEventSubSubscriptions).MaxTotalCost
 	eventSubs.Data.EventSubSubscriptions = resp.Data.(*ManyEventSubSubscriptions).EventSubSubscriptions
-	eventSubs.Data.Pagination            = resp.Data.(*ManyEventSubSubscriptions).Pagination
+	eventSubs.Data.Pagination = resp.Data.(*ManyEventSubSubscriptions).Pagination
 
 	return eventSubs, nil
 }
