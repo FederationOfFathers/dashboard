@@ -35,7 +35,6 @@ var logger *zap.Logger
 var devPort = 0
 var DB *db.DB
 var mysqlURI string
-var streamChannel = "-fof-dashboard"
 var mindStreams bool
 var honeycombToken string
 var honeycombDataset string = "unknown"
@@ -73,9 +72,8 @@ func init() {
 	// start the seen updater
 	bridge.Init()
 
+	// TODO move `mindStreams` to a better config
 	scfg := cfg.New("cfg-slack")
-	scfg.BoolVar(&bot.StartupNotice, "startupNotice", bot.StartupNotice, "send a start-up notice to slack")
-	scfg.StringVar(&streamChannel, "streamChannel", streamChannel, "where to send streaming notices")
 	scfg.BoolVar(&mindStreams, "mindStreams", mindStreams, "should we mind streaming?")
 
 	err := unmarshalConfig("cfg-discord.yml", &discordCfg)
