@@ -26,13 +26,6 @@ var ErrDiscordAPIUnresponsive = fmt.Errorf("The Discord api returned no data. Er
 var UpdateTimer = 30 * time.Minute
 var UpdateRequest = make(chan struct{})
 
-// var connection *slack.Info
-var connected bool
-var token string
-
-// var Logger *zap.Logger
-var StartupNotice = false
-
 // LogLevel sets the logging verbosity for the package
 var LogLevel = zap.InfoLevel
 
