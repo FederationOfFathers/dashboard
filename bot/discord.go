@@ -61,7 +61,11 @@ func StartDiscord(cfg DiscordCfg) *DiscordAPI {
 
 	discordApi.memberChannelAssignID = discordApi.channelIDByName(channelAssignName, memberCategoryID)
 
+	// register slash command
+	discordApi.registerSlashStream()
+
 	//add handlers
+	discordApi.discord.AddHandler(discordApi.slashCommandHandlers)
 	discordApi.discord.AddHandler(discordApi.roleAssignmentHandler)
 	discordApi.discord.AddHandler(discordApi.teamCommandHandler)
 	discordApi.discord.AddHandler(discordApi.verifiedEventsHandler)
