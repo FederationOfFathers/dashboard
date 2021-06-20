@@ -139,6 +139,7 @@ func (v *VoiceConnection) ChangeChannel(channelID string, mute, deaf bool) (err 
 func (v *VoiceConnection) Disconnect() (err error) {
 
 	// Send a OP4 with a nil channel to disconnect
+	v.Lock()
 	if v.sessionID != "" {
 		data := voiceChannelJoinOp{4, voiceChannelJoinData{&v.GuildID, nil, true, true}}
 		v.session.wsMutex.Lock()
@@ -146,6 +147,7 @@ func (v *VoiceConnection) Disconnect() (err error) {
 		v.session.wsMutex.Unlock()
 		v.sessionID = ""
 	}
+	v.Unlock()
 
 	// Close websocket and udp connections
 	v.Close()
@@ -346,6 +348,25 @@ func (v *VoiceConnection) wsListen(wsConn *websocket.Conn, close <-chan struct{}
 	for {
 		_, message, err := v.wsConn.ReadMessage()
 		if err != nil {
+			// 4014 indicates a manual disconnection by someone in the guild;
+			// we shouldn't reconnect.
+			if websocket.IsCloseError(err, 4014) {
+				v.log(LogInformational, "received 4014 manual disconnection")
+
+				// Abandon the voice WS connection
+				v.Lock()
+				v.wsConn = nil
+				v.Unlock()
+
+				v.session.Lock()
+				delete(v.session.VoiceConnections, v.GuildID)
+				v.session.Unlock()
+
+				v.Close()
+
+				return
+			}
+
 			// Detect if we have been closed manually. If a Close() has already
 			// happened, the websocket we are listening on will be different to the
 			// current session.
@@ -810,9 +831,15 @@ func (v *VoiceConnection) opusReceiver(udpConn *net.UDPConn, close <-chan struct
 		copy(nonce[:], recvbuf[0:12])
 		p.Opus, _ = secretbox.Open(nil, recvbuf[12:rlen], &nonce, &v.op4.SecretKey)
 
-		if len(p.Opus) > 8 && recvbuf[0] == 0x90 {
-			// Extension bit is set, first 8 bytes is the extended header
-			p.Opus = p.Opus[8:]
+		// extension bit set, and not a RTCP packet
+		if ((recvbuf[0] & 0x10) == 0x10) && ((recvbuf[1] & 0x80) == 0) {
+			// get extended header length
+			extlen := binary.BigEndian.Uint16(p.Opus[2:4])
+			// 4 bytes (ext header header) + 4*extlen (ext header data)
+			shift := int(4 + 4*extlen)
+			if len(p.Opus) > shift {
+				p.Opus = p.Opus[shift:]
+			}
 		}
 
 		if c != nil {
