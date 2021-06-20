@@ -1,6 +1,8 @@
 package db
 
-import "time"
+import (
+	"time"
+)
 
 type Stream struct {
 	ID             int       `sql:"bigint(20) NOT NULL AUTO_INCREMENT"`
@@ -34,9 +36,7 @@ func (d *DB) StreamByID(id int) (*Stream, error) {
 func (d *DB) StreamByMemberID(memberID int) (*Stream, error) {
 	s := new(Stream)
 	err := d.Where("member_id = ?", memberID).First(&s).Error
-	if err != nil {
-		s.db = d
-	}
+	s.db = d
 	return s, err
 }
 
