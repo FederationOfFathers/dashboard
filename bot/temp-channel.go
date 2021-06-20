@@ -95,12 +95,12 @@ func (d DiscordAPI) newMemberChannel(channelName string) (*discordgo.Channel, er
 		PermissionOverwrites: []*discordgo.PermissionOverwrite{
 			{
 				ID:   d.Config.GuildId, // deny everyone to view
-				Type: "role",
+				Type: discordgo.PermissionOverwriteTypeRole,
 				Deny: 0x00000400,
 			},
 			{
 				ID:    d.Config.ClientId, // bot permissions
-				Type:  "member",
+				Type:  discordgo.PermissionOverwriteTypeMember,
 				Allow: 0x00000010 + 0x00000040 + 0x00000800 + 0x00000400 + 0x00004000 + 0x00008000 + 0x00010000 + 0x00040000,
 			},
 		},
@@ -127,17 +127,17 @@ func (d DiscordAPI) updateMemberChannelPermissions(channelName, channelID, chann
 	po := []*discordgo.PermissionOverwrite{
 		{
 			ID:    channelRoleID, // allow the new role to send text
-			Type:  "role",
+			Type:  discordgo.PermissionOverwriteTypeRole,
 			Allow: 0x00000040 + 0x00000800 + 0x00000400 + 0x00004000 + 0x00008000 + 0x00010000 + 0x00040000,
 		},
 		{
 			ID:   d.Config.GuildId, // deny everyone to view
-			Type: "role",
+			Type: discordgo.PermissionOverwriteTypeRole,
 			Deny: 0x00000400,
 		},
 		{
 			ID:    d.Config.ClientId, // bot permissions
-			Type:  "member",
+			Type:  discordgo.PermissionOverwriteTypeMember,
 			Allow: 0x00000040 + 0x00000800 + 0x00000400 + 0x00004000 + 0x00008000 + 0x00010000 + 0x00040000 + 0x00000010,
 		},
 	}

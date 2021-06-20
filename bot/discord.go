@@ -70,7 +70,7 @@ func StartDiscord(cfg DiscordCfg) *DiscordAPI {
 
 	//go discordApi.setChannelAssignMessage()
 
-	discordApi.discord.UpdateStatus(0, "ui.fofgaming.com | !team")
+	discordApi.discord.UpdateGameStatus(0, "ui.fofgaming.com | !team")
 
 	// data cache
 	data.load()
