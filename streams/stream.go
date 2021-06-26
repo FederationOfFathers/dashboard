@@ -92,3 +92,9 @@ func Remove(memberID int, kind string) error {
 	}
 	return fmt.Errorf("unknown kind!")
 }
+
+func RemoveAll(memberID int) error {
+	err := DB.Exec("UPDATE `streams` SET `twitch` = '', `youtube` = '' WHERE `id` = ?", memberID).Error
+	updated()
+	return err
+}

@@ -6,7 +6,7 @@ require (
 	github.com/apokalyptik/cfg v0.0.0-20160401174707-703f89116901
 	github.com/bearcherian/rollzap v1.0.2
 	github.com/boltdb/bolt v1.3.1
-	github.com/bwmarrin/discordgo v0.20.2
+	github.com/bwmarrin/discordgo v0.23.3-0.20210529215543-f5bb723db8d9
 	github.com/denisenkom/go-mssqldb v0.0.0-20190915052044-aa4949efa320 // indirect
 	github.com/dineshappavoo/basex v0.0.0-20160618072718-f35bafba529c
 	github.com/erikstmartin/go-testdb v0.0.0-20160219214506-8d10e4a1bae5 // indirect
@@ -30,3 +30,6 @@ require (
 	gopkg.in/djherbis/stow.v2 v2.2.0
 	gopkg.in/yaml.v2 v2.4.0
 )
+
+// this is a fork that has an unreleased version of interaction component implementation
+replace github.com/bwmarrin/discordgo v0.23.3-0.20210529215543-f5bb723db8d9 => github.com/FedorLap2006/discordgo v0.22.1-0.20210618185457-afb10575dbd8

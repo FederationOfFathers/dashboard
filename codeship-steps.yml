@@ -1,3 +1,6 @@
+- name: "build"
+  service: app
+  command: echo "build complete"
 - service: app
   tag: ^(master|dev)
   type: push

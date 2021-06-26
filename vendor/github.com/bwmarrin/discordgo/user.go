@@ -2,6 +2,28 @@ package discordgo
 
 import "strings"
 
+// UserFlags is the flags of "user" (see UserFlags* consts)
+// https://discord.com/developers/docs/resources/user#user-object-user-flags
+type UserFlags int
+
+// Valid UserFlags values
+const (
+	UserFlagDiscordEmployee           UserFlags = 1 << 0
+	UserFlagDiscordPartner            UserFlags = 1 << 1
+	UserFlagHypeSquadEvents           UserFlags = 1 << 2
+	UserFlagBugHunterLevel1           UserFlags = 1 << 3
+	UserFlagHouseBravery              UserFlags = 1 << 6
+	UserFlagHouseBrilliance           UserFlags = 1 << 7
+	UserFlagHouseBalance              UserFlags = 1 << 8
+	UserFlagEarlySupporter            UserFlags = 1 << 9
+	UserFlagTeamUser                  UserFlags = 1 << 10
+	UserFlagSystem                    UserFlags = 1 << 12
+	UserFlagBugHunterLevel2           UserFlags = 1 << 14
+	UserFlagVerifiedBot               UserFlags = 1 << 16
+	UserFlagVerifiedBotDeveloper      UserFlags = 1 << 17
+	UserFlagDiscordCertifiedModerator UserFlags = 1 << 18
+)
+
 // A User stores all data for an individual Discord user.
 type User struct {
 	// The ID of the user.
@@ -36,6 +58,22 @@ type User struct {
 
 	// Whether the user is a bot.
 	Bot bool `json:"bot"`
+
+	// The public flags on a user's account.
+	// This is a combination of bit masks; the presence of a certain flag can
+	// be checked by performing a bitwise AND between this int and the flag.
+	PublicFlags UserFlags `json:"public_flags"`
+
+	// The type of Nitro subscription on a user's account.
+	// Only available when the request is authorized via a Bearer token.
+	PremiumType int `json:"premium_type"`
+
+	// Whether the user is an Official Discord System user (part of the urgent message system).
+	System bool `json:"system"`
+
+	// The flags on a user's account.
+	// Only available when the request is authorized via a Bearer token.
+	Flags int `json:"flags"`
 }
 
 // String returns a unique identifier of the form username#discriminator
