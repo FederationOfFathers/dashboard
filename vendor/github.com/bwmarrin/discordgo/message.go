@@ -16,23 +16,28 @@ import (
 )
 
 // MessageType is the type of Message
+// https://discord.com/developers/docs/resources/channel#message-object-message-types
 type MessageType int
 
 // Block contains the valid known MessageType values
 const (
-	MessageTypeDefault MessageType = iota
-	MessageTypeRecipientAdd
-	MessageTypeRecipientRemove
-	MessageTypeCall
-	MessageTypeChannelNameChange
-	MessageTypeChannelIconChange
-	MessageTypeChannelPinnedMessage
-	MessageTypeGuildMemberJoin
-	MessageTypeUserPremiumGuildSubscription
-	MessageTypeUserPremiumGuildSubscriptionTierOne
-	MessageTypeUserPremiumGuildSubscriptionTierTwo
-	MessageTypeUserPremiumGuildSubscriptionTierThree
-	MessageTypeChannelFollowAdd
+	MessageTypeDefault                               MessageType = 0
+	MessageTypeRecipientAdd                          MessageType = 1
+	MessageTypeRecipientRemove                       MessageType = 2
+	MessageTypeCall                                  MessageType = 3
+	MessageTypeChannelNameChange                     MessageType = 4
+	MessageTypeChannelIconChange                     MessageType = 5
+	MessageTypeChannelPinnedMessage                  MessageType = 6
+	MessageTypeGuildMemberJoin                       MessageType = 7
+	MessageTypeUserPremiumGuildSubscription          MessageType = 8
+	MessageTypeUserPremiumGuildSubscriptionTierOne   MessageType = 9
+	MessageTypeUserPremiumGuildSubscriptionTierTwo   MessageType = 10
+	MessageTypeUserPremiumGuildSubscriptionTierThree MessageType = 11
+	MessageTypeChannelFollowAdd                      MessageType = 12
+	MessageTypeGuildDiscoveryDisqualified            MessageType = 14
+	MessageTypeGuildDiscoveryRequalified             MessageType = 15
+	MessageTypeReply                                 MessageType = 19
+	MessageTypeApplicationCommand                    MessageType = 20
 )
 
 // A Message stores all data related to a specific Discord message.
@@ -63,7 +68,7 @@ type Message struct {
 	MentionRoles []string `json:"mention_roles"`
 
 	// Whether the message is text-to-speech.
-	Tts bool `json:"tts"`
+	TTS bool `json:"tts"`
 
 	// Whether the message mentions everyone.
 	MentionEveryone bool `json:"mention_everyone"`
@@ -74,6 +79,9 @@ type Message struct {
 
 	// A list of attachments present in the message.
 	Attachments []*MessageAttachment `json:"attachments"`
+
+	// A list of components attached to the message.
+	Components []UnmarshableMessageComponent `json:"components"`
 
 	// A list of embeds present in the message. Multiple
 	// embeds can currently only be sent by webhooks.
@@ -117,8 +125,39 @@ type Message struct {
 	// The flags of the message, which describe extra features of a message.
 	// This is a combination of bit masks; the presence of a certain permission can
 	// be checked by performing a bitwise AND between this int and the flag.
-	Flags int `json:"flags"`
+	Flags MessageFlags `json:"flags"`
 }
+
+// GetCustomEmojis pulls out all the custom (Non-unicode) emojis from a message and returns a Slice of the Emoji struct.
+func (m *Message) GetCustomEmojis() []*Emoji {
+	var toReturn []*Emoji
+	emojis := EmojiRegex.FindAllString(m.Content, -1)
+	if len(emojis) < 1 {
+		return toReturn
+	}
+	for _, em := range emojis {
+		parts := strings.Split(em, ":")
+		toReturn = append(toReturn, &Emoji{
+			ID:       parts[2][:len(parts[2])-1],
+			Name:     parts[1],
+			Animated: strings.HasPrefix(em, "<a:"),
+		})
+	}
+	return toReturn
+}
+
+// MessageFlags is the flags of "message" (see MessageFlags* consts)
+// https://discord.com/developers/docs/resources/channel#message-object-message-flags
+type MessageFlags int
+
+// Valid MessageFlags values
+const (
+	MessageFlagsCrossPosted          MessageFlags = 1 << 0
+	MessageFlagsIsCrossPosted        MessageFlags = 1 << 1
+	MessageFlagsSupressEmbeds        MessageFlags = 1 << 2
+	MessageFlagsSourceMessageDeleted MessageFlags = 1 << 3
+	MessageFlagsUrgent               MessageFlags = 1 << 4
+)
 
 // File stores info about files you e.g. send in messages.
 type File struct {
@@ -129,10 +168,13 @@ type File struct {
 
 // MessageSend stores all parameters you can send with ChannelMessageSendComplex.
 type MessageSend struct {
-	Content string        `json:"content,omitempty"`
-	Embed   *MessageEmbed `json:"embed,omitempty"`
-	Tts     bool          `json:"tts"`
-	Files   []*File       `json:"-"`
+	Content         string                  `json:"content,omitempty"`
+	Embed           *MessageEmbed           `json:"embed,omitempty"`
+	TTS             bool                    `json:"tts"`
+	Components      []MessageComponent      `json:"components"`
+	Files           []*File                 `json:"-"`
+	AllowedMentions *MessageAllowedMentions `json:"allowed_mentions,omitempty"`
+	Reference       *MessageReference       `json:"message_reference,omitempty"`
 
 	// TODO: Remove this when compatibility is not required.
 	File *File `json:"-"`
@@ -141,8 +183,10 @@ type MessageSend struct {
 // MessageEdit is used to chain parameters via ChannelMessageEditComplex, which
 // is also where you should get the instance from.
 type MessageEdit struct {
-	Content *string       `json:"content,omitempty"`
-	Embed   *MessageEmbed `json:"embed,omitempty"`
+	Content         *string                 `json:"content,omitempty"`
+	Components      []MessageComponent      `json:"components"`
+	Embed           *MessageEmbed           `json:"embed,omitempty"`
+	AllowedMentions *MessageAllowedMentions `json:"allowed_mentions,omitempty"`
 
 	ID      string
 	Channel string
@@ -169,6 +213,42 @@ func (m *MessageEdit) SetContent(str string) *MessageEdit {
 func (m *MessageEdit) SetEmbed(embed *MessageEmbed) *MessageEdit {
 	m.Embed = embed
 	return m
+}
+
+// AllowedMentionType describes the types of mentions used
+// in the MessageAllowedMentions type.
+type AllowedMentionType string
+
+// The types of mentions used in MessageAllowedMentions.
+const (
+	AllowedMentionTypeRoles    AllowedMentionType = "roles"
+	AllowedMentionTypeUsers    AllowedMentionType = "users"
+	AllowedMentionTypeEveryone AllowedMentionType = "everyone"
+)
+
+// MessageAllowedMentions allows the user to specify which mentions
+// Discord is allowed to parse in this message. This is useful when
+// sending user input as a message, as it prevents unwanted mentions.
+// If this type is used, all mentions must be explicitly whitelisted,
+// either by putting an AllowedMentionType in the Parse slice
+// (allowing all mentions of that type) or, in the case of roles and
+// users, explicitly allowing those mentions on an ID-by-ID basis.
+// For more information on this functionality, see:
+// https://discordapp.com/developers/docs/resources/channel#allowed-mentions-object-allowed-mentions-reference
+type MessageAllowedMentions struct {
+	// The mention types that are allowed to be parsed in this message.
+	// Please note that this is purposely **not** marked as omitempty,
+	// so if a zero-value MessageAllowedMentions object is provided no
+	// mentions will be allowed.
+	Parse []AllowedMentionType `json:"parse"`
+
+	// A list of role IDs to allow. This cannot be used when specifying
+	// AllowedMentionTypeRoles in the Parse slice.
+	Roles []string `json:"roles,omitempty"`
+
+	// A list of user IDs to allow. This cannot be used when specifying
+	// AllowedMentionTypeUsers in the Parse slice.
+	Users []string `json:"users,omitempty"`
 }
 
 // A MessageAttachment stores data for message attachments.
@@ -207,10 +287,9 @@ type MessageEmbedThumbnail struct {
 
 // MessageEmbedVideo is a part of a MessageEmbed struct.
 type MessageEmbedVideo struct {
-	URL      string `json:"url,omitempty"`
-	ProxyURL string `json:"proxy_url,omitempty"`
-	Width    int    `json:"width,omitempty"`
-	Height   int    `json:"height,omitempty"`
+	URL    string `json:"url,omitempty"`
+	Width  int    `json:"width,omitempty"`
+	Height int    `json:"height,omitempty"`
 }
 
 // MessageEmbedProvider is a part of a MessageEmbed struct.
@@ -237,7 +316,7 @@ type MessageEmbedField struct {
 // An MessageEmbed stores data for message embeds.
 type MessageEmbed struct {
 	URL         string                 `json:"url,omitempty"`
-	Type        string                 `json:"type,omitempty"`
+	Type        EmbedType              `json:"type,omitempty"`
 	Title       string                 `json:"title,omitempty"`
 	Description string                 `json:"description,omitempty"`
 	Timestamp   string                 `json:"timestamp,omitempty"`
@@ -250,6 +329,20 @@ type MessageEmbed struct {
 	Author      *MessageEmbedAuthor    `json:"author,omitempty"`
 	Fields      []*MessageEmbedField   `json:"fields,omitempty"`
 }
+
+// EmbedType is the type of embed
+// https://discord.com/developers/docs/resources/channel#embed-object-embed-types
+type EmbedType string
+
+// Block of valid EmbedTypes
+const (
+	EmbedTypeRich    EmbedType = "rich"
+	EmbedTypeImage   EmbedType = "image"
+	EmbedTypeVideo   EmbedType = "video"
+	EmbedTypeGifv    EmbedType = "gifv"
+	EmbedTypeArticle EmbedType = "article"
+	EmbedTypeLink    EmbedType = "link"
+)
 
 // MessageReactions holds a reactions object for a message.
 type MessageReactions struct {
@@ -269,23 +362,10 @@ type MessageActivityType int
 
 // Constants for the different types of Message Activity
 const (
-	MessageActivityTypeJoin = iota + 1
-	MessageActivityTypeSpectate
-	MessageActivityTypeListen
-	MessageActivityTypeJoinRequest
-)
-
-// MessageFlag describes an extra feature of the message
-type MessageFlag int
-
-// Constants for the different bit offsets of Message Flags
-const (
-	// This message has been published to subscribed channels (via Channel Following)
-	MessageFlagCrossposted = 1 << iota
-	// This message originated from a message in another channel (via Channel Following)
-	MessageFlagIsCrosspost
-	// Do not include any embeds when serializing this message
-	MessageFlagSuppressEmbeds
+	MessageActivityTypeJoin        MessageActivityType = 1
+	MessageActivityTypeSpectate    MessageActivityType = 2
+	MessageActivityTypeListen      MessageActivityType = 3
+	MessageActivityTypeJoinRequest MessageActivityType = 5
 )
 
 // MessageApplication is sent with Rich Presence-related chat embeds
@@ -301,7 +381,16 @@ type MessageApplication struct {
 type MessageReference struct {
 	MessageID string `json:"message_id"`
 	ChannelID string `json:"channel_id"`
-	GuildID   string `json:"guild_id"`
+	GuildID   string `json:"guild_id,omitempty"`
+}
+
+// Reference returns MessageReference of given message
+func (m *Message) Reference() *MessageReference {
+	return &MessageReference{
+		GuildID:   m.GuildID,
+		ChannelID: m.ChannelID,
+		MessageID: m.ID,
+	}
 }
 
 // ContentWithMentionsReplaced will replace all @<id> mentions with the

@@ -7,7 +7,7 @@ github.com/bearcherian/rollzap
 # github.com/boltdb/bolt v1.3.1
 ## explicit
 github.com/boltdb/bolt
-# github.com/bwmarrin/discordgo v0.20.2
+# github.com/bwmarrin/discordgo v0.23.3-0.20210529215543-f5bb723db8d9 => github.com/FedorLap2006/discordgo v0.22.1-0.20210618185457-afb10575dbd8
 ## explicit
 github.com/bwmarrin/discordgo
 # github.com/denisenkom/go-mssqldb v0.0.0-20190915052044-aa4949efa320
@@ -38,7 +38,7 @@ github.com/gorilla/mux
 # github.com/gorilla/securecookie v0.0.0-20160422134519-667fe4e3466a
 ## explicit
 github.com/gorilla/securecookie
-# github.com/gorilla/websocket v1.4.0
+# github.com/gorilla/websocket v1.4.2
 github.com/gorilla/websocket
 # github.com/honeycombio/beeline-go v1.1.2
 ## explicit
@@ -124,7 +124,7 @@ go.uber.org/zap/internal/bufferpool
 go.uber.org/zap/internal/color
 go.uber.org/zap/internal/exit
 go.uber.org/zap/zapcore
-# golang.org/x/crypto v0.0.0-20210322153248-0c34fe9e7dc2
+# golang.org/x/crypto v0.0.0-20210421170649-83a5a9bb288b
 golang.org/x/crypto/internal/subtle
 golang.org/x/crypto/nacl/secretbox
 golang.org/x/crypto/poly1305
