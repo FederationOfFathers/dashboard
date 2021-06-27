@@ -29,8 +29,6 @@ import (
 
 var twitchClientID = ""
 var twitchClientSecret = ""
-var slackAPIKey = "xox...."
-var slackMessagingKey = ""
 var discordCfg = bot.DiscordCfg{}
 var rollbarCfg = metrics.RollbarConfig{}
 var logger *zap.Logger
@@ -72,14 +70,7 @@ func init() {
 	bridge.Logger = logger.Named("bridge")
 	messaging.Logger = logger.Named("messaging")
 
-	// start the seen updater
-	bridge.Init()
-
 	scfg := cfg.New("cfg-slack")
-	scfg.StringVar(&slackAPIKey, "apiKey", slackAPIKey, "Slack API Key (env: SLACK_APIKEY)")
-	scfg.StringVar(&slackMessagingKey, "messagingKey", slackMessagingKey, "Slack Messaging API Key (env: SLACK_MESSAGINGAPIKEY)")
-	scfg.BoolVar(&bot.StartupNotice, "startupNotice", bot.StartupNotice, "send a start-up notice to slack")
-	scfg.StringVar(&streamChannel, "streamChannel", streamChannel, "where to send streaming notices")
 	scfg.BoolVar(&mindStreams, "mindStreams", mindStreams, "should we mind streaming?")
 
 	err := unmarshalConfig("cfg-discord.yml", &discordCfg)

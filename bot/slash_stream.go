@@ -11,8 +11,6 @@ import (
 	"go.uber.org/zap"
 )
 
-var twitchRegex = `http(s)?://(.*).twitch.tv/$1`
-
 // registerSlashStream regsiters the /stream add/remove commands for the bot
 func (d *DiscordAPI) registerSlashStream() {
 
@@ -41,7 +39,11 @@ func (d *DiscordAPI) registerSlashStream() {
 		},
 	}
 
-	d.discord.ApplicationCommandCreate(d.discord.State.User.ID, d.Config.GuildId, streamCommand)
+	if _, err := d.discord.ApplicationCommandCreate(d.discord.State.User.ID, d.Config.GuildId, streamCommand); err != nil {
+		Logger.With(zap.Error(err)).Error("unable to register slash commands")
+	} else {
+		Logger.Info("Discord slash commands registered")
+	}
 
 }
 
