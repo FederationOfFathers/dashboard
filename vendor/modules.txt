@@ -71,7 +71,7 @@ github.com/klauspost/compress/zstd
 github.com/klauspost/compress/zstd/internal/xxhash
 # github.com/lusis/slack-test v0.0.0-20190426140909-c40012f20018
 ## explicit
-# github.com/nicklaw5/helix v1.17.0
+# github.com/nicklaw5/helix v1.21.0
 ## explicit
 github.com/nicklaw5/helix
 # github.com/nlopes/slack v0.0.0-20180905213137-8cf10c586222
