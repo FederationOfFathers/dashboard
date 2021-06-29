@@ -10,7 +10,7 @@ import (
 // slashCommandHandlers handles and routes all incoming interaction based commands based on the interaction type
 func (d *DiscordAPI) slashCommandHandlers(s *discordgo.Session, i *discordgo.InteractionCreate) {
 
-	Logger.With(zap.Any("interaction", i.Interaction)).Error("slash command interaction")
+	Logger.With(zap.Any("interaction", i.Interaction)).Debug("slash command interaction")
 
 	switch i.Type {
 	case discordgo.InteractionApplicationCommand:
