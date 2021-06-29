@@ -25,7 +25,7 @@ require (
 	github.com/robfig/cron v1.2.0
 	github.com/rollbar/rollbar-go v1.4.0
 	github.com/speps/go-hashids v1.0.0
-	go.uber.org/zap v1.17.0
+	go.uber.org/zap v1.18.1
 	golang.org/x/oauth2 v0.0.0-20190130055435-99b60b757ec1
 	gopkg.in/djherbis/stow.v2 v2.2.0
 	gopkg.in/yaml.v2 v2.4.0
