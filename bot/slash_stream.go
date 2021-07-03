@@ -11,23 +11,21 @@ import (
 	"go.uber.org/zap"
 )
 
-var twitchRegex = `http(s)?://(.*).twitch.tv/$1`
-
 // registerSlashStream regsiters the /stream add/remove commands for the bot
 func (d *DiscordAPI) registerSlashStream() {
 
 	streamCommand := &discordgo.ApplicationCommand{
 		Name:        "stream",
-		Description: "register/unregister streams",
+		Description: "Use to register/unregister streams to be announced in the on-air channel",
 		Options: []*discordgo.ApplicationCommandOption{
 			{
 				Name:        "add",
-				Description: "adds a stream to be monitored for announcement in the stream channel",
+				Description: "Adds a stream to be monitored and announced in the on-air channel",
 				Type:        discordgo.ApplicationCommandOptionSubCommand,
 				Options: []*discordgo.ApplicationCommandOption{
 					{
 						Name:        "stream",
-						Description: "link to your stream",
+						Description: "link to your stream (http://twitch.tv/my_username)",
 						Required:    true,
 						Type:        discordgo.ApplicationCommandOptionString,
 					},
@@ -35,13 +33,17 @@ func (d *DiscordAPI) registerSlashStream() {
 			},
 			{
 				Name:        "remove",
-				Description: "use to remove the stream linked to your profile",
+				Description: "use to remove any stream linked to your profile",
 				Type:        discordgo.ApplicationCommandOptionSubCommand,
 			},
 		},
 	}
 
-	d.discord.ApplicationCommandCreate(d.discord.State.User.ID, d.Config.GuildId, streamCommand)
+	if _, err := d.discord.ApplicationCommandCreate(d.discord.State.User.ID, d.Config.GuildId, streamCommand); err != nil {
+		Logger.With(zap.Error(err)).Error("unable to register slash commands")
+	} else {
+		Logger.Info("Discord slash commands registered")
+	}
 
 }
 
