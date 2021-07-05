@@ -1,6 +1,5 @@
 package helix
 
-// ChannelCustomRewardsParams ...
 type ChannelCustomRewardsParams struct {
 	BroadcasterID                     string `query:"broadcaster_id"`
 	Title                             string `json:"title"`
@@ -18,12 +17,21 @@ type ChannelCustomRewardsParams struct {
 	ShouldRedemptionsSkipRequestQueue bool   `json:"should_redemptions_skip_request_queue"`
 }
 
-// ChannelCustomRewards ...
+type DeleteCustomRewardsParams struct {
+	BroadcasterID string `query:"broadcaster_id"`
+	ID            string `query:"id"`
+}
+
+type GetCustomRewardsParams struct {
+	BroadcasterID         string `query:"broadcaster_id"`
+	ID                    string `query:"id"`
+	OnlyManageableRewards bool   `query:"only_manageable_rewards"`
+}
+
 type ManyChannelCustomRewards struct {
 	ChannelCustomRewards []ChannelCustomReward `json:"data"`
 }
 
-// ChannelCustomReward ...
 type ChannelCustomReward struct {
 	BroadcasterID                     string                      `json:"broadcaster_id"`
 	BroadcasterLogin                  string                      `json:"broadcaster_login"`
@@ -46,35 +54,35 @@ type ChannelCustomReward struct {
 	CooldownExpiresAt                 string                      `json:"cooldown_expires_at"`
 }
 
-// RewardImage ...
 type RewardImage struct {
-	Url1 string `json:"url_1x"`
-	Url2 string `json:"url_2x"`
-	Url4 string `json:"url_4x"`
+	Url1x string `json:"url_1x"`
+	Url2x string `json:"url_2x"`
+	Url4x string `json:"url_4x"`
 }
 
-// MaxPerUserPerStreamSettings ...
 type MaxPerUserPerStreamSettings struct {
 	IsEnabled           bool `json:"is_enabled"`
 	MaxPerUserPerStream int  `json:"max_per_user_per_stream"`
 }
 
-// MaxPerStreamSettings ...
 type MaxPerStreamSettings struct {
 	IsEnabled    bool `json:"is_enabled"`
 	MaxPerStream int  `json:"max_per_stream"`
 }
 
-// GlobalCooldownSettings ...
 type GlobalCooldownSettings struct {
 	IsEnabled             bool `json:"is_enabled"`
 	GlobalCooldownSeconds int  `json:"global_cooldown_seconds"`
 }
 
-// ChannelCustomRewardResponse ...
 type ChannelCustomRewardResponse struct {
 	ResponseCommon
 	Data ManyChannelCustomRewards
+}
+
+// Response for removing a custom reward
+type DeleteCustomRewardsResponse struct {
+	ResponseCommon
 }
 
 // CreateCustomReward : Creates a Custom Reward on a channel.
@@ -90,4 +98,33 @@ func (c *Client) CreateCustomReward(params *ChannelCustomRewardsParams) (*Channe
 	reward.Data.ChannelCustomRewards = resp.Data.(*ManyChannelCustomRewards).ChannelCustomRewards
 
 	return reward, nil
+}
+
+// DeleteCustomRewards : Deletes a Custom Rewards on a channel
+// Required scope: channel:manage:redemptions
+func (c *Client) DeleteCustomRewards(params *DeleteCustomRewardsParams) (*DeleteCustomRewardsResponse, error) {
+	resp, err := c.delete("/channel_points/custom_rewards", nil, params)
+	if err != nil {
+		return nil, err
+	}
+
+	reward := &DeleteCustomRewardsResponse{}
+	resp.HydrateResponseCommon(&reward.ResponseCommon)
+
+	return reward, nil
+}
+
+// GetCustomRewards : Get Custom Rewards on a channel
+// Required scope: channel:read:redemptions
+func (c *Client) GetCustomRewards(params *GetCustomRewardsParams) (*ChannelCustomRewardResponse, error) {
+	resp, err := c.get("/channel_points/custom_rewards", &ManyChannelCustomRewards{}, params)
+	if err != nil {
+		return nil, err
+	}
+
+	rewards := &ChannelCustomRewardResponse{}
+	resp.HydrateResponseCommon(&rewards.ResponseCommon)
+	rewards.Data.ChannelCustomRewards = resp.Data.(*ManyChannelCustomRewards).ChannelCustomRewards
+
+	return rewards, nil
 }
