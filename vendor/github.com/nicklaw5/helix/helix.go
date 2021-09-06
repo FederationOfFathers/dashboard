@@ -22,19 +22,16 @@ const (
 	AuthBaseURL = "https://id.twitch.tv/oauth2"
 )
 
-// HTTPClient ...
 type HTTPClient interface {
 	Do(req *http.Request) (*http.Response, error)
 }
 
-// Client ...
 type Client struct {
 	mu           sync.RWMutex
 	opts         *Options
 	lastResponse *Response
 }
 
-// Options ...
 type Options struct {
 	ClientID        string
 	ClientSecret    string
@@ -45,6 +42,13 @@ type Options struct {
 	HTTPClient      HTTPClient
 	RateLimitFunc   RateLimitFunc
 	APIBaseURL      string
+	ExtensionOpts   ExtensionOptions
+}
+
+type ExtensionOptions struct {
+	OwnerUserID    string
+	Secret         string
+	SignedJWTToken string
 }
 
 // DateRange is a generic struct used by various responses.
@@ -53,10 +57,8 @@ type DateRange struct {
 	EndedAt   Time `json:"ended_at"`
 }
 
-// RateLimitFunc ...
 type RateLimitFunc func(*Response) error
 
-// ResponseCommon ...
 type ResponseCommon struct {
 	StatusCode   int
 	Header       http.Header
@@ -86,7 +88,6 @@ func (rc *ResponseCommon) GetRateLimitReset() int {
 	return rc.convertHeaderToInt(rc.Header.Get("RateLimit-Reset"))
 }
 
-// Response ...
 type Response struct {
 	ResponseCommon
 	Data interface{}
@@ -101,7 +102,6 @@ func (r *Response) HydrateResponseCommon(rc *ResponseCommon) {
 	rc.ErrorMessage = r.ResponseCommon.ErrorMessage
 }
 
-// Pagination ...
 type Pagination struct {
 	Cursor string `json:"cursor"`
 }
@@ -401,6 +401,9 @@ func (c *Client) setRequestHeaders(req *http.Request) {
 	if opts.UserAccessToken != "" {
 		bearerToken = opts.UserAccessToken
 	}
+	if opts.ExtensionOpts.SignedJWTToken != "" {
+		bearerToken = opts.ExtensionOpts.SignedJWTToken
+	}
 
 	authType := "Bearer"
 	// Token validation requires different type of Auth
@@ -424,7 +427,6 @@ func (c *Client) GetAppAccessToken() string {
 	return c.opts.AppAccessToken
 }
 
-// SetAppAccessToken ...
 func (c *Client) SetAppAccessToken(accessToken string) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
@@ -436,21 +438,29 @@ func (c *Client) GetUserAccessToken() string {
 	return c.opts.UserAccessToken
 }
 
-// SetUserAccessToken ...
 func (c *Client) SetUserAccessToken(accessToken string) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	c.opts.UserAccessToken = accessToken
 }
 
-// SetUserAgent ...
+// GetAppAccessToken returns the current app access token.
+func (c *Client) GetExtensionSignedJWTToken() string {
+	return c.opts.ExtensionOpts.SignedJWTToken
+}
+
+func (c *Client) SetExtensionSignedJWTToken(jwt string) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	c.opts.ExtensionOpts.SignedJWTToken = jwt
+}
+
 func (c *Client) SetUserAgent(userAgent string) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	c.opts.UserAgent = userAgent
 }
 
-// SetRedirectURI ...
 func (c *Client) SetRedirectURI(uri string) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
