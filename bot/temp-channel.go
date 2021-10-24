@@ -19,10 +19,15 @@ const memberChannelRoleFmt = "mc_%s"
 const channelAssignName = "channel-assign"
 const joinMemberChannelEmoji = "✅"
 const leaveMemberChannelEmoji = "🛑"
-const channelMaxIdleTime = time.Hour * 120 // TTL for a channel without new messages
+const channelMaxIdleTime = time.Hour * 72 // TTL for a channel without new messages
 
 // !channel channel_name
 func (d *DiscordAPI) tempChannelCommandHandler(s *discordgo.Session, event *discordgo.MessageCreate) {
+
+	if time.Now().Hour()%1 == 0 {
+		Logger.Info("!channel: we don't do that anymore")
+		return
+	}
 
 	// check that we're listening to the right guild
 	if event.GuildID != d.Config.GuildId {
@@ -391,7 +396,7 @@ func (d *DiscordAPI) setChannelAssignMessage() {
 		"* To join a channel click the ✅ below a channel.\n" +
 		"* Click the 🛑 to leave the channel.\n" +
 		"* To create a new channel, type `!channel channel_name` with no spaces in the channel name. This can be done in any channel with FoF Bot, like <#%s>\n" +
-		"* Channels are auto deleted after ~5 days of inactivity\n" +
+		"* Channels are auto deleted after 3 days of inactivity\n" +
 		"---------------------------------------------------------------------------"
 
 	d.discord.ChannelMessageSend(
