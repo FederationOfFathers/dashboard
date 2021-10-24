@@ -24,6 +24,11 @@ const channelMaxIdleTime = time.Hour * 120 // TTL for a channel without new mess
 // !channel channel_name
 func (d *DiscordAPI) tempChannelCommandHandler(s *discordgo.Session, event *discordgo.MessageCreate) {
 
+	if time.Now().Hour()%1 == 0 {
+		Logger.Info("!channel: we don't do that anymore")
+		return
+	}
+
 	// check that we're listening to the right guild
 	if event.GuildID != d.Config.GuildId {
 		return
