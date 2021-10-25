@@ -2,6 +2,7 @@ package bot
 
 import (
 	"fmt"
+	"math/rand"
 	"sort"
 	"strings"
 	"time"
@@ -24,7 +25,24 @@ const channelMaxIdleTime = time.Hour * 72 // TTL for a channel without new messa
 // !channel channel_name
 func (d *DiscordAPI) tempChannelCommandHandler(s *discordgo.Session, event *discordgo.MessageCreate) {
 
+	noResponses := []string{
+		"Sorry, I don't do that any more.",
+		"You can't make me.",
+		"Just what do you think you're doing, Dave?",
+		"Sorry, I'm taking a shit and posting about it on a channel that doesn't exist anymore",
+		"Remember when I used to be on Slack? HA!",
+		"I'm telling Meow",
+		"Thank you! Beginning self destruct...",
+		"That's not for you",
+		"You are not authorized to access this area.",
+		"Shall we play a game? Oh... wait... I don't know how to play games...",
+		"End Of Line",
+	}
+
 	if time.Now().Hour()%1 == 0 {
+		rand.Seed(time.Now().UnixNano())
+		randResponse := rand.Intn(len(noResponses) - 1)
+		s.ChannelMessageSendReply(event.ChannelID, noResponses[randResponse], event.Reference())
 		Logger.Info("!channel: we don't do that anymore")
 		return
 	}
