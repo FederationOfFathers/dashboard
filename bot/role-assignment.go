@@ -38,8 +38,6 @@ func (d DiscordAPI) roleAssignmentHandler(s *discordgo.Session, event *discordgo
 	switch event.ChannelID {
 	case d.Config.RoleCfg.ChannelId:
 		d.handleConsoleRoles(s, event)
-	case d.memberChannelAssignID:
-		d.handleMemberChannelRole(s, event)
 	}
 
 }
@@ -75,7 +73,7 @@ func (d DiscordAPI) handleConsoleRoles(s *discordgo.Session, event *discordgo.Me
 	}
 }
 
-func (d *DiscordAPI) assignRoleToUser(userID, roleID string ) {
+func (d *DiscordAPI) assignRoleToUser(userID, roleID string) {
 	// get the user from the server/guild
 	member, err := d.discord.GuildMember(d.Config.GuildId, userID)
 	if err != nil {
@@ -165,5 +163,3 @@ func (d *DiscordAPI) createRoleMessages() {
 		d.assignmentMsgs[message.ID] = emojiRoles
 	}
 }
-
-
