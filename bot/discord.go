@@ -14,10 +14,9 @@ import (
 )
 
 type DiscordAPI struct {
-	Config                DiscordCfg
-	discord               *discordgo.Session
-	assignmentMsgs        map[string]map[string]string
-	memberChannelAssignID string
+	Config         DiscordCfg
+	discord        *discordgo.Session
+	assignmentMsgs map[string]map[string]string
 }
 
 type DiscordCfg struct {
@@ -59,8 +58,6 @@ func StartDiscord(cfg DiscordCfg) *DiscordAPI {
 		discordApi.StartRoleHandlers()
 	}
 
-	discordApi.memberChannelAssignID = discordApi.channelIDByName(channelAssignName, memberCategoryID)
-
 	// register slash command
 	discordApi.registerSlashStream()
 
@@ -69,8 +66,6 @@ func StartDiscord(cfg DiscordCfg) *DiscordAPI {
 	discordApi.discord.AddHandler(discordApi.roleAssignmentHandler)
 	discordApi.discord.AddHandler(discordApi.teamCommandHandler)
 	discordApi.discord.AddHandler(discordApi.verifiedEventsHandler)
-
-	go discordApi.mindTempChannels()
 
 	//go discordApi.setChannelAssignMessage()
 
@@ -98,10 +93,6 @@ func (d *DiscordAPI) verifiedEventsHandler(s *discordgo.Session, event *discordg
 	switch fields[0] {
 	case channelCommand:
 		d.tempChannelCommandHandler(s, event)
-	case inviteCommand:
-		d.inviteTempChannelHandler(s, event)
-	case leaveCommand:
-		d.leaveTempChannelHandler(s, event)
 	}
 }
 
@@ -416,29 +407,4 @@ func userIDFromMention(mention string) string {
 
 func channelIDFromChannelLink(channelLink string) string {
 	return strings.Trim(channelLink[2:len(channelLink)-1], "!")
-}
-
-func (d *DiscordAPI) textChannelsInCategory(categoryID string) []*Channel {
-
-	channels := d.guildChannels()
-	// get channels of member channels category
-	for _, category := range channels.Categories {
-		if category.ID == memberCategoryID {
-			return category.Channels
-		}
-	}
-
-	return []*Channel{}
-}
-
-func (d DiscordAPI) channelIDByName(channelName, parentID string) string {
-	memberChannels := d.textChannelsInCategory(parentID)
-
-	for _, ch := range memberChannels {
-		if ch.Name == channelAssignName {
-			return ch.ID
-		}
-	}
-
-	return ""
 }
