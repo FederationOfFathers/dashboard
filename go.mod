@@ -24,7 +24,7 @@ require (
 	github.com/pborman/uuid v0.0.0-20170612153648-e790cca94e6c
 	github.com/robfig/cron v1.2.0
 	github.com/rollbar/rollbar-go v1.4.0
-	github.com/speps/go-hashids v1.0.0
+	github.com/speps/go-hashids v2.0.0+incompatible
 	go.uber.org/zap v1.17.0
 	golang.org/x/oauth2 v0.0.0-20190130055435-99b60b757ec1
 	gopkg.in/djherbis/stow.v2 v2.2.0
