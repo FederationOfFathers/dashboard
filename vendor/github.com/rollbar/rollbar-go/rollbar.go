@@ -128,6 +128,11 @@ func SetEndpoint(endpoint string) {
 	std.SetEndpoint(endpoint)
 }
 
+// SetItemsPerMinute sets the max number of items to send in a given minute
+func SetItemsPerMinute(itemsPerMinute int) {
+	std.SetItemsPerMinute(itemsPerMinute)
+}
+
 // SetPlatform sets the platform on the managed Client instance.
 // The platform is reported for all Rollbar items. The default is
 // the running operating system (darwin, freebsd, linux, etc.) but it can
@@ -419,11 +424,13 @@ func Debug(interfaces ...interface{}) {
 //    string
 //    map[string]interface{}
 //    int
+//    context.Context
 // The string and error types are mutually exclusive.
 // If an error is present then a stack trace is captured. If an int is also present then we skip
 // that number of stack frames. If the map is present it is used as extra custom data in the
 // item. If a string is present without an error, then we log a message without a stack
-// trace. If a request is present we extract as much relevant information from it as we can.
+// trace. If a request is present we extract as much relevant information from it as we can. If
+// a context is present, it is applied to downstream operations.
 func Log(level string, interfaces ...interface{}) {
 	var r *http.Request
 	var err error
