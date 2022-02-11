@@ -91,6 +91,9 @@ type Config struct {
 	// Client, if specified, allows overriding the default client used to send events to Honeycomb
 	// If set, overrides many fields in this config - see descriptions
 	Client *libhoney.Client
+
+	// PprofTagging controls whether span IDs should be propagated to pprof.
+	PprofTagging bool
 }
 
 // Init intializes the honeycomb instrumentation library.
@@ -184,6 +187,8 @@ func Init(config Config) {
 	if config.PresendHook != nil {
 		trace.GlobalConfig.PresendHook = config.PresendHook
 	}
+
+	trace.GlobalConfig.PprofTagging = config.PprofTagging
 	return
 }
 
@@ -213,6 +218,9 @@ func Close() {
 // context from the request (`r.Context()`) and the key and value you wish to
 // add.This function is good for span-level data, eg timers or the arguments to
 // a specific function call, etc. Fields added here are prefixed with `app.`
+//
+// Errors are treated as a special case for convenience: if `val` is of type
+// `error` then the key is set to the error's message in the span.
 func AddField(ctx context.Context, key string, val interface{}) {
 	span := trace.GetSpanFromContext(ctx)
 	if span != nil {
