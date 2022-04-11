@@ -13,7 +13,7 @@ require (
 	github.com/gorilla/handlers v1.5.1
 	github.com/gorilla/mux v1.8.0
 	github.com/gorilla/securecookie v0.0.0-20160422134519-667fe4e3466a
-	github.com/honeycombio/beeline-go v1.1.2
+	github.com/honeycombio/beeline-go v1.8.0
 	github.com/jinzhu/gorm v0.0.0-20160404144928-5174cc5c242a
 	github.com/jinzhu/inflection v0.0.0-20170102125226-1c35d901db3d // indirect
 	github.com/jinzhu/now v1.0.1 // indirect
@@ -26,7 +26,7 @@ require (
 	github.com/rollbar/rollbar-go v1.4.0
 	github.com/speps/go-hashids v1.0.0
 	go.uber.org/zap v1.17.0
-	golang.org/x/oauth2 v0.0.0-20190130055435-99b60b757ec1
+	golang.org/x/oauth2 v0.0.0-20210402161424-2e8d93401602
 	gopkg.in/djherbis/stow.v2 v2.2.0
 	gopkg.in/yaml.v2 v2.4.0
 )
