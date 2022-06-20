@@ -89,7 +89,7 @@ github.com/pkg/errors
 # github.com/robfig/cron v1.2.0
 ## explicit
 github.com/robfig/cron
-# github.com/rollbar/rollbar-go v1.4.0
+# github.com/rollbar/rollbar-go v1.4.3
 ## explicit
 github.com/rollbar/rollbar-go
 # github.com/speps/go-hashids v1.0.0
