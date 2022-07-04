@@ -86,7 +86,7 @@ func (c *Client) SetEnabled(enabled bool) {
 	c.configuration.enabled = enabled
 }
 
-// SetToken sets the token used by this client.
+// SetToken sets the token used by this Client.
 // The value is a Rollbar access token with scope "post_server_item".
 // It is required to set this value before any of the other functions herein will be able to work
 // properly. This also configures the underlying Transport.
@@ -135,11 +135,24 @@ func (c *Client) SetCustom(custom map[string]interface{}) {
 // SetPerson information for identifying a user associated with
 // any subsequent errors or messages. Only id is required to be
 // non-empty.
-func (c *Client) SetPerson(id, username, email string) {
+
+type personOption func(*Person)
+
+func WithPersonExtra(extra map[string]string) personOption {
+	return func(p *Person) {
+		p.Extra = extra
+	}
+}
+func (c *Client) SetPerson(id, username, email string, opts ...personOption) {
 	person := Person{
 		Id:       id,
 		Username: username,
 		Email:    email,
+	}
+	for _, opt := range opts {
+		// Call the option giving the instantiated
+		// *Person as the argument
+		opt(&person)
 	}
 
 	c.configuration.person = person
@@ -192,7 +205,7 @@ func (c *Client) SetTransform(transform func(map[string]interface{})) {
 	c.configuration.transform = transform
 }
 
-// SetUnwrapper sets the UnwrapperFunc used by the client. The unwrapper function
+// SetUnwrapper sets the UnwrapperFunc used by the Client. The unwrapper function
 // is used to extract wrapped errors from enhanced error types. This feature can be used to add
 // support for custom error types that do not yet implement the Unwrap method specified in Go 1.13.
 // See the documentation of UnwrapperFunc for more details.
@@ -203,7 +216,7 @@ func (c *Client) SetUnwrapper(unwrapper UnwrapperFunc) {
 	c.configuration.unwrapper = unwrapper
 }
 
-// SetStackTracer sets the StackTracerFunc used by the client. The stack tracer
+// SetStackTracer sets the StackTracerFunc used by the Client. The stack tracer
 // function is used to extract the stack trace from enhanced error types. This feature can be used
 // to add support for custom error types that do not implement the Stacker interface.
 // See the documentation of StackTracerFunc for more details.
@@ -240,6 +253,12 @@ func (c *Client) SetRetryAttempts(retryAttempts int) {
 	c.Transport.SetRetryAttempts(retryAttempts)
 }
 
+// SetItemsPerMinute sets the max number of items to send in a given minute
+func (c *Client) SetItemsPerMinute(itemsPerMinute int) {
+	c.configuration.itemsPerMinute = itemsPerMinute
+	c.Transport.SetItemsPerMinute(itemsPerMinute)
+}
+
 // SetPrintPayloadOnError sets whether or not to output the payload to the set logger or to
 // stderr if an error occurs during transport to the Rollbar API. For example, if you hit
 // your rate limit and we run out of retry attempts, then if this is true we will output the
@@ -248,7 +267,7 @@ func (c *Client) SetPrintPayloadOnError(printPayloadOnError bool) {
 	c.Transport.SetPrintPayloadOnError(printPayloadOnError)
 }
 
-// SetHTTPClient sets custom http client. http.DefaultClient is used by default
+// SetHTTPClient sets custom http Client. http.DefaultClient is used by default
 func (c *Client) SetHTTPClient(httpClient *http.Client) {
 	c.Transport.SetHTTPClient(httpClient)
 }
@@ -256,6 +275,11 @@ func (c *Client) SetHTTPClient(httpClient *http.Client) {
 // Token is the currently set Rollbar access token.
 func (c *Client) Token() string {
 	return c.configuration.token
+}
+
+// ItemsPerMinute is the currently set Rollbar items per minute
+func (c *Client) ItemsPerMinute() int {
+	return c.configuration.itemsPerMinute
 }
 
 // Environment is the currently set environment underwhich all errors and
@@ -271,7 +295,7 @@ func (c *Client) Endpoint() string {
 
 // Platform is the currently set platform reported for all Rollbar items. The default is
 // the running operating system (darwin, freebsd, linux, etc.) but it can
-// also be application specific (client, heroku, etc.).
+// also be application specific (Client, heroku, etc.).
 func (c *Client) Platform() string {
 	return c.configuration.platform
 }
@@ -623,6 +647,7 @@ type Person struct {
 	Id       string
 	Username string
 	Email    string
+	Extra    map[string]string
 }
 
 type pkey int
@@ -652,24 +677,25 @@ const (
 )
 
 type configuration struct {
-	enabled      bool
-	token        string
-	environment  string
-	platform     string
-	codeVersion  string
-	serverHost   string
-	serverRoot   string
-	endpoint     string
-	custom       map[string]interface{}
-	fingerprint  bool
-	scrubHeaders *regexp.Regexp
-	scrubFields  *regexp.Regexp
-	checkIgnore  func(string) bool
-	transform    func(map[string]interface{})
-	unwrapper    UnwrapperFunc
-	stackTracer  StackTracerFunc
-	person       Person
-	captureIp    captureIp
+	enabled        bool
+	token          string
+	environment    string
+	platform       string
+	codeVersion    string
+	serverHost     string
+	serverRoot     string
+	endpoint       string
+	custom         map[string]interface{}
+	fingerprint    bool
+	scrubHeaders   *regexp.Regexp
+	scrubFields    *regexp.Regexp
+	checkIgnore    func(string) bool
+	transform      func(map[string]interface{})
+	unwrapper      UnwrapperFunc
+	stackTracer    StackTracerFunc
+	person         Person
+	captureIp      captureIp
+	itemsPerMinute int
 }
 
 func createConfiguration(token, environment, codeVersion, serverHost, serverRoot string) configuration {
@@ -678,23 +704,24 @@ func createConfiguration(token, environment, codeVersion, serverHost, serverRoot
 		hostname, _ = os.Hostname()
 	}
 	return configuration{
-		enabled:      true,
-		token:        token,
-		environment:  environment,
-		platform:     runtime.GOOS,
-		endpoint:     "https://api.rollbar.com/api/1/item/",
-		scrubHeaders: regexp.MustCompile("Authorization"),
-		scrubFields:  regexp.MustCompile("password|secret|token"),
-		codeVersion:  codeVersion,
-		serverHost:   hostname,
-		serverRoot:   serverRoot,
-		fingerprint:  false,
-		checkIgnore:  func(_s string) bool { return false },
-		transform:    func(_d map[string]interface{}) {},
-		unwrapper:    DefaultUnwrapper,
-		stackTracer:  DefaultStackTracer,
-		person:       Person{},
-		captureIp:    CaptureIpFull,
+		enabled:        true,
+		token:          token,
+		environment:    environment,
+		platform:       runtime.GOOS,
+		endpoint:       "https://api.rollbar.com/api/1/item/",
+		scrubHeaders:   regexp.MustCompile("Authorization"),
+		scrubFields:    regexp.MustCompile("password|secret|token"),
+		codeVersion:    codeVersion,
+		serverHost:     hostname,
+		serverRoot:     serverRoot,
+		fingerprint:    false,
+		checkIgnore:    func(_s string) bool { return false },
+		transform:      func(_d map[string]interface{}) {},
+		unwrapper:      DefaultUnwrapper,
+		stackTracer:    DefaultStackTracer,
+		person:         Person{},
+		captureIp:      CaptureIpFull,
+		itemsPerMinute: 0,
 	}
 }
 
