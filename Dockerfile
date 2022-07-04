@@ -1,5 +1,5 @@
 FROM golang:1.18-alpine AS build
-ENV GO111MODULE=on CGO_ENABLED=0 GOFLAGS=-mod=vendor
+ENV CGO_ENABLED=0
 RUN apk update && apk add git
 WORKDIR /app
 COPY go.mod go.sum ./
