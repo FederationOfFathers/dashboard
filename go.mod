@@ -18,14 +18,14 @@ require (
 	github.com/jinzhu/inflection v0.0.0-20170102125226-1c35d901db3d // indirect
 	github.com/jinzhu/now v1.0.1 // indirect
 	github.com/lusis/slack-test v0.0.0-20190426140909-c40012f20018 // indirect
-	github.com/nicklaw5/helix v1.17.0
+	github.com/nicklaw5/helix v1.25.0
 	github.com/nlopes/slack v0.0.0-20180905213137-8cf10c586222
 	github.com/nu7hatch/gouuid v0.0.0-20131221200532-179d4d0c4d8d
 	github.com/pborman/uuid v0.0.0-20170612153648-e790cca94e6c
 	github.com/robfig/cron v1.2.0
-	github.com/rollbar/rollbar-go v1.4.0
+	github.com/rollbar/rollbar-go v1.4.4
 	github.com/speps/go-hashids v1.0.0
-	go.uber.org/zap v1.17.0
+	go.uber.org/zap v1.21.0
 	golang.org/x/oauth2 v0.0.0-20190130055435-99b60b757ec1
 	gopkg.in/djherbis/stow.v2 v2.2.0
 	gopkg.in/yaml.v2 v2.4.0
