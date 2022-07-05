@@ -13,6 +13,11 @@ import (
 	"google.golang.org/api/youtube/v3"
 )
 
+const (
+	twitchStreamLinkFmt  = "https://www.twitch.tv/%s"
+	youtubeStreamLinkFmt = "https://www.youtube.com/channel/%s"
+)
+
 // registerSlashStream regsiters the /stream add/remove commands for the bot
 func (d *DiscordAPI) registerSlashStream() {
 
@@ -76,12 +81,14 @@ func (d *DiscordAPI) slashStreamHandler(s *discordgo.Session, i *discordgo.Inter
 		var streamType string
 		var streamUser string
 		var streamID string
+		var channelLink string
 
 		// determine stream type and username
 		if strings.Contains(streamLink, "twitch.tv/") || strings.Contains(streamLink, "twitch.com/") {
 			streamType = "twitch"
 			streamUser = streamLink[strings.LastIndex(streamLink, "/")+1:]
 			streamID = streamUser
+			channelLink = fmt.Sprintf(twitchStreamLinkFmt, streamID)
 		} else if strings.Contains(streamLink, "youtube.com/") {
 			if d.yt == nil {
 				s.InteractionRespond(i.Interaction, badOptionResponse)
@@ -102,6 +109,7 @@ func (d *DiscordAPI) slashStreamHandler(s *discordgo.Session, i *discordgo.Inter
 			}
 			streamUser = ytChannel.BrandingSettings.Channel.Title
 			streamID = ytChannel.Id
+			channelLink = fmt.Sprintf(youtubeStreamLinkFmt, streamID)
 		}
 
 		if streamUser == "" || streamType == "" {
@@ -113,7 +121,7 @@ func (d *DiscordAPI) slashStreamHandler(s *discordgo.Session, i *discordgo.Inter
 			Type: discordgo.InteractionResponseChannelMessageWithSource,
 			Data: &discordgo.InteractionResponseData{
 				Flags:   64,
-				Content: fmt.Sprintf("Do you want to add the %s stream for %s?", streamType, streamUser),
+				Content: fmt.Sprintf("Do you want to add the stream for %s? \n%s\n(This will replace any current stream you may have already added)", streamUser, channelLink),
 				Components: []discordgo.MessageComponent{
 					discordgo.ActionsRow{
 						Components: []discordgo.MessageComponent{
