@@ -7,8 +7,10 @@ import (
 
 	"github.com/FederationOfFathers/dashboard/db"
 	"github.com/bwmarrin/discordgo"
+	"github.com/gocolly/colly/v2"
 	"github.com/jinzhu/gorm"
 	"go.uber.org/zap"
+	"google.golang.org/api/youtube/v3"
 )
 
 // registerSlashStream regsiters the /stream add/remove commands for the bot
@@ -73,11 +75,33 @@ func (d *DiscordAPI) slashStreamHandler(s *discordgo.Session, i *discordgo.Inter
 		streamLink := commandData.Options[0].Options[0].StringValue()
 		var streamType string
 		var streamUser string
+		var streamID string
 
 		// determine stream type and username
 		if strings.Contains(streamLink, "twitch.tv/") || strings.Contains(streamLink, "twitch.com/") {
 			streamType = "twitch"
 			streamUser = streamLink[strings.LastIndex(streamLink, "/")+1:]
+			streamID = streamUser
+		} else if strings.Contains(streamLink, "youtube.com/") {
+			if d.yt == nil {
+				s.InteractionRespond(i.Interaction, badOptionResponse)
+				return
+			}
+			streamType = "youtube"
+			ytChannel, err := d.getYoutubeChannelFromURL(streamLink)
+			if err != nil {
+				s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+					Type: discordgo.InteractionResponseChannelMessageWithSource,
+					Data: &discordgo.InteractionResponseData{
+						Content: "OOPS! We had some trouble processing your link.",
+						Flags:   64,
+					},
+				})
+				Logger.With(zap.String("youtube_url", streamLink), zap.Error(err)).Error("parsing youtube channel stream failed")
+				return
+			}
+			streamUser = ytChannel.BrandingSettings.Channel.Title
+			streamID = ytChannel.Id
 		}
 
 		if streamUser == "" || streamType == "" {
@@ -96,7 +120,7 @@ func (d *DiscordAPI) slashStreamHandler(s *discordgo.Session, i *discordgo.Inter
 							discordgo.Button{
 								Label:    "yes",
 								Style:    discordgo.PrimaryButton,
-								CustomID: fmt.Sprintf("stream:add:confirm:%s:%s", streamType, streamUser),
+								CustomID: fmt.Sprintf("stream:add:confirm:%s:%s", streamType, streamID),
 							},
 							discordgo.Button{
 								Label:    "no",
@@ -162,6 +186,62 @@ func (d *DiscordAPI) slashStreamHandler(s *discordgo.Session, i *discordgo.Inter
 
 }
 
+func (d *DiscordAPI) getYoutubeChannelFromURL(url string) (*youtube.Channel, error) {
+
+	channelList := d.yt.Channels.List([]string{"id", "brandingSettings"})
+	if strings.Contains(url, "/channel/") {
+		id := url[strings.LastIndex(url, "/")+1:]
+		channelList = channelList.Id(id)
+	} else if strings.Contains(url, "/user/") {
+		username := url[strings.LastIndex(url, "/")+1:]
+		channelList = channelList.ForUsername(username)
+	} else if strings.Contains(url, "/c/") {
+
+		// there is currently no API endpoint to get a channel by the custom
+		// URL, so we need to do some HTML scraping to get and verify the channel
+		channelUrl := getCanonicalURLForCustomURL(url)
+		if channelUrl == "" {
+			return nil, fmt.Errorf("could not find a valid YouTube channel")
+		}
+
+		id := channelUrl[strings.LastIndex(channelUrl, "/")+1:]
+		Logger.With(zap.String("url", channelUrl), zap.String("id", id)).Debug("channel URL found")
+		channelList = channelList.Id(id)
+	} else {
+		return nil, fmt.Errorf("unable to parse the URL")
+	}
+
+	resp, err := channelList.Do()
+	if err != nil {
+		return nil, err
+	}
+
+	if len(resp.Items) > 0 {
+		return resp.Items[0], nil
+	}
+
+	return nil, fmt.Errorf("could not find a matching youtube channel")
+
+}
+
+func getCanonicalURLForCustomURL(url string) string {
+	var canonicalUrl string
+	c := colly.NewCollector()
+
+	c.OnHTML("link[rel]", func(e *colly.HTMLElement) {
+		rel := e.Attr("rel")
+		if rel == "canonical" {
+			canonicalUrl = e.Attr("href")
+		}
+	})
+
+	if err := c.Visit(url); err != nil {
+		Logger.With(zap.String("url", url), zap.Error(err)).Error("unable to visit YouTube url")
+	}
+
+	return canonicalUrl
+}
+
 // slashStreamComponentHandler handles the component interactions, such as button clicks for confirmation
 func (d *DiscordAPI) slashStreamComponentHandler(s *discordgo.Session, i *discordgo.InteractionCreate) {
 
@@ -213,6 +293,19 @@ func (d *DiscordAPI) slashStreamComponentHandler(s *discordgo.Session, i *discor
 		case "twitch":
 			stream.Twitch = streamUsername
 			stream.Youtube = ""
+		case "youtube":
+			stream.Youtube = streamUsername
+			stream.Twitch = ""
+		default:
+			s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+				Type: discordgo.InteractionResponseChannelMessageWithSource,
+				Data: &discordgo.InteractionResponseData{
+					Content: "hmm, something didn't go right...sorry! try again if you must",
+					Flags:   64,
+				},
+			})
+			Logger.With(zap.String("button_id", customID)).Error("unknown stream type option")
+			return
 		}
 
 		if err := stream.Save(); err != nil {

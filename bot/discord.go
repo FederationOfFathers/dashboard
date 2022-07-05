@@ -11,12 +11,14 @@ import (
 	"github.com/bwmarrin/discordgo"
 	"github.com/honeycombio/beeline-go"
 	"go.uber.org/zap"
+	"google.golang.org/api/youtube/v3"
 )
 
 type DiscordAPI struct {
 	Config         DiscordCfg
 	discord        *discordgo.Session
 	assignmentMsgs map[string]map[string]string
+	yt             *youtube.Service
 }
 
 type DiscordCfg struct {
@@ -44,15 +46,16 @@ type Channel struct {
 
 var discordApi *DiscordAPI
 
-func NewDiscordAPI(cfg DiscordCfg) *DiscordAPI {
+func NewDiscordAPI(cfg DiscordCfg, yt *youtube.Service) *DiscordAPI {
 	return &DiscordAPI{
 		Config: cfg,
+		yt:     yt,
 	}
 }
 
 // StartDiscord starts Discord API bot
-func StartDiscord(cfg DiscordCfg) *DiscordAPI {
-	discordApi = NewDiscordAPI(cfg)
+func StartDiscord(cfg DiscordCfg, yt *youtube.Service) *DiscordAPI {
+	discordApi = NewDiscordAPI(cfg, yt)
 	discordApi.Connect()
 	if cfg.RoleCfg.ChannelId != "" {
 		discordApi.StartRoleHandlers()
