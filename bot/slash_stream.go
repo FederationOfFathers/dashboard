@@ -180,12 +180,18 @@ func (d *DiscordAPI) slashStreamComponentHandler(s *discordgo.Session, i *discor
 		if err != nil {
 			if err == gorm.ErrRecordNotFound || err == sql.ErrNoRows {
 				Logger.Info("adding new member")
+
 				// new member
-				m = &db.Member{
-					Discord: i.Member.User.ID,
-					Name:    i.Member.Nick,
-				}
+				m = db.NewMember(DB)
+				m.Discord = i.Member.User.ID
+				m.Name = i.Member.Nick
 				m.Save()
+				newM, err := DB.MemberByDiscordID(i.Member.User.ID)
+				if err != nil {
+					Logger.With(zap.Error(err)).Error("unable to retrieve newly created member")
+					return
+				}
+				m = newM
 			}
 			Logger.With(zap.Error(err)).Error("unable to find member data")
 			return
