@@ -5,19 +5,20 @@ import (
 )
 
 type Stream struct {
-	ID             int       `sql:"bigint(20) NOT NULL AUTO_INCREMENT"`
-	MemberID       int       `gorm:"type:bigint;not null;default:0;unique_index"`
-	Twitch         string    `gorm:"type:varchar(191);not null;default:'';index"`
-	TwitchStreamID string    `gorm:"type:varchar(191);not null;default:''"`
-	TwitchGame     string    `form:"type:varchar(191);not null;default:''"`
-	TwitchStart    int64     `gorm:"type:bigint;not null;default:0"`
-	TwitchStop     int64     `gorm:"type:bigint;not null;default:0"`
-	Youtube        string    `gorm:"type:varchar(191);not null;default:'';index"`
-	YoutubeStart   int64     `gorm:"type:bigint;not null;default:0"`
-	YoutubeStop    int64     `gorm:"type:bigint;not null;default:0"`
-	CreatedAt      time.Time `sql:"DEFAULT:current_timestamp"`
-	UpdatedAt      time.Time ``
-	db             *DB       `gorm:"-"`
+	ID              int       `sql:"bigint(20) NOT NULL AUTO_INCREMENT"`
+	MemberID        int       `gorm:"type:bigint;not null;default:0;unique_index"`
+	Twitch          string    `gorm:"type:varchar(191);not null;default:'';index"`
+	TwitchStreamID  string    `gorm:"type:varchar(191);not null;default:''"`
+	TwitchGame      string    `form:"type:varchar(191);not null;default:''"`
+	TwitchStart     int64     `gorm:"type:bigint;not null;default:0"`
+	TwitchStop      int64     `gorm:"type:bigint;not null;default:0"`
+	YoutubeStreamID string    `gorm:"type:varchar(64);not null;default:''"`
+	Youtube         string    `gorm:"type:varchar(191);not null;default:'';index"`
+	YoutubeStart    int64     `gorm:"type:bigint;not null;default:0"`
+	YoutubeStop     int64     `gorm:"type:bigint;not null;default:0"`
+	CreatedAt       time.Time `sql:"DEFAULT:current_timestamp"`
+	UpdatedAt       time.Time ``
+	db              *DB       `gorm:"-"`
 }
 
 func (s *Stream) Save() error {
