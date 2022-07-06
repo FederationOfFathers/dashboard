@@ -119,11 +119,11 @@ func updateTwitch(ctx context.Context, streams []*db.Stream) {
 		streamID := fmt.Sprintf("%s", stream.ID)
 		postStreamMessage := true
 
-		if streamID == s.TwitchStreamID && s.TwitchGame == stream.GameID {
+		if streamID == s.TwitchStreamID {
 			// if the stream has the same ID and the same game, then leave it as is
 			twlog.Debug("still streaming...", zap.String("twitch_user", s.Twitch), zap.String("game_id", stream.GameID))
 			continue
-		} else if isRecent && s.TwitchGame == stream.GameID {
+		} else if isRecent {
 			// if the game ID hasn't changed update, but don't sent a message
 			twlog.Debug("new ID, but still streaming...", zap.String("twitch_user", s.Twitch), zap.String("game_id", stream.GameID))
 			postStreamMessage = false
@@ -135,28 +135,17 @@ func updateTwitch(ctx context.Context, streams []*db.Stream) {
 			s.TwitchStop = s.TwitchStart - 1
 		}
 
-		var game helix.Game
-		gamesResponse, gerr := client.GetGames(&helix.GamesParams{
-			IDs: []string{stream.GameID},
-		})
-		if gerr != nil {
-			twlog.Error("could not get game data", zap.Error(err), zap.String("gameID", stream.GameID), zap.String("twitchUser", stream.UserName))
-		} else if len(gamesResponse.Data.Games) > 0 {
-			game = gamesResponse.Data.Games[0]
-		}
-
 		if postStreamMessage {
 			twlog.Info("posting twistream message")
 			var u helix.User
 			if user, ok := indexedUsers[stream.UserID]; ok {
 				u = user
 			}
-			sendTwitchMessage(stream, game, u)
+			sendTwitchMessage(stream, u)
 		}
 
-		s.TwitchGame = stream.GameID
 		if err := s.Save(); err != nil {
-			twlog.Error("unable to save stream data", zap.Any("stream", s), zap.Error(err))
+			twlog.Error("unable to save Twitch stream data", zap.Any("stream", s), zap.Error(err))
 		}
 
 	}
@@ -186,7 +175,7 @@ func updateTwitch(ctx context.Context, streams []*db.Stream) {
 
 }
 
-func sendTwitchMessage(stream helix.Stream, game helix.Game, user helix.User) {
+func sendTwitchMessage(stream helix.Stream, user helix.User) {
 
 	var userLogo string
 	if user.ID != "" {
@@ -195,6 +184,7 @@ func sendTwitchMessage(stream helix.Stream, game helix.Game, user helix.User) {
 
 	thumbnailUrl := strings.Replace(stream.ThumbnailURL, "{width}", "320", 1)
 	thumbnailUrl = strings.Replace(thumbnailUrl, "{height}", "180", 1)
+	thumbnailUrl = fmt.Sprintf("%s?%d", thumbnailUrl, time.Now().Unix())
 
 	messaging.SendTwitchStreamMessage(messaging.StreamMessage{
 		Platform:         "Twitch",
@@ -204,7 +194,6 @@ func sendTwitchMessage(stream helix.Stream, game helix.Game, user helix.User) {
 		Username:         stream.UserName,
 		UserLogo:         userLogo,
 		URL:              fmt.Sprintf("https://twitch.tv/%s", stream.UserName),
-		Game:             game.Name,
 		Description:      stream.Title,
 		Timestamp:        time.Now().Format("01/02/2006 15:04 MST"),
 		ThumbnailURL:     thumbnailUrl,
