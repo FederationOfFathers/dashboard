@@ -7,6 +7,7 @@ import (
 
 	"github.com/FederationOfFathers/dashboard/db"
 	"go.uber.org/zap"
+	"google.golang.org/api/youtube/v3"
 )
 
 var Streams = []*db.Stream{}
@@ -14,6 +15,7 @@ var lock sync.Mutex
 var Logger *zap.Logger
 
 var DB *db.DB
+var YouTube *youtube.Service
 
 func updated() {
 	if s, err := DB.Streams(); err != nil {

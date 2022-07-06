@@ -24,6 +24,10 @@ type Member struct {
 	db        *DB        `gorm:"-"`
 }
 
+func NewMember(db *DB) *Member {
+	return &Member{db: db}
+}
+
 func (m *Member) Save() error {
 	rval := m.db.Save(m)
 	return rval.Error
