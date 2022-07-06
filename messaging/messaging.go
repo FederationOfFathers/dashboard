@@ -65,7 +65,7 @@ func postStreamMessageToAllApis(sm StreamMessage) {
 	for _, msgApi := range msgApis {
 		err := msgApi.PostStreamMessage(sm)
 		if err != nil {
-			Logger.Error("unable to send stream update", zap.Error(err))
+			Logger.With(zap.Any("message", sm)).Error("unable to send stream update", zap.Error(err))
 		}
 	}
 }
