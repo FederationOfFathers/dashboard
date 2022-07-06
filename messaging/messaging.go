@@ -19,7 +19,6 @@ type StreamMessage struct {
 	Username         string
 	UserLogo         string
 	URL              string
-	Game             string
 	Description      string
 	Timestamp        string
 	ThumbnailURL     string
