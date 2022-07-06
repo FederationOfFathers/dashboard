@@ -120,6 +120,8 @@ func markStreamOffline(s *db.Stream) {
 }
 
 func sendYouTubeMessage(i *youtube.SearchResult, c *youtube.Channel) {
+
+	thumbnailUrl := fmt.Sprintf("%s?%d", i.Snippet.Thumbnails.Medium.Url, time.Now().Unix())
 	messaging.SendTwitchStreamMessage(messaging.StreamMessage{
 		Platform:         "YouTube",
 		PlatformLogo:     "https://slack-imgs.com/?c=1&o1=wi16.he16.si.ip&url=https%3A%2F%2Fwww.youtube.com%2Ffavicon.ico",
@@ -130,6 +132,6 @@ func sendYouTubeMessage(i *youtube.SearchResult, c *youtube.Channel) {
 		URL:              fmt.Sprintf("https://youtube.com/v/%s", i.Id.VideoId),
 		Description:      i.Snippet.Title,
 		Timestamp:        time.Now().Format("01/02/2006 15:04 MST"),
-		ThumbnailURL:     i.Snippet.Thumbnails.Medium.Url,
+		ThumbnailURL:     thumbnailUrl,
 	})
 }

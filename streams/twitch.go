@@ -184,6 +184,7 @@ func sendTwitchMessage(stream helix.Stream, user helix.User) {
 
 	thumbnailUrl := strings.Replace(stream.ThumbnailURL, "{width}", "320", 1)
 	thumbnailUrl = strings.Replace(thumbnailUrl, "{height}", "180", 1)
+	thumbnailUrl = fmt.Sprintf("%s?%d", thumbnailUrl, time.Now().Unix())
 
 	messaging.SendTwitchStreamMessage(messaging.StreamMessage{
 		Platform:         "Twitch",
