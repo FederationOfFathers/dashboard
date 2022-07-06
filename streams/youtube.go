@@ -95,7 +95,9 @@ func updateYouTubeStream(s *db.Stream) {
 	}
 
 	// save after we send the message. Ideally, we would only do this if the message succeeded
-	s.Save()
+	if err := s.Save(); err != nil {
+		ytlog.Error("unable to save YouTube stream data", zap.Any("stream", s), zap.Error(err))
+	}
 
 }
 

@@ -144,6 +144,10 @@ func updateTwitch(ctx context.Context, streams []*db.Stream) {
 			sendTwitchMessage(stream, u)
 		}
 
+		if err := s.Save(); err != nil {
+			twlog.Error("unable to save Twitch stream data", zap.Any("stream", s), zap.Error(err))
+		}
+
 	}
 
 	// update remaining streams as not streaming
