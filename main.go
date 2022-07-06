@@ -146,7 +146,10 @@ func main() {
 			logger.Error("YouTube service creation failed", zap.Error(err))
 		}
 		yt = y
+		logger.Info("YouTube service created")
 	}
+
+	streams.YouTube = yt
 
 	// start discord bot
 	if discordCfg.Token != "" {
