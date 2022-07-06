@@ -7,7 +7,6 @@ cfg-db.yml
 cfg-events.yml
 cfg-rollbar.yml
 cfg-twitch.yml
-cfg-youtube.yml
 database.bolt.*
 .database.bolt.*
 # Compiled Object files, Static and Dynamic libs (Shared Objects)

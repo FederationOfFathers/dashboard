@@ -11,14 +11,12 @@ import (
 	"github.com/bwmarrin/discordgo"
 	"github.com/honeycombio/beeline-go"
 	"go.uber.org/zap"
-	"google.golang.org/api/youtube/v3"
 )
 
 type DiscordAPI struct {
 	Config         DiscordCfg
 	discord        *discordgo.Session
 	assignmentMsgs map[string]map[string]string
-	yt             *youtube.Service
 }
 
 type DiscordCfg struct {
@@ -46,16 +44,15 @@ type Channel struct {
 
 var discordApi *DiscordAPI
 
-func NewDiscordAPI(cfg DiscordCfg, yt *youtube.Service) *DiscordAPI {
+func NewDiscordAPI(cfg DiscordCfg) *DiscordAPI {
 	return &DiscordAPI{
 		Config: cfg,
-		yt:     yt,
 	}
 }
 
 // StartDiscord starts Discord API bot
-func StartDiscord(cfg DiscordCfg, yt *youtube.Service) *DiscordAPI {
-	discordApi = NewDiscordAPI(cfg, yt)
+func StartDiscord(cfg DiscordCfg) *DiscordAPI {
+	discordApi = NewDiscordAPI(cfg)
 	discordApi.Connect()
 	if cfg.RoleCfg.ChannelId != "" {
 		discordApi.StartRoleHandlers()
@@ -287,7 +284,7 @@ func (d DiscordAPI) PostStreamMessage(sm messaging.StreamMessage) error {
 		return fmt.Errorf("stream channel id not configured")
 	}
 	author := discordgo.MessageEmbedAuthor{
-		Name:    sm.Username,
+		Name:    fmt.Sprintf("%s is live!", sm.Username),
 		IconURL: sm.UserLogo,
 	}
 
@@ -296,7 +293,7 @@ func (d DiscordAPI) PostStreamMessage(sm messaging.StreamMessage) error {
 		IconURL: sm.PlatformLogo,
 	}
 	messageEmbed := discordgo.MessageEmbed{
-		Description: fmt.Sprintf("%s\n%s", sm.Description, sm.URL),
+		Description: sm.Description,
 		Color:       sm.PlatformColorInt,
 		URL:         sm.URL,
 		Author:      &author,
@@ -306,10 +303,22 @@ func (d DiscordAPI) PostStreamMessage(sm messaging.StreamMessage) error {
 			Height: 180,
 		},
 		Footer: &footer,
+		Fields: []*discordgo.MessageEmbedField{
+			{
+				Name:   "Game",
+				Value:  sm.Game,
+				Inline: false,
+			},
+			{
+				Name:   "Stream URL",
+				Value:  sm.URL,
+				Inline: false,
+			},
+		},
 	}
 
 	_, err := d.discord.ChannelMessageSendComplex(d.Config.StreamChannelId, &discordgo.MessageSend{
-		Content: fmt.Sprintf("%s is Live!\n**%s**\n%s", sm.Username, sm.Description, sm.URL),
+		Content: fmt.Sprintf("%s is streaming **%s**\n%s", sm.Username, sm.Game, sm.URL),
 		Embed:   &messageEmbed,
 	})
 	return err

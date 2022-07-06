@@ -10,11 +10,9 @@
 package discordgo
 
 import (
-	"encoding/json"
 	"io"
 	"regexp"
 	"strings"
-	"time"
 )
 
 // MessageType is the type of Message
@@ -38,11 +36,8 @@ const (
 	MessageTypeChannelFollowAdd                      MessageType = 12
 	MessageTypeGuildDiscoveryDisqualified            MessageType = 14
 	MessageTypeGuildDiscoveryRequalified             MessageType = 15
-	MessageTypeThreadCreated                         MessageType = 18
 	MessageTypeReply                                 MessageType = 19
-	MessageTypeChatInputCommand                      MessageType = 20
-	MessageTypeThreadStarterMessage                  MessageType = 21
-	MessageTypeContextMenuCommand                    MessageType = 23
+	MessageTypeApplicationCommand                    MessageType = 20
 )
 
 // A Message stores all data related to a specific Discord message.
@@ -63,11 +58,11 @@ type Message struct {
 	// CAUTION: this field may be removed in a
 	// future API version; it is safer to calculate
 	// the creation time via the ID.
-	Timestamp time.Time `json:"timestamp"`
+	Timestamp Timestamp `json:"timestamp"`
 
 	// The time at which the last edit of the message
 	// occurred, if it has been edited.
-	EditedTimestamp *time.Time `json:"edited_timestamp"`
+	EditedTimestamp Timestamp `json:"edited_timestamp"`
 
 	// The roles mentioned in the message.
 	MentionRoles []string `json:"mention_roles"`
@@ -86,9 +81,10 @@ type Message struct {
 	Attachments []*MessageAttachment `json:"attachments"`
 
 	// A list of components attached to the message.
-	Components []MessageComponent `json:"-"`
+	Components []UnmarshableMessageComponent `json:"components"`
 
-	// A list of embeds present in the message.
+	// A list of embeds present in the message. Multiple
+	// embeds can currently only be sent by webhooks.
 	Embeds []*MessageEmbed `json:"embeds"`
 
 	// A list of users mentioned in the message.
@@ -123,52 +119,13 @@ type Message struct {
 	// Is sent with Rich Presence-related chat embeds
 	Application *MessageApplication `json:"application"`
 
-	// MessageReference contains reference data sent with crossposted or reply messages.
-	// This does not contain the reference *to* this message; this is for when *this* message references another.
-	// To generate a reference to this message, use (*Message).Reference().
+	// MessageReference contains reference data sent with crossposted messages
 	MessageReference *MessageReference `json:"message_reference"`
-
-	// The message associated with the message_reference
-	// NOTE: This field is only returned for messages with a type of 19 (REPLY) or 21 (THREAD_STARTER_MESSAGE).
-	// If the message is a reply but the referenced_message field is not present,
-	// the backend did not attempt to fetch the message that was being replied to, so its state is unknown.
-	// If the field exists but is null, the referenced message was deleted.
-	ReferencedMessage *Message `json:"referenced_message"`
-
-	// Is sent when the message is a response to an Interaction, without an existing message.
-	// This means responses to message component interactions do not include this property,
-	// instead including a MessageReference, as components exist on preexisting messages.
-	Interaction *MessageInteraction `json:"interaction"`
 
 	// The flags of the message, which describe extra features of a message.
 	// This is a combination of bit masks; the presence of a certain permission can
 	// be checked by performing a bitwise AND between this int and the flag.
 	Flags MessageFlags `json:"flags"`
-
-	// The thread that was started from this message, includes thread member object
-	Thread *Channel `json:"thread,omitempty"`
-
-	// An array of Sticker objects, if any were sent.
-	StickerItems []*Sticker `json:"sticker_items"`
-}
-
-// UnmarshalJSON is a helper function to unmarshal the Message.
-func (m *Message) UnmarshalJSON(data []byte) error {
-	type message Message
-	var v struct {
-		message
-		RawComponents []unmarshalableMessageComponent `json:"components"`
-	}
-	err := json.Unmarshal(data, &v)
-	if err != nil {
-		return err
-	}
-	*m = Message(v.message)
-	m.Components = make([]MessageComponent, len(v.RawComponents))
-	for i, v := range v.RawComponents {
-		m.Components[i] = v.MessageComponent
-	}
-	return err
 }
 
 // GetCustomEmojis pulls out all the custom (Non-unicode) emojis from a message and returns a Slice of the Emoji struct.
@@ -195,26 +152,11 @@ type MessageFlags int
 
 // Valid MessageFlags values
 const (
-	// MessageFlagsCrossPosted This message has been published to subscribed channels (via Channel Following).
-	MessageFlagsCrossPosted MessageFlags = 1 << 0
-	// MessageFlagsIsCrossPosted this message originated from a message in another channel (via Channel Following).
-	MessageFlagsIsCrossPosted MessageFlags = 1 << 1
-	// MessageFlagsSuppressEmbeds do not include any embeds when serializing this message.
-	MessageFlagsSuppressEmbeds MessageFlags = 1 << 2
-	// TODO: deprecated, remove when compatibility is not needed
-	MessageFlagsSupressEmbeds MessageFlags = 1 << 2
-	// MessageFlagsSourceMessageDeleted the source message for this crosspost has been deleted (via Channel Following).
+	MessageFlagsCrossPosted          MessageFlags = 1 << 0
+	MessageFlagsIsCrossPosted        MessageFlags = 1 << 1
+	MessageFlagsSupressEmbeds        MessageFlags = 1 << 2
 	MessageFlagsSourceMessageDeleted MessageFlags = 1 << 3
-	// MessageFlagsUrgent this message came from the urgent message system.
-	MessageFlagsUrgent MessageFlags = 1 << 4
-	// MessageFlagsHasThread this message has an associated thread, with the same id as the message.
-	MessageFlagsHasThread MessageFlags = 1 << 5
-	// MessageFlagsEphemeral this message is only visible to the user who invoked the Interaction.
-	MessageFlagsEphemeral MessageFlags = 1 << 6
-	// MessageFlagsLoading this message is an Interaction Response and the bot is "thinking".
-	MessageFlagsLoading MessageFlags = 1 << 7
-	// MessageFlagsFailedToMentionSomeRolesInThread this message failed to mention some roles and add their members to the thread.
-	MessageFlagsFailedToMentionSomeRolesInThread MessageFlags = 1 << 8
+	MessageFlagsUrgent               MessageFlags = 1 << 4
 )
 
 // File stores info about files you e.g. send in messages.
@@ -227,7 +169,7 @@ type File struct {
 // MessageSend stores all parameters you can send with ChannelMessageSendComplex.
 type MessageSend struct {
 	Content         string                  `json:"content,omitempty"`
-	Embeds          []*MessageEmbed         `json:"embeds"`
+	Embed           *MessageEmbed           `json:"embed,omitempty"`
 	TTS             bool                    `json:"tts"`
 	Components      []MessageComponent      `json:"components"`
 	Files           []*File                 `json:"-"`
@@ -236,9 +178,6 @@ type MessageSend struct {
 
 	// TODO: Remove this when compatibility is not required.
 	File *File `json:"-"`
-
-	// TODO: Remove this when compatibility is not required.
-	Embed *MessageEmbed `json:"-"`
 }
 
 // MessageEdit is used to chain parameters via ChannelMessageEditComplex, which
@@ -246,15 +185,11 @@ type MessageSend struct {
 type MessageEdit struct {
 	Content         *string                 `json:"content,omitempty"`
 	Components      []MessageComponent      `json:"components"`
-	Embeds          []*MessageEmbed         `json:"embeds"`
+	Embed           *MessageEmbed           `json:"embed,omitempty"`
 	AllowedMentions *MessageAllowedMentions `json:"allowed_mentions,omitempty"`
-	Flags           MessageFlags            `json:"flags,omitempty"`
 
 	ID      string
 	Channel string
-
-	// TODO: Remove this when compatibility is not required.
-	Embed *MessageEmbed `json:"-"`
 }
 
 // NewMessageEdit returns a MessageEdit struct, initialized
@@ -276,14 +211,7 @@ func (m *MessageEdit) SetContent(str string) *MessageEdit {
 // SetEmbed is a convenience function for setting the embed,
 // so you can chain commands.
 func (m *MessageEdit) SetEmbed(embed *MessageEmbed) *MessageEdit {
-	m.Embeds = []*MessageEmbed{embed}
-	return m
-}
-
-// SetEmbeds is a convenience function for setting the embeds,
-// so you can chain commands.
-func (m *MessageEdit) SetEmbeds(embeds []*MessageEmbed) *MessageEdit {
-	m.Embeds = embeds
+	m.Embed = embed
 	return m
 }
 
@@ -325,15 +253,13 @@ type MessageAllowedMentions struct {
 
 // A MessageAttachment stores data for message attachments.
 type MessageAttachment struct {
-	ID          string `json:"id"`
-	URL         string `json:"url"`
-	ProxyURL    string `json:"proxy_url"`
-	Filename    string `json:"filename"`
-	ContentType string `json:"content_type"`
-	Width       int    `json:"width"`
-	Height      int    `json:"height"`
-	Size        int    `json:"size"`
-	Ephemeral   bool   `json:"ephemeral"`
+	ID       string `json:"id"`
+	URL      string `json:"url"`
+	ProxyURL string `json:"proxy_url"`
+	Filename string `json:"filename"`
+	Width    int    `json:"width"`
+	Height   int    `json:"height"`
+	Size     int    `json:"size"`
 }
 
 // MessageEmbedFooter is a part of a MessageEmbed struct.
@@ -345,7 +271,7 @@ type MessageEmbedFooter struct {
 
 // MessageEmbedImage is a part of a MessageEmbed struct.
 type MessageEmbedImage struct {
-	URL      string `json:"url"`
+	URL      string `json:"url,omitempty"`
 	ProxyURL string `json:"proxy_url,omitempty"`
 	Width    int    `json:"width,omitempty"`
 	Height   int    `json:"height,omitempty"`
@@ -353,7 +279,7 @@ type MessageEmbedImage struct {
 
 // MessageEmbedThumbnail is a part of a MessageEmbed struct.
 type MessageEmbedThumbnail struct {
-	URL      string `json:"url"`
+	URL      string `json:"url,omitempty"`
 	ProxyURL string `json:"proxy_url,omitempty"`
 	Width    int    `json:"width,omitempty"`
 	Height   int    `json:"height,omitempty"`
@@ -375,7 +301,7 @@ type MessageEmbedProvider struct {
 // MessageEmbedAuthor is a part of a MessageEmbed struct.
 type MessageEmbedAuthor struct {
 	URL          string `json:"url,omitempty"`
-	Name         string `json:"name"`
+	Name         string `json:"name,omitempty"`
 	IconURL      string `json:"icon_url,omitempty"`
 	ProxyIconURL string `json:"proxy_icon_url,omitempty"`
 }
@@ -530,15 +456,4 @@ func (m *Message) ContentWithMoreMentionsReplaced(s *Session) (content string, e
 		return "#" + channel.Name
 	})
 	return
-}
-
-// MessageInteraction contains information about the application command interaction which generated the message.
-type MessageInteraction struct {
-	ID   string          `json:"id"`
-	Type InteractionType `json:"type"`
-	Name string          `json:"name"`
-	User *User           `json:"user"`
-
-	// Member is only present when the interaction is from a guild.
-	Member *Member `json:"member"`
 }

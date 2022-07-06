@@ -2,7 +2,6 @@
 package main
 
 import (
-	"context"
 	"fmt"
 	"os"
 
@@ -25,14 +24,11 @@ import (
 	rollbar "github.com/rollbar/rollbar-go"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
-	"google.golang.org/api/option"
-	"google.golang.org/api/youtube/v3"
 	"gopkg.in/yaml.v2"
 )
 
 var twitchClientID = ""
 var twitchClientSecret = ""
-var youtubeAPIKey = ""
 var discordCfg = bot.DiscordCfg{}
 var rollbarCfg = metrics.RollbarConfig{}
 var logger *zap.Logger
@@ -100,9 +96,6 @@ func init() {
 	tcfg.StringVar(&twitchClientID, "clientID", "", "Twitch Client ID")
 	tcfg.StringVar(&twitchClientSecret, "clientSecret", "", "Twitch Client Secret")
 
-	ytcfg := cfg.New("cfg-youtube")
-	ytcfg.StringVar(&youtubeAPIKey, "apiKey", "", "YouTube API Key")
-
 	hcfg := cfg.New("cfg-honeycomb")
 	hcfg.StringVar(&honeycombToken, "token", honeycombToken, "Token for Honeycomb project reporting")
 	hcfg.StringVar(&honeycombDataset, "dataset", honeycombDataset, "Dataset for Honeycomb project reporting")
@@ -139,22 +132,10 @@ func main() {
 	bridge.OldEventToolLink = events.OldEventToolLink
 	bridge.OldEventToolAuthorization = events.OldEventToolAuthorization
 
-	var yt *youtube.Service
-	if youtubeAPIKey != "" {
-		y, err := youtube.NewService(context.Background(), option.WithAPIKey(youtubeAPIKey))
-		if err != nil {
-			logger.Error("YouTube service creation failed", zap.Error(err))
-		}
-		yt = y
-		logger.Info("YouTube service created")
-	}
-
-	streams.YouTube = yt
-
 	// start discord bot
 	if discordCfg.Token != "" {
 		logger.Info("Starting discord")
-		discordApi := bot.StartDiscord(discordCfg, yt)
+		discordApi := bot.StartDiscord(discordCfg)
 		discordApi.MindGuild()
 		defer discordApi.Shutdown()
 
