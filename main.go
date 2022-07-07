@@ -153,8 +153,10 @@ func main() {
 
 	// start discord bot
 	if discordCfg.Token != "" {
-		if err := startDiscord(discordCfg, yt); err != nil {
+		if dApi, err := startDiscord(discordCfg, yt); err != nil {
 			logger.Error(fmt.Sprintf("Discord failed to start: %s", err))
+		} else {
+			defer dApi.Shutdown()
 		}
 	}
 
@@ -184,18 +186,17 @@ func main() {
 
 }
 
-func startDiscord(discordCfg bot.DiscordCfg, yt *youtube.Service) error {
+func startDiscord(discordCfg bot.DiscordCfg, yt *youtube.Service) (*bot.DiscordAPI, error) {
 	logger.Info("Starting discord")
 	discordApi, err := bot.StartDiscord(discordCfg, yt)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	discordApi.MindGuild()
-	defer discordApi.Shutdown()
 
 	messaging.AddMsgAPI(discordApi)
 
-	return nil
+	return discordApi, nil
 }
 
 // unmarshal a config YML file into an interface
