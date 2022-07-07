@@ -2,10 +2,12 @@ package streams
 
 import (
 	"fmt"
+	"net/url"
 	"time"
 
 	"github.com/FederationOfFathers/dashboard/db"
 	"github.com/FederationOfFathers/dashboard/messaging"
+	"github.com/gocolly/colly/v2"
 	"go.uber.org/zap"
 	"google.golang.org/api/youtube/v3"
 )
@@ -20,85 +22,145 @@ func mindYoutube() {
 	}
 	ytlog = Logger.Named("youtube")
 	ytlog.Debug("begin minding")
+
+	// indexed by channelID
+	indexedStreams := make(map[string]*db.Stream)
+	var streamsToCheck []string
 	for _, stream := range Streams {
-		ytlog.Debug("minding", zap.String("key", stream.Youtube))
+
 		if stream.Youtube != "" {
-			updateYouTubeStream(stream)
+			ytlog.With(
+				zap.String("channelID", stream.Youtube),
+			).Debug("minding stream")
+			indexedStreams[stream.Youtube] = stream
+
+			// get the 'live' video id by scraping the '/live' page for the channel
+			vidId := getYTVideoIDForStream(stream)
+			if vidId != "" {
+				streamsToCheck = append(streamsToCheck, vidId)
+			} else if stream.YoutubeStreamID != "" {
+				// if the vidID was empty and stream ID was not, we need to mark it as offline
+				markStreamOffline(stream)
+			}
+
 		}
 	}
+
+	if len(streamsToCheck) == 0 {
+		ytlog.Debug("no YouTube streams found")
+		return
+	}
+
+	vids := getYTStreamStatuses(streamsToCheck)
+	if vids == nil {
+		return
+	}
+
+	var updatedStreams []*db.Stream
+	var liveChannelIDs []string
+	indexedVids := make(map[string]*youtube.Video)
+	for _, v := range vids {
+		channelID := v.Snippet.ChannelId
+
+		s, found := indexedStreams[channelID]
+		if !found {
+			ytlog.With(zap.String("channelID", channelID)).Error("impossible channel id without a stream")
+			continue
+		}
+
+		if v.Snippet.LiveBroadcastContent == "live" {
+			// online and needs updating
+			if s.YoutubeStreamID != v.Id {
+
+				s.YoutubeStreamID = v.Id
+				s.YoutubeStart = time.Now().Unix()
+				s.YoutubeStop = 0
+
+				liveChannelIDs = append(liveChannelIDs, channelID)
+				updatedStreams = append(updatedStreams, s)
+				indexedVids[channelID] = v
+			}
+
+		} else if s.YoutubeStreamID != "" {
+			//offline
+			markStreamOffline(s)
+		}
+	}
+
+	channels := getYTChannelInfo(liveChannelIDs)
+	for _, c := range channels {
+		vid, found := indexedVids[c.Id]
+		if !found {
+			ytlog.With(zap.String("channelID", c.Id)).Error("impossible channel id without a video")
+			continue
+		}
+
+		sendYouTubeMessage(vid, c)
+	}
+
+	// save all update streams
+	for _, s := range updatedStreams {
+		if err := s.Save(); err != nil {
+			ytlog.With(zap.String("yt_channel", s.Youtube), zap.Error(err)).Error("unable to save stream data")
+		}
+	}
+
 	ytlog.Debug("end minding")
 }
 
-func updateYouTubeStream(s *db.Stream) {
-	channelID := s.Youtube
-
-	log := Logger.With(zap.Int("stream_id", s.ID), zap.String("channelID", channelID))
-
-	ytSearch := YouTube.Search.List([]string{"snippet"}).
-		ChannelId(channelID).Type("video").EventType("live")
-
-	resp, err := ytSearch.Do()
+func getYTChannelInfo(ids []string) []*youtube.Channel {
+	if len(ids) == 0 {
+		return []*youtube.Channel{}
+	}
+	resp, err := YouTube.Channels.List([]string{"snippet"}).Id(ids...).Do()
 	if err != nil {
-		ytlog.With(zap.Error(err), zap.String("channelID", channelID)).Error("unable to check for YouTube stream status")
-		return
+		ytlog.With(zap.Strings("ids", ids), zap.Error(err)).Error("unable to get channel info")
+		return []*youtube.Channel{}
 	}
 
-	if resp.HTTPStatusCode != 200 {
-		log.With(zap.Int("status", resp.HTTPStatusCode)).Error("search query failed")
-		return
+	return resp.Items
+}
+func getYTVideoIDForStream(s *db.Stream) string {
+	vidUrl := getCanonicalURL(fmt.Sprintf("https://www.youtube.com/channel/%s/live", s.Youtube))
+	u, err := url.Parse(vidUrl)
+	if err != nil {
+		ytlog.With(
+			zap.String("url", vidUrl),
+			zap.String("yt_channel", s.Youtube),
+			zap.Error(err),
+		).Error("unable to parse url")
 	}
 
-	// the channel is not streaming, ensure we have marked it as not live and done
-	if len(resp.Items) == 0 {
-		if s.YoutubeStreamID != "" {
-			markStreamOffline(s)
-			// todo update online message?
+	return u.Query().Get("v")
+}
+
+func getCanonicalURL(url string) string {
+	var canonicalUrl string
+	c := colly.NewCollector()
+
+	c.OnHTML("link[rel]", func(e *colly.HTMLElement) {
+		rel := e.Attr("rel")
+		if rel == "canonical" {
+			canonicalUrl = e.Attr("href")
 		}
-		return
+	})
+
+	if err := c.Visit(url); err != nil {
+		Logger.With(zap.String("url", url), zap.Error(err)).Error("unable to visit YouTube url")
 	}
 
-	// check if the live stream is one we have already posted, or if its a new stream
-	postStreamMessage := false
-	var broadcastItem *youtube.SearchResult
-	// we have a live stream!
-	for _, i := range resp.Items {
-		if i.Snippet.LiveBroadcastContent == "live" {
-			// update the stream id if it is not the same (also if empty)
-			if s.YoutubeStreamID != i.Id.VideoId {
-				postStreamMessage = true
-				s.YoutubeStreamID = i.Id.VideoId
-				// update start stop times
-				s.YoutubeStart = time.Now().Unix()
-				s.YoutubeStop = time.Now().Unix() - 10
-			}
-			broadcastItem = i
+	return canonicalUrl
+}
 
-			// we only need the first active live stream
-			break
-		}
+func getYTStreamStatuses(ids []string) []*youtube.Video {
+
+	resp, err := YouTube.Videos.List([]string{"snippet"}).Id(ids...).Do()
+	if err != nil {
+		ytlog.With(zap.Strings("ids", ids), zap.Error(err)).Error("unable to check YouTube streams")
+		return nil
 	}
 
-	if postStreamMessage {
-		var c *youtube.Channel
-		if resp, err := YouTube.Channels.List([]string{"snippet"}).Id(channelID).Do(); err != nil {
-			ytlog.With(
-				zap.String("channelID", channelID),
-				zap.Int("user", s.MemberID),
-				zap.Error(err),
-			).Error("unable to get channel info")
-		} else {
-			if len(resp.Items) > 0 {
-				c = resp.Items[0]
-			}
-		}
-
-		sendYouTubeMessage(broadcastItem, c)
-	}
-
-	// save after we send the message. Ideally, we would only do this if the message succeeded
-	if err := s.Save(); err != nil {
-		ytlog.Error("unable to save YouTube stream data", zap.Any("stream", s), zap.Error(err))
-	}
+	return resp.Items
 
 }
 
@@ -120,7 +182,7 @@ func markStreamOffline(s *db.Stream) {
 	}
 }
 
-func sendYouTubeMessage(i *youtube.SearchResult, c *youtube.Channel) {
+func sendYouTubeMessage(i *youtube.Video, c *youtube.Channel) {
 
 	thumbnailUrl := fmt.Sprintf("%s?%d", i.Snippet.Thumbnails.Medium.Url, time.Now().Unix())
 	messaging.SendTwitchStreamMessage(messaging.StreamMessage{
@@ -130,7 +192,7 @@ func sendYouTubeMessage(i *youtube.SearchResult, c *youtube.Channel) {
 		PlatformColorInt: 16711680,
 		Username:         i.Snippet.ChannelTitle,
 		UserLogo:         c.Snippet.Thumbnails.Default.Url,
-		URL:              fmt.Sprintf("https://youtube.com/v/%s", i.Id.VideoId),
+		URL:              fmt.Sprintf("https://youtube.com/v/%s", i.Id),
 		Description:      i.Snippet.Title,
 		Timestamp:        time.Now().Format("01/02/2006 15:04 MST"),
 		ThumbnailURL:     thumbnailUrl,
