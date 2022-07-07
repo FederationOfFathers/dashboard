@@ -40,6 +40,7 @@ func updateYouTubeStream(s *db.Stream) {
 	resp, err := ytSearch.Do()
 	if err != nil {
 		ytlog.With(zap.Error(err), zap.String("channelID", channelID)).Error("unable to check for YouTube stream status")
+		return
 	}
 
 	if resp.HTTPStatusCode != 200 {
