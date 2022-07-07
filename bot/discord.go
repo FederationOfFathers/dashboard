@@ -54,9 +54,12 @@ func NewDiscordAPI(cfg DiscordCfg, yt *youtube.Service) *DiscordAPI {
 }
 
 // StartDiscord starts Discord API bot
-func StartDiscord(cfg DiscordCfg, yt *youtube.Service) *DiscordAPI {
+func StartDiscord(cfg DiscordCfg, yt *youtube.Service) (*DiscordAPI, error) {
 	discordApi = NewDiscordAPI(cfg, yt)
-	discordApi.Connect()
+	if err := discordApi.Connect(); err != nil {
+		return nil, fmt.Errorf("failed to connect to Discord: %w", err)
+	}
+
 	if cfg.RoleCfg.ChannelId != "" {
 		discordApi.StartRoleHandlers()
 	}
@@ -79,7 +82,7 @@ func StartDiscord(cfg DiscordCfg, yt *youtube.Service) *DiscordAPI {
 	populateLists()
 	go mindLists()
 
-	return discordApi
+	return discordApi, nil
 
 }
 
@@ -250,15 +253,15 @@ func (d *DiscordAPI) FindIDByUsernameStartingAt(username string, snowflake strin
 }
 
 // Connect Needs to be called before any other API function work
-func (d *DiscordAPI) Connect() {
+func (d *DiscordAPI) Connect() error {
 	dg, err := discordgo.New("Bot " + d.Config.Token)
 	if err != nil {
 		Logger.Error("Unable to create discord connection", zap.Error(err))
-		return
+		return err
 	}
 
 	d.discord = dg
-	dg.Open()
+	return dg.Open()
 }
 
 // Needs to be called to disconnect from discord

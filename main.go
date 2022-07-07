@@ -153,12 +153,9 @@ func main() {
 
 	// start discord bot
 	if discordCfg.Token != "" {
-		logger.Info("Starting discord")
-		discordApi := bot.StartDiscord(discordCfg, yt)
-		discordApi.MindGuild()
-		defer discordApi.Shutdown()
-
-		messaging.AddMsgAPI(discordApi)
+		if err := startDiscord(discordCfg, yt); err != nil {
+			logger.Error(fmt.Sprintf("Discord failed to start: %s", err))
+		}
 	}
 
 	if mindStreams {
@@ -185,6 +182,20 @@ func main() {
 	rollbar.Info("starting up")
 	api.Run()
 
+}
+
+func startDiscord(discordCfg bot.DiscordCfg, yt *youtube.Service) error {
+	logger.Info("Starting discord")
+	discordApi, err := bot.StartDiscord(discordCfg, yt)
+	if err != nil {
+		return err
+	}
+	discordApi.MindGuild()
+	defer discordApi.Shutdown()
+
+	messaging.AddMsgAPI(discordApi)
+
+	return nil
 }
 
 // unmarshal a config YML file into an interface
