@@ -12,7 +12,7 @@ require (
 	github.com/gorilla/handlers v1.5.1
 	github.com/gorilla/mux v1.8.0
 	github.com/gorilla/securecookie v0.0.0-20160422134519-667fe4e3466a
-	github.com/honeycombio/beeline-go v1.1.2
+	github.com/honeycombio/beeline-go v1.11.0
 	github.com/jinzhu/gorm v0.0.0-20160404144928-5174cc5c242a
 	github.com/nicklaw5/helix v1.25.0
 	github.com/nlopes/slack v0.0.0-20180905213137-8cf10c586222
@@ -40,7 +40,7 @@ require (
 	github.com/facebookgo/clock v0.0.0-20150410010913-600d898af40a // indirect
 	github.com/facebookgo/limitgroup v0.0.0-20150612190941-6abd8d71ec01 // indirect
 	github.com/facebookgo/muster v0.0.0-20150708232844-fd3d7953fd52 // indirect
-	github.com/felixge/httpsnoop v1.0.2 // indirect
+	github.com/felixge/httpsnoop v1.0.3 // indirect
 	github.com/go-sql-driver/mysql v1.6.0 // indirect
 	github.com/gobwas/glob v0.2.3 // indirect
 	github.com/golang-jwt/jwt v3.2.1+incompatible // indirect
@@ -50,30 +50,28 @@ require (
 	github.com/googleapis/enterprise-certificate-proxy v0.1.0 // indirect
 	github.com/googleapis/gax-go/v2 v2.4.0 // indirect
 	github.com/gorilla/websocket v1.4.2 // indirect
-	github.com/honeycombio/libhoney-go v1.15.2 // indirect
+	github.com/honeycombio/libhoney-go v1.17.0 // indirect
 	github.com/jinzhu/inflection v0.0.0-20170102125226-1c35d901db3d // indirect
 	github.com/jinzhu/now v1.0.1 // indirect
 	github.com/kennygrant/sanitize v1.2.4 // indirect
-	github.com/klauspost/compress v1.11.4 // indirect
+	github.com/klauspost/compress v1.15.9 // indirect
+	github.com/lib/pq v1.10.7 // indirect
 	github.com/lusis/slack-test v0.0.0-20190426140909-c40012f20018 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/saintfish/chardet v0.0.0-20120816061221-3af4cd4741ca // indirect
 	github.com/temoto/robotstxt v1.1.1 // indirect
-	github.com/vmihailenco/msgpack/v4 v4.3.12 // indirect
-	github.com/vmihailenco/tagparser v0.1.1 // indirect
+	github.com/vmihailenco/msgpack/v5 v5.3.5 // indirect
+	github.com/vmihailenco/tagparser/v2 v2.0.0 // indirect
 	go.opencensus.io v0.23.0 // indirect
-	go.opentelemetry.io/contrib/propagators v0.20.0 // indirect
-	go.opentelemetry.io/otel v0.20.0 // indirect
-	go.opentelemetry.io/otel/trace v0.20.0 // indirect
 	go.uber.org/atomic v1.7.0 // indirect
 	go.uber.org/multierr v1.6.0 // indirect
-	golang.org/x/crypto v0.0.0-20210421170649-83a5a9bb288b // indirect
-	golang.org/x/net v0.0.0-20220624214902-1bab6f366d9e // indirect
-	golang.org/x/sys v0.0.0-20220624220833-87e55d714810 // indirect
+	golang.org/x/crypto v0.0.0-20220722155217-630584e8d5aa // indirect
+	golang.org/x/net v0.0.0-20221002022538-bcab6841153b // indirect
+	golang.org/x/sys v0.0.0-20220728004956-3c1f35247d10 // indirect
 	golang.org/x/text v0.3.7 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
 	google.golang.org/genproto v0.0.0-20220624142145-8cd45d7dbd1f // indirect
-	google.golang.org/grpc v1.47.0 // indirect
-	google.golang.org/protobuf v1.28.0 // indirect
+	google.golang.org/grpc v1.49.0 // indirect
+	google.golang.org/protobuf v1.28.1 // indirect
 	gopkg.in/alexcesaro/statsd.v2 v2.0.0 // indirect
 )
