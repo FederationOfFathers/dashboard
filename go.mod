@@ -19,9 +19,9 @@ require (
 	github.com/nu7hatch/gouuid v0.0.0-20131221200532-179d4d0c4d8d
 	github.com/pborman/uuid v0.0.0-20170612153648-e790cca94e6c
 	github.com/robfig/cron v1.2.0
-	github.com/rollbar/rollbar-go v1.4.4
+	github.com/rollbar/rollbar-go v1.4.5
 	github.com/speps/go-hashids v1.0.0
-	go.uber.org/zap v1.21.0
+	go.uber.org/zap v1.23.0
 	golang.org/x/oauth2 v0.0.0-20220622183110-fd043fe589d2
 	google.golang.org/api v0.86.0
 	gopkg.in/djherbis/stow.v2 v2.2.0
