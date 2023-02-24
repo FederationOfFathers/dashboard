@@ -142,14 +142,14 @@ github.com/klauspost/compress/zstd
 github.com/klauspost/compress/zstd/internal/xxhash
 # github.com/lib/pq v1.10.7
 ## explicit; go 1.13
-# github.com/lusis/slack-test v0.0.0-20190426140909-c40012f20018
-## explicit
 # github.com/nicklaw5/helix v1.25.0
 ## explicit; go 1.15
 github.com/nicklaw5/helix
-# github.com/nlopes/slack v0.0.0-20180905213137-8cf10c586222
+# github.com/nlopes/slack v0.6.0
 ## explicit
 github.com/nlopes/slack
+github.com/nlopes/slack/internal/errorsx
+github.com/nlopes/slack/internal/timex
 github.com/nlopes/slack/slackutilsx
 # github.com/nu7hatch/gouuid v0.0.0-20131221200532-179d4d0c4d8d
 ## explicit
