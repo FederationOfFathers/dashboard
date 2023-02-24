@@ -13,7 +13,7 @@ require (
 	github.com/gorilla/mux v1.8.0
 	github.com/gorilla/securecookie v0.0.0-20160422134519-667fe4e3466a
 	github.com/honeycombio/beeline-go v1.11.1
-	github.com/jinzhu/gorm v0.0.0-20160404144928-5174cc5c242a
+	github.com/jinzhu/gorm v1.9.16
 	github.com/nicklaw5/helix v1.25.0
 	github.com/nlopes/slack v0.0.0-20180905213137-8cf10c586222
 	github.com/nu7hatch/gouuid v0.0.0-20131221200532-179d4d0c4d8d
@@ -35,8 +35,6 @@ require (
 	github.com/antchfx/htmlquery v1.2.3 // indirect
 	github.com/antchfx/xmlquery v1.2.4 // indirect
 	github.com/antchfx/xpath v1.1.8 // indirect
-	github.com/denisenkom/go-mssqldb v0.0.0-20190915052044-aa4949efa320 // indirect
-	github.com/erikstmartin/go-testdb v0.0.0-20160219214506-8d10e4a1bae5 // indirect
 	github.com/facebookgo/clock v0.0.0-20150410010913-600d898af40a // indirect
 	github.com/facebookgo/limitgroup v0.0.0-20150612190941-6abd8d71ec01 // indirect
 	github.com/facebookgo/muster v0.0.0-20150708232844-fd3d7953fd52 // indirect
@@ -51,8 +49,7 @@ require (
 	github.com/googleapis/gax-go/v2 v2.6.0 // indirect
 	github.com/gorilla/websocket v1.4.2 // indirect
 	github.com/honeycombio/libhoney-go v1.17.1 // indirect
-	github.com/jinzhu/inflection v0.0.0-20170102125226-1c35d901db3d // indirect
-	github.com/jinzhu/now v1.0.1 // indirect
+	github.com/jinzhu/inflection v1.0.0 // indirect
 	github.com/kennygrant/sanitize v1.2.4 // indirect
 	github.com/klauspost/compress v1.15.9 // indirect
 	github.com/lib/pq v1.10.7 // indirect
