@@ -11,7 +11,7 @@ require (
 	github.com/gocolly/colly/v2 v2.1.0
 	github.com/gorilla/handlers v1.5.1
 	github.com/gorilla/mux v1.8.0
-	github.com/gorilla/securecookie v0.0.0-20160422134519-667fe4e3466a
+	github.com/gorilla/securecookie v1.1.1
 	github.com/honeycombio/beeline-go v1.11.1
 	github.com/jinzhu/gorm v0.0.0-20160404144928-5174cc5c242a
 	github.com/nicklaw5/helix v1.25.0
