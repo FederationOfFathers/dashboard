@@ -15,7 +15,7 @@ require (
 	github.com/honeycombio/beeline-go v1.11.1
 	github.com/jinzhu/gorm v0.0.0-20160404144928-5174cc5c242a
 	github.com/nicklaw5/helix v1.25.0
-	github.com/nlopes/slack v0.0.0-20180905213137-8cf10c586222
+	github.com/nlopes/slack v0.6.0
 	github.com/nu7hatch/gouuid v0.0.0-20131221200532-179d4d0c4d8d
 	github.com/pborman/uuid v0.0.0-20170612153648-e790cca94e6c
 	github.com/robfig/cron v1.2.0
@@ -56,7 +56,6 @@ require (
 	github.com/kennygrant/sanitize v1.2.4 // indirect
 	github.com/klauspost/compress v1.15.9 // indirect
 	github.com/lib/pq v1.10.7 // indirect
-	github.com/lusis/slack-test v0.0.0-20190426140909-c40012f20018 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/saintfish/chardet v0.0.0-20120816061221-3af4cd4741ca // indirect
 	github.com/temoto/robotstxt v1.1.1 // indirect
